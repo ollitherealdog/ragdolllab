@@ -215,6 +215,40 @@ body.intro #bars i{height:11vh}
 @media (max-width:760px){#mlang{right:calc(12px + var(--sar));top:calc(10px + var(--sat))}}
 @media (orientation:landscape) and (max-height:540px){#mlang{display:none}}
 
+/* Karten mit echten Vorschaubildern */
+.mcard{width:clamp(200px,19vw,262px)}
+.mcard .pv{position:relative;border-radius:11px;overflow:hidden;aspect-ratio:16/9;background:linear-gradient(135deg,#1b2433,#0d121b);display:flex;align-items:center;justify-content:center}
+.mcard .pv img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.mcard .pv svg{position:relative;height:60%;width:60%;opacity:.9}
+.mcard .pv img + svg{display:none}
+.mcard .tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:2px}
+.mcard .tags i{font-style:normal;font-size:10.5px;font-weight:700;letter-spacing:.04em;padding:3px 8px;border-radius:99px;background:rgba(255,255,255,.09);color:#cfd8e6}
+.mcard.on .tags i{background:rgba(255,184,0,.2);color:var(--acc)}
+.mmaps h3 .nav{display:flex;gap:6px;order:3}.mmaps h3 .nav button{min-height:30px;width:34px;padding:0;font-size:20px;line-height:1;border-radius:10px}
+.mmaps h3::after{order:2}
+@media (max-width:760px),(max-height:620px){.mcard .tags{display:none}.mcard{width:150px}.mmaps h3 .nav{display:none}}
+/* Roentgen-Panel */
+#xr{position:fixed;right:calc(10px + var(--sar));top:66px;z-index:6;width:168px;padding:8px 8px 10px;border-radius:16px;background:rgba(8,13,22,.78);border:1px solid rgba(120,180,255,.35);backdrop-filter:blur(8px);display:none;pointer-events:none;box-shadow:0 8px 30px rgba(0,0,0,.4)}
+#xr.show{display:block}
+#xr h4{margin:0 0 6px;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:#9fd0ff}
+#xr canvas{position:static;left:auto;top:auto;width:150px;height:306px;display:block;margin:0 auto}
+#xr.ping{border-color:#ff4a4a;box-shadow:0 0 0 2px rgba(255,60,60,.5),0 8px 30px rgba(0,0,0,.4)}
+#xrl{font-size:11.5px;margin-top:6px;max-height:110px;overflow:hidden}
+#xrl p{margin:0;color:#8fa3bd}
+#xrl ul{margin:0;padding:0;list-style:none;display:grid;gap:3px}
+#xrl li{display:flex;justify-content:space-between;gap:6px;color:#ffd3cf}
+#xrl li span{color:#ff6a5a;font-weight:800;font-size:10.5px;text-transform:uppercase}
+body.inmenu #xr,body.intro #xr{display:none!important}
+#btn-xray.on{background:rgba(120,180,255,.25)}
+@media (max-width:760px),(max-height:560px){#xr{width:112px;top:auto;bottom:calc(96px + var(--sab));padding:6px}#xr canvas{position:static;width:100px;height:204px}#xrl{display:none}}
+/* Lade-Abdeckung */
+#mload{position:fixed;inset:0;z-index:40;background:radial-gradient(ellipse at 50% 40%,#12182a,#05070b);display:flex;align-items:center;justify-content:center;transition:opacity .7s ease;text-align:center}
+#mload.hide{opacity:0;pointer-events:none}
+#mload b{display:block;font-size:clamp(34px,7vw,64px);font-weight:900;letter-spacing:.04em;text-transform:uppercase}
+#mload span{display:block;margin-top:10px;color:#9aa9c0;letter-spacing:.2em;font-size:12px;text-transform:uppercase}
+#mload i{display:block;margin:18px auto 0;width:160px;height:3px;border-radius:3px;background:linear-gradient(90deg,transparent,var(--acc),transparent);animation:mslide 1.1s ease-in-out infinite}
+@keyframes mslide{0%{transform:translateX(-40px);opacity:.3}50%{opacity:1}100%{transform:translateX(40px);opacity:.3}}
+
 </style>
 </head>
 <body>
@@ -233,6 +267,7 @@ body.intro #bars i{height:11vh}
       <button id="btn-scene" title="Next scene (N)">Scene</button>
       <button id="btn-slow" title="Slow motion (Space)">Slow-mo</button>
       <button id="btn-reset" title="Reset dummy (R)">Reset</button>
+      <button id="btn-xray" title="X-ray (X)">X-ray</button>
       <button id="btn-brain" title="Live brain modules (B)">Brain</button>
       <button id="btn-menu" title="Settings (M)">Settings</button>
       <button id="btn-home" title="Main menu (Esc)">Menu</button>
@@ -261,12 +296,14 @@ body.intro #bars i{height:11vh}
     <div class="quick"><h4>Quick settings</h4><div id="mquick"></div></div>
   </div>
   <div class="mmaps">
-    <h3>Choose a map</h3>
+    <h3>Choose a map<span class="nav"><button id="mprev" title="Previous" aria-label="Previous">‹</button><button id="mnext" title="Next" aria-label="Next">›</button></span></h3>
     <div id="mcards"></div>
-    <div class="mfoot"><span>Tip: key 0 = slice, 1–9 = weapons, Esc = menu</span><span>Violence and blood are depicted on a fictional test dummy.</span></div>
+    <div class="mfoot"><span>Tip: 0 slice · 1–9 weapons · T axe · K katana · L knives · P spear · X x-ray · Esc menu</span><span>Violence and blood are depicted on a fictional test dummy.</span></div>
   </div>
 </div>
 <div id="sback"></div>
+<div id="xr"><h4>X-ray</h4><canvas id="xrc" width="300" height="612"></canvas><div id="xrl"></div></div>
+<div id="mload"><div><b>Ragdoll Lab</b><span>Loading maps…</span><i></i></div></div>
 
 <div id="fatal"><div><h2 id="ftitle">Something went wrong</h2><p id="fmsg"></p><pre id="fdetail"></pre></div></div>
 <script>
@@ -4504,7 +4541,8 @@ vec3 shade(vec3 base, vec3 N, float rough, float metal, float ao){
 }`;
 
 const GLSL_MESH_FS = `#version 300 es` + GLSL_COMMON + `
-void main(){ vec3 N = normalize(vN); float ao = capAO(vW, N, uCapMask); float ro = vMat.x > 0.0 ? vMat.x : 0.5;
+uniform float uClipX;
+void main(){ if (uClipX*vO.x < 0.0) discard; vec3 N = normalize(vN); float ao = capAO(vW, N, uCapMask); float ro = vMat.x > 0.0 ? vMat.x : 0.5;
   /* object-space vinyl micro-variation + scuffs / dust that accumulate with ground contact (uDirt per part) */
   float dn = vnoise(vO.xy*38.0+vO.z*17.0)*0.6 + vnoise(vO.zy*71.0+vO.x*9.0)*0.4;
   vec3 base = vCol*uTint*(0.965+0.07*dn); float dirt = uDirt*smoothstep(0.38, 0.78, dn);
@@ -4534,8 +4572,9 @@ void main(){
   vL = uLightVP*vec4(w.xyz + normalize(vN)*0.014, 1.0); gl_Position = uVP*w; }`;
 
 const GLSL_SKIN_FS = `#version 300 es` + GLSL_COMMON + `
-flat in int vBone; in float vComp; in float vDirtS, vFlash; uniform vec3 uSkin, uShirt, uPants, uHairC, uEyeC, uPoly; uniform int uBMask[17], uLook;
+uniform float uClipX; flat in int vBone; in float vComp; in float vDirtS, vFlash; uniform vec3 uSkin, uShirt, uPants, uHairC, uEyeC, uPoly; uniform int uBMask[17], uLook;
 void main(){
+  if (uClipX*vO.x < 0.0) discard;
   if (abs(vComp - floor(vComp + 0.5)) > 0.02) discard;      // gedehnte Dreiecke zwischen getrennten Teilen ausblenden
   vec3 N = normalize(vN); int reg = int(vMat.z + 0.5); float ao = capAO(vW, N, uBMask[vBone]);
   float ro = vMat.x, me = vMat.y; vec3 base = vCol;
@@ -4654,8 +4693,8 @@ precision highp float; out vec4 o; void main(){ o = vec4(1.0); }`;
 const GLSL_SHADOW_VS = `#version 300 es
 in vec3 aPos; uniform mat4 uLightVP, uModel; void main(){ gl_Position = uLightVP*(uModel*vec4(aPos,1.0)); }`;
 const GLSL_SKIN_SHADOW_VS = `#version 300 es
-in vec3 aPos; in vec4 aBI; in vec4 aBW; uniform mat4 uLightVP; uniform mat4 uBones[17]; uniform float uComp[17]; out float vComp;
-void main(){ ivec4 bi = ivec4(aBI + 0.5);
+in vec3 aPos; in vec4 aBI; in vec4 aBW; uniform mat4 uLightVP; uniform mat4 uBones[17]; uniform float uComp[17]; out float vComp, vRX;
+void main(){ vRX = aPos.x; ivec4 bi = ivec4(aBI + 0.5);
   vec4 bw = aBW; int dk = 0; float dm = bw.x;
   if (bw.y > dm) { dm = bw.y; dk = 1; } if (bw.z > dm) { dm = bw.z; dk = 2; } if (bw.w > dm) { dm = bw.w; dk = 3; }
   float cdom = uComp[bi[dk]];
@@ -4663,7 +4702,7 @@ void main(){ ivec4 bi = ivec4(aBI + 0.5);
   bw /= max(bw.x + bw.y + bw.z + bw.w, 1e-4); vComp = cdom;
   mat4 M = uBones[bi.x]*bw.x + uBones[bi.y]*bw.y + uBones[bi.z]*bw.z + uBones[bi.w]*bw.w; gl_Position = uLightVP*(M*vec4(aPos,1.0)); }`;
 const GLSL_SKIN_SHADOW_FS = `#version 300 es
-precision highp float; in float vComp; out vec4 o; void main(){ if (abs(vComp - floor(vComp + 0.5)) > 0.02) discard; o = vec4(1.0); }`;
+precision highp float; in float vComp, vRX; uniform float uClipX; out vec4 o; void main(){ if (uClipX*vRX < 0.0) discard; if (abs(vComp - floor(vComp + 0.5)) > 0.02) discard; o = vec4(1.0); }`;
 
 /* floor blood map: instanced quads, one per stamp (x z R amp | surface y, dir x, dir z, elongation), max-blended: r = thickness, g = wetness.
    A stamp only lands where the surface height map agrees with its height, so blood stays on the stair tread / stage top it fell on. */
@@ -5010,7 +5049,9 @@ class Renderer {
       for (const d of sc.dummyDraws) this.drawDepth(p, d.mesh, d.model);
       for (const d of sc.ballDraws) this.drawDepth(p, d.mesh, d.model);
       this.drawDepth(p, this.envRest, this.ident);
-      if (sc.human) { const q = this.prog.skinShadow; gl.useProgram(q); gl.uniformMatrix4fv(this.U(q, 'uLightVP'), false, this.lvp); gl.uniformMatrix4fv(this.U(q, 'uBones'), false, sc.human.bones); gl.uniform1fv(this.U(q, 'uComp'), sc.human.comp); this.drawSkinned(sc.human.layers); }
+      if (sc.human) { const q = this.prog.skinShadow; gl.useProgram(q); gl.uniformMatrix4fv(this.U(q, 'uLightVP'), false, this.lvp); gl.uniformMatrix4fv(this.U(q, 'uBones'), false, sc.human.bones); gl.uniform1fv(this.U(q, 'uComp'), sc.human.comp);
+        if (sc.human.split) { gl.uniform1f(this.U(q, 'uClipX'), 1); this.drawSkinned(sc.human.layers); gl.uniformMatrix4fv(this.U(q, 'uBones'), false, sc.human.bonesB); gl.uniform1f(this.U(q, 'uClipX'), -1); this.drawSkinned(sc.human.layers); gl.uniform1f(this.U(q, 'uClipX'), 0); }
+        else { gl.uniform1f(this.U(q, 'uClipX'), 0); this.drawSkinned(sc.human.layers); } }
       gl.disable(gl.POLYGON_OFFSET_FILL); gl.colorMask(true, true, true, true);
     }
     // ---- main pass: opaque geometry nearest-first (character, props, environment, floor) so early-z discards hidden fragments, then the sky fills what is left ----
@@ -5022,10 +5063,11 @@ class Renderer {
       gl.uniformMatrix4fv(this.U(p, 'uBones'), false, h.bones); gl.uniform1fv(this.U(p, 'uBD'), h.dirt); gl.uniform1fv(this.U(p, 'uBF'), h.flash); gl.uniform1iv(this.U(p, 'uBMask'), h.mask); gl.uniform1fv(this.U(p, 'uComp'), h.comp); gl.uniform1fv(this.U(p, 'uBS'), h.stain);
       gl.uniform3fv(this.U(p, 'uSkin'), h.skin); gl.uniform3fv(this.U(p, 'uShirt'), h.shirt); gl.uniform3fv(this.U(p, 'uPants'), h.pants); gl.uniform3fv(this.U(p, 'uHairC'), h.hair); gl.uniform3fv(this.U(p, 'uEyeC'), h.eye);
       gl.uniform1i(this.U(p, 'uLook'), h.look | 0); gl.uniform3fv(this.U(p, 'uPoly'), h.poly);
-      this.drawSkinned(h.layers); }
+      if (h.split) { gl.uniform1f(this.U(p, 'uClipX'), 1); this.drawSkinned(h.layers); gl.uniformMatrix4fv(this.U(p, 'uBones'), false, h.bonesB); gl.uniform1f(this.U(p, 'uClipX'), -1); this.drawSkinned(h.layers); gl.uniform1f(this.U(p, 'uClipX'), 0); }
+      else { gl.uniform1f(this.U(p, 'uClipX'), 0); this.drawSkinned(h.layers); } }
     if (sc.dummyDraws.length || sc.ballDraws.length) { const p = this.prog.mesh; gl.useProgram(p); this.setFrame(p);
-      for (const d of sc.dummyDraws) { this.setDraw(p, d.tint || _W3, 1.0, d.mask, d.dirt); gl.uniform1f(this.U(p, 'uBS'), d.stain || 0); this.drawMesh(p, d.mesh, d.model); }
-      gl.uniform1f(this.U(p, 'uBS'), 0);
+      for (const d of sc.dummyDraws) { this.setDraw(p, d.tint || _W3, 1.0, d.mask, d.dirt); gl.uniform1f(this.U(p, 'uBS'), d.stain || 0); gl.uniform1f(this.U(p, 'uClipX'), d.clip || 0); this.drawMesh(p, d.mesh, d.model); }
+      gl.uniform1f(this.U(p, 'uBS'), 0); gl.uniform1f(this.U(p, 'uClipX'), 0);
       for (const d of sc.ballDraws) { this.setDraw(p, d.tint, 1.0, -1); this.drawMesh(p, d.mesh, d.model); } }
     { const p = this.prog.env; gl.useProgram(p); this.setFrame(p); this.setDraw(p, _W3, 0.6, -1);
       gl.uniform4fv(this.U(p, 'uBoxA'), this.boxA); gl.uniform1fv(this.U(p, 'uBoxH'), this.boxH); gl.uniform1i(this.U(p, 'uNBox'), this.nBox);
@@ -5538,9 +5580,9 @@ const BMAP = { x0: -6.5, z0: -10, size: 13 };          // world rectangle (x, z)
 /* setting levels: flow, droplet count, mist, arterial chance, pool size, droplet pool size */
 const BLOOD_LV = [
   null,
-  { rate: 0.55, drops: 0.55, mist: 0.5, art: 0.6, pool: 0.6, cap: 110 },
-  { rate: 1.00, drops: 1.00, mist: 1.0, art: 1.0, pool: 1.0, cap: 256 },
-  { rate: 1.70, drops: 1.45, mist: 1.4, art: 1.3, pool: 1.5, cap: 384 }
+  { rate: 0.7, drops: 0.7, mist: 0.55, art: 0.7, pool: 1.0, cap: 128 },
+  { rate: 1.35, drops: 1.3, mist: 1.1, art: 1.15, pool: 1.9, cap: 300 },
+  { rate: 2.2, drops: 1.9, mist: 1.5, art: 1.5, pool: 2.8, cap: 440 }
 ];
 /* chance that a hit opens an artery (pulsing spurts) by body part */
 const ART_P = { neck: 0.5, thigh: 0.24, uarm: 0.2, head: 0.1, shank: 0.1, farm: 0.1, chest: 0.1, pelvis: 0.08, abdomen: 0.04, hand: 0.03, foot: 0.03 };
@@ -5592,7 +5634,7 @@ class Blood {
   }
 
   wound(b, p, n, dmg, exit) {
-    const lv = BLOOD_LV[this.level], part = b.tag.part, i = this.bi[b.name], base = (exit ? 1.25 : 0.7) * (3 + 62 * dmg);
+    const lv = BLOOD_LV[this.level], part = b.tag.part, i = this.bi[b.name], base = 1.35 * (exit ? 1.25 : 0.7) * (3 + 62 * dmg);
     const l = b.w2l(V3(), p), arterial = Math.random() < (ART_P[part] || 0.05) * clamp(0.35 + dmg * 4, 0.3, 1.5) * lv.art;
     this.active = this.t;
     for (let k = 0; k < this.wounds.length; k++) {         // a second hole within 3 cm of an open wound just makes it bleed more
@@ -5841,9 +5883,9 @@ Object.assign(Blood.prototype, {
     let c = this.cells.get(key);
     if (!c) { if (this.cells.size > 90) this.cells.clear(); c = { v: 0, x: 0, z: 0, y }; this.cells.set(key, c); }
     c.v += vol; c.x += x * vol; c.z += z * vol;
-    if (c.v >= 5) {
+    if (c.v >= 3) {
       this.cells.delete(key);
-      if (P.length >= 14) { let m = 0; for (let i = 1; i < P.length; i++) if (P[i].vol < P[m].vol) m = i; P.splice(m, 1); }
+      if (P.length >= 22) { let m = 0; for (let i = 1; i < P.length; i++) if (P[i].vol < P[m].vol) m = i; P.splice(m, 1); }
       const a = Math.random() * 6.283;
       P.push({ x: c.x / c.v, z: c.z / c.v, y, vol: c.v, R: 0.02, rd: 0, t: 0, cs: Math.cos(a), sn: Math.sin(a), el: Math.random() * 0.25 });
     }
@@ -5853,7 +5895,7 @@ Object.assign(Blood.prototype, {
     const P = this.pools, texel = BMAP.size / this.mapSize;
     for (let i = 0; i < P.length; i++) {
       const p = P[i]; p.t += dt;
-      const Rt = 0.0163 * Math.sqrt(p.vol * lv.pool);
+      const Rt = 0.021 * Math.sqrt(p.vol * lv.pool);
       if (p.R < Rt) p.R = Math.min(Rt, p.R + Math.max(0.012, (Rt - p.R) * 0.9) * dt);
       if (p.R - p.rd > texel * 1.1 && this.stamp(p.x, p.z, p.R, 0.96, p.y, p.cs, p.sn, 1 + p.el)) p.rd = p.R;
     }
@@ -6113,6 +6155,7 @@ class Game {
     this.snapshot();
     this.updateDrag();
     this.updateProjectiles(DT);
+    this.stepBlades(DT);
     this.brain.update(DT);
     this.world.step(DT, this.substeps);
     this.simTime += DT;
@@ -6213,7 +6256,10 @@ class Game {
       if (human) {
         qrot(cv, Qn, this.boneCom[i]); _gt[0] = P[0] - cv[0]; _gt[1] = P[1] - cv[1]; _gt[2] = P[2] - cv[2]; M4.trs(this.boneV[i], _gt, Qn, 1, 1, 1);
         this.bDirt[i] = b.dirt || 0; this.bFlash[i] = f; this.bMask[i] = this.capMask[i]; this.bStain[i] = bon ? stn[i] : 0;
-      } else dd.push({ mesh: this.dmesh[b.name], model: m, tint, mask: this.capMask[i], dirt: b.dirt || 0, stain: bon ? stn[i] : 0 });
+      } else {
+        const it = { mesh: this.dmesh[b.name], model: m, tint, mask: this.capMask[i], dirt: b.dirt || 0, stain: bon ? stn[i] : 0, clip: 0 };
+        if (this.halves && i < 5) { it.clip = 1; dd.push(it); dd.push(this.halfDraw(i, a, it)); } else dd.push(it);
+      }
       // AO capsule (first collision capsule; feet use a centred sole capsule) in world space
       const cap = AO_CAP[b.name.replace(/[LR]$/, '')] || null, c0 = cap ? cap : b.caps[0] && [b.caps[0].a, b.caps[0].b, b.caps[0].r0, b.caps[0].r1];
       const o = i * 8;
@@ -6234,13 +6280,15 @@ class Game {
       if (p.kind === 'grenade') { const blink = (Math.sin(p.age * (6 + p.age * 5)) > 0.5) ? 1 : 0; tint = [0.18 + blink * 0.9, 0.3 - blink * 0.15, 0.2 - blink * 0.15]; }
       bd.push({ mesh: this.ballMesh, model: m, tint });
     }
+    if (human && this.halves) this.fillBonesB(a);
     this.appendCaps(bd, a);
+    this.appendBlades(bd, a); this.appendHalfCaps(bd, a);
     this.fx.build(this.camPos);
     if (bon) { bl.frame(); this.fx.parts.nAlpha = bl.appendSprites(this.fx.parts.alpha, this.fx.parts.nAlpha, g.night); }
     g.render({
       camPos: this.camPos, camTarget: this.camTarget, fov: this.cam.fov, focus: [this.cam.tx, this.cam.ty, this.cam.tz], time: this.realTime,
       dummyDraws: dd, ballDraws: bd, envDraws: this.envDraws, parts: this.fx.parts, ribbons: this.fx.rib, blood: bon ? bl : null,
-      human: human ? { comp: this.compArr, look: this.set.look, poly: this.polyCol, bones: this.bones, dirt: this.bDirt, flash: this.bFlash, stain: this.bStain, mask: this.bMask, layers: this.hLayers, skin: this.look.skin, shirt: this.look.shirt, pants: this.look.pants, hair: this.look.hair, eye: this.look.eye } : null
+      human: human ? { bonesB: this.bonesB, split: this.halves ? 1 : 0, comp: this.compArr, look: this.set.look, poly: this.polyCol, bones: this.bones, dirt: this.bDirt, flash: this.bFlash, stain: this.bStain, mask: this.bMask, layers: this.hLayers, skin: this.look.skin, shirt: this.look.shirt, pants: this.look.pants, hair: this.look.hair, eye: this.look.eye } : null
     });
   }
 }
@@ -6673,7 +6721,7 @@ Object.assign(Game.prototype, {
     if (this.blood) this.blood.bullet(b, P0, nin, P1, nex, dirIn, r, many);
     const sp = this.spatial(P0[0], P0[1], P0[2]), head = part === 'head';
     this.sfx.play('smack', { vol: (head ? 0.95 : 0.7) * sp.vol, pan: sp.pan, pitch: head ? 1.15 : 0.78 + Math.random() * 0.15 });
-    if (r.fracture) this.sfx.play('crack', { vol: 0.8 * sp.vol, pan: sp.pan, delay: 0.01 });
+    if (r.fracture) { this.sfx.play('crack', { vol: 0.8 * sp.vol, pan: sp.pan, delay: 0.01 }); this.markFracture(b.name, 0.8); }
     this.exert = Math.min(1, (this.exert || 0) + 0.12);
     this.stats.hits++; this.fx.addShake(many ? 0.02 : 0.05);
     if (set.bulletTime) this.slowT = Math.max(this.slowT, 0.55);
@@ -6776,6 +6824,7 @@ Object.assign(Game.prototype, {
         if (this.weapon === 'pistol' || this.weapon === 'rifle') this.sfx.play('casing', { pan: 0.55, vol: 0.9 });
         this.stats.shots++; break;
       }
+      case 'axe': case 'katana': case 'knife': case 'spear': this.throwBlade(this.weapon, o, d, mz); break;
       case 'taser': this.fireTaser(o, d, mz); break;
       case 'shove': this.fireShove(o, d, mz, W); break;
       case 'ball': this.throwProjectile('ball', o, d, mz); this.sfx.play('whoosh', { vol: 0.8 }); break;
@@ -6874,7 +6923,7 @@ Object.assign(Game.prototype, {
       const dv = Math.min(22, 17 * f * sc);
       b.v[0] += dx / l * dv; b.v[1] += dy / l * dv; b.v[2] += dz / l * dv;
       b.w[0] += (Math.random() - 0.5) * dv * 0.6; b.w[1] += (Math.random() - 0.5) * dv * 0.6; b.w[2] += (Math.random() - 0.5) * dv * 0.6;
-      if (b.tag && b.tag.dummy) { b.flash = 1; if (f > bestF) { bestF = f; best = b; } }
+      if (b.tag && b.tag.dummy) { b.flash = 1; if (f > bestF) { bestF = f; best = b; } if (f > 0.35 && Math.random() < f) this.markFracture(b.name, 0.5 + 0.5 * f); }
     }
     if (best) {
       const dmg = 0.55 * bestF; if (!this.set.mortal) this.brain.health = Math.max(this.brain.health, dmg + 0.06);
@@ -7009,6 +7058,7 @@ Object.assign(Game.prototype, {
         A.dirt = Math.min(1, (A.dirt || 0) + Math.min(0.1, e.speed * 0.009));
         if (e.speed > 3.2) {
           this.fx.dust([e.x, e.y, e.z], 3, 0.6 + e.speed * 0.08);
+          this.noteImpact(A, e.speed);
           if (e.speed > 6.5 && br.alive) this.noteLanding(e, A);
           if (e.speed > 5) this.fx.addShake(Math.min(0.5, e.speed * 0.03));
         }
@@ -7352,6 +7402,8 @@ class UI {
     if (k === 'f' || k === 'F') { g.setFollow(!!g.cam.free); return; }
     if (k >= '1' && k <= '9') { g.sfx.unlock(); g.setWeapon(WEAPON_ORDER[parseInt(k, 10) - 1]); }
     else if (k === '0') { g.sfx.unlock(); g.setWeapon('slice'); }
+    else if (BLADE_KEYS[k.toLowerCase()]) { g.sfx.unlock(); g.setWeapon(BLADE_KEYS[k.toLowerCase()]); }
+    else if (k === 'x' || k === 'X') this.xrayToggle();
     else if (k === 'r' || k === 'R') g.reset();
     else if (k === 'n' || k === 'N') g.nextScene();
     else if (k === ' ') { e.preventDefault(); this.toggleSlow(); }
@@ -7364,7 +7416,7 @@ class UI {
 
   /* ---------- per-frame ---------- */
   frame(dt) {
-    this.drawOverlay(dt);
+    this.drawOverlay(dt); this.xrayTick(dt);
     this.hudT -= dt; if (this.hudT > 0) return; this.hudT = 0.08;   // the DOM below only gets touched when a value actually changed
     const g = this.g, br = g.brain;
     const st = br.electroT > 0 && br.alive ? ['ELECTROCUTED', '#1d6fb8'] : (STATE_UI[br.state] || STATE_UI.stand);
@@ -7496,7 +7548,7 @@ function seg2dHit(p0, p1, c0, c1) {      // Schnitt zweier Strecken im Bild: gib
 }
 
 Object.assign(Game.prototype, {
-  initCuts() { this.cuts = []; if (!this.compArr) this.compArr = new Float32Array(17); this.compArr.fill(0); this.compCount = 1; },
+  initCuts() { this.blades = []; this.fract = {}; this.fracVer = 0; this.halves = null; if (this.ui) { const x = document.getElementById('xr'); if (x) x.classList.remove('show'); this.ui._xl = -1; } this.cuts = []; if (!this.compArr) this.compArr = new Float32Array(17); this.compArr.fill(0); this.compCount = 1; },
 
   /* zusammenhaengende Koerperteile (ohne die getrennten Gelenke) -> compArr[bone] = Teil-Nummer */
   updateComps() {
@@ -7580,6 +7632,7 @@ Object.assign(Game.prototype, {
     this.sfx.unlock(); this.sfx.play('slash', { vol: 0.9, pitch: 0.9 + Math.random() * 0.2 });
     this.fx.addShake(0.12);
     if (Math.hypot(x1 - x0, y1 - y0) < 28) return 0;
+    if (this.splitDetect(x0, y0, x1, y1)) return this.splitBody();
     const list = this.sliceTargets(x0, y0, x1, y1);
     if (!list.length) return 0;
     const br = this.brain, wasAlive = br.alive, head = this.dummy.b.head.p;
@@ -7605,11 +7658,15 @@ Object.assign(Game.prototype, {
         const b = s ? c.B : c.A, loc = s ? c.j.aB : c.j.aA, r = s ? c.rB : c.rA;
         this.lerpPose(b, a, P, Q);
         const l = Math.hypot(loc[0], loc[1], loc[2]) || 1; ax[0] = -loc[0] / l; ax[1] = -loc[1] / l; ax[2] = -loc[2] / l;   // zeigt zum Schwerpunkt = ins Koerperteil
-        ol[0] = loc[0] + ax[0] * 0.012; ol[1] = loc[1] + ax[1] * 0.012; ol[2] = loc[2] + ax[2] * 0.012;
-        qrot(wp, Q, ol); wp[0] += P[0]; wp[1] += P[1]; wp[2] += P[2];
         qFromTo(lq, _sY, ax); qmul(wq, Q, lq);
-        const m = c['m' + s] || (c['m' + s] = M4.id()); M4.trs(m, wp, wq, r, 0.012, r);
-        bd.push({ mesh: this.ballMesh, model: m, tint });
+        const LY = this.set.look === 2 ? _CAPL2 : _CAPL;
+        for (let li = 0; li < LY.length; li++) {
+          const Ly = LY[li], d = 0.010 + li * 0.0016;
+          ol[0] = loc[0] + ax[0] * d; ol[1] = loc[1] + ax[1] * d; ol[2] = loc[2] + ax[2] * d;
+          qrot(wp, Q, ol); wp[0] += P[0]; wp[1] += P[1]; wp[2] += P[2];
+          const mk = 'm' + s + '_' + li, m = c[mk] || (c[mk] = M4.id()); M4.trs(m, wp, wq, r * Ly[0], 0.006, r * Ly[0]);
+          const tn = Ly[1] || tint; bd.push({ mesh: this.ballMesh, model: m, tint: tn });
+        }
       }
     }
   },
@@ -7684,6 +7741,14 @@ const DE = {
   'Tap to shoot · drag to orbit · pinch to zoom · three fingers to pan · hold for auto-fire': 'Tippen zum Schießen · Ziehen dreht die Kamera · Zwei Finger zoomen · Drei Finger verschieben · Halten = Dauerfeuer',
   'Click to shoot · right-drag orbit · middle/Shift-drag or WASD pan · Q/E down/up · wheel zoom · F follow · 0–9 weapons · R reset · Esc menu': 'Klick = Schießen · Rechtsklick ziehen = Kamera drehen · Mittelklick/Shift+Ziehen oder WASD = verschieben · Q/E runter/hoch · Mausrad = Zoom · F = folgen · 0–9 Waffen · R = zurück · Esc = Menü',
   'Map': 'Karte', 'On': 'An',
+  /* ---- neue Waffen, Brueche, Roentgen ---- */
+  'Axe': 'Axt', 'Thrown axe, sticks in the body': 'Wurfaxt, bleibt im Körper stecken', 'Katana': 'Katana', 'Thrown blade, cuts deep': 'Geworfene Klinge, schneidet tief',
+  'Throwing knife': 'Wurfmesser', 'Fast knives, hold for a volley': 'Schnelle Messer, halten für eine Salve', 'Spear': 'Speer', 'Goes right through and sticks out the back': 'Geht glatt durch und ragt hinten heraus',
+  'AXE IN HEAD': 'AXT IM KOPF', 'IMPALED': 'AUFGESPIESST', 'SPEARED': 'DURCHBOHRT', 'SPLIT IN HALF': 'LÄNGS GESPALTEN', 'BONE BREAK': 'KNOCHENBRUCH',
+  'X-ray': 'Röntgen', 'No fractures': 'Keine Brüche', 'Fractured': 'Gebrochen', 'left': 'links', 'right': 'rechts', 'X-ray (X)': 'Röntgen (X)',
+  'Skull': 'Schädel', 'Cervical spine': 'Halswirbel', 'Ribs': 'Rippen', 'Lumbar spine': 'Lendenwirbel', 'Pelvis': 'Becken', 'Upper arm': 'Oberarm', 'Forearm': 'Unterarm', 'Thigh': 'Oberschenkel', 'Shin': 'Schienbein', 'Foot': 'Fuß',
+  'Flat': 'Flach', 'Beginner': 'Einsteiger', 'Stairs': 'Treppe', 'Tumbling': 'Kullern', 'Edge': 'Kante', '1.3 m drop': '1,3 m Sturz', 'Wall': 'Wand', 'Impacts': 'Aufpralle', 'Skyline': 'Skyline', 'Narrow': 'Schmal', 'Multi-level': 'Mehrere Ebenen', 'Stacked': 'Gestapelt', 'Loading maps…': 'Karten werden geladen…', 'Previous': 'Zurück', 'Next': 'Weiter',
+
   'Shots': 'Schüsse', 'Hits': 'Treffer', 'Falls': 'Stürze', 'KO': 'K.o.', 'shots': 'Schüsse', 'hits': 'Treffer', 'Cuts': 'Schnitte',
   'fps · physics': 'FPS · Physik', 'Statistics': 'Statistik', 'Performance': 'Leistung', 'Defaults': 'Standard', 'Reset settings': 'Einstellungen zurücksetzen', 'Session': 'Sitzung', 'About': 'Info',
   'A from-scratch XPBD rigid-body engine with a procedural, Euphoria-style motor brain: no keyframe animation, every movement is computed live from balance, stepping, reflex and pain models and driven through joint muscles. Inspired by NaturalMotion\'s Euphoria behaviours; it is an independent approximation, not their code. The reaction layer (impact profiles, strength spread, stagger, collapse, get-up staging) borrows ideas from the MIT-licensed Kickback active-ragdoll addon for Godot by Blugart. Ballistics use real ammunition data (mass, velocity, drag, penetration) with a simplified tissue model; it is a game, not a forensic tool.':
@@ -7761,7 +7826,7 @@ const DE = {
   /* ---- Startscreen ---- */
   'Physics sandbox': 'Physik-Sandkasten', 'An active ragdoll with its own motor brain. Push it, shoot it, cut it or just let it fall.': 'Ein aktiver Ragdoll mit eigenem Motor-Gehirn. Schubs ihn, schieß auf ihn, schneide ihn oder lass ihn einfach fallen.',
   'Play': 'Spielen', 'Quick settings': 'Schnell-Einstellungen', 'Choose a map': 'Karte wählen', 'Back to the menu': 'Zurück zum Menü', 'Height': 'Höhe',
-  'Tip: key 0 = slice, 1–9 = weapons, Esc = menu': 'Tipp: Taste 0 = Schneiden, 1–9 = Waffen, Esc = Menü',
+  'Tip: 0 slice · 1–9 weapons · T axe · K katana · L knives · P spear · X x-ray · Esc menu': 'Tipp: 0 Schneiden · 1–9 Waffen · T Axt · K Katana · L Messer · P Speer · X Röntgen · Esc Menü',
   'Violence and blood are depicted on a fictional test dummy.': 'Gewalt und Blut werden an einer fiktiven Testpuppe dargestellt.',
   'Deutsch': 'Deutsch', 'English': 'English', 'Close': 'Schließen', 'Start': 'Start',
   'Settings are saved automatically in this browser.': 'Die Einstellungen werden automatisch in diesem Browser gespeichert.',
@@ -7822,6 +7887,7 @@ const MAP_SVG = {
   containers: '<rect x="12" y="40" width="46" height="18"/><rect x="62" y="40" width="46" height="18"/><rect x="30" y="22" width="46" height="18"/><path d="M20 40v18M30 40v18M70 40v18M80 40v18M38 22v18M48 22v18"/>'
 };
 const TAB_ICON = { 'Gameplay': '🎮', 'Ballistics': '🎯', 'Character': '🧍', 'Graphics': '🖥️', 'Camera': '🎥', 'Atmosphere and look': '🌇', 'Motor brain': '🧠', 'Audio and physics': '🔊', 'Debug overlays': '🛠️', 'Session': '📊', 'About': 'ℹ️' };
+const MAP_TAGS = { ground: ['Flat', 'Beginner'], stairs: ['Stairs', 'Tumbling'], ledge: ['Edge', '1.3 m drop'], wall: ['Wall', 'Impacts'], roof: ['60 m', 'Skyline', 'Fall damage'], catwalk: ['22 m', 'Narrow'], scaffold: ['15 m', 'Multi-level'], ziggurat: ['5 m', 'Tumbling'], containers: ['8 m', 'Stacked'] };
 const MENU_QUICK = ['blood', 'look', 'screams'];
 
 Object.assign(Game.prototype, {
@@ -7872,13 +7938,31 @@ class Menu {
     this.$('m-set').addEventListener('click', () => { g.sfx.unlock(); g.ui.toggleMenu(true); });
     this.$('sback').addEventListener('click', () => g.ui.toggleMenu(false));
     this.$('btn-home').addEventListener('click', () => { g.sfx.unlock(); this.show(true); });
+    this.$('btn-xray').addEventListener('click', () => g.ui.xrayToggle());
+    this.$('mprev').addEventListener('click', () => this.scrollCards(-1)); this.$('mnext').addEventListener('click', () => this.scrollCards(1));
     this.show(true, true);
+    setTimeout(() => { try { this.makeThumbs(); } catch (e) { console.warn('thumbs', e); } this.$('mload').classList.add('hide'); }, 80);
+  }
+  scrollCards(d) { const b = this.$('mcards'); b.scrollBy({ left: d * b.clientWidth * 0.8, behavior: 'smooth' }); }
+  /* Jede Karte einmal laden, ein Bild der Kamera machen und als Vorschau auf der Karte zeigen */
+  makeThumbs() {
+    const g = this.g, keep = this.sel, cv = g.canvas, t = document.createElement('canvas'); t.width = 360; t.height = 200; const x = t.getContext('2d');
+    this.thumbs = {}; const bm = g.menuBlend, was = g.menuOn; g.menuOn = true;
+    for (const k of MAP_ORDER) {
+      g.reset(k); g.menuBlend = 0; g.menuT = 0;
+      g.advance(0.5); for (let i = 0; i < 40; i++) g.updateCamera(0.033);
+      g.alpha = 1; g.render();
+      const sw = cv.width, sh = cv.height, ar = t.width / t.height; let cw = sw, ch = sw / ar; if (ch > sh) { ch = sh; cw = sh * ar; }
+      x.drawImage(cv, (sw - cw) / 2, (sh - ch) / 2, cw, ch, 0, 0, t.width, t.height); this.thumbs[k] = t.toDataURL('image/jpeg', 0.8);
+    }
+    g.menuBlend = bm; g.menuOn = was; g.reset(keep); this.build();
   }
   build() {
     const g = this.g, box = this.$('mcards'); box.innerHTML = '';
     for (const k of MAP_ORDER) {
       const I = MAP_INFO[k], b = document.createElement('button'); b.className = 'mcard' + (k === this.sel ? ' on' : ''); b.dataset.k = k;
-      b.innerHTML = '<svg viewBox="0 0 120 64" aria-hidden="true">' + (MAP_SVG[I.icon] || '') + '</svg><b>' + esc_(T(I.name)) + '</b><small>' + esc_(T(I.desc)) + '</small>';
+      const th = this.thumbs && this.thumbs[k], tags = (MAP_TAGS[k] || []).map(t => '<i>' + esc_(T(t)) + '</i>').join('');
+      b.innerHTML = '<div class="pv">' + (th ? '<img alt="" src="' + th + '">' : '') + '<svg viewBox="0 0 120 64" aria-hidden="true">' + (MAP_SVG[I.icon] || '') + '</svg></div><b>' + esc_(T(I.name)) + '</b><small>' + esc_(T(I.desc)) + '</small><span class="tags">' + tags + '</span>';
       b.addEventListener('click', () => { g.sfx.unlock(); this.select(k); });
       b.addEventListener('dblclick', () => this.play());
       box.appendChild(b);
@@ -7933,6 +8017,505 @@ class Menu {
   }
 }
 
+/* ---- 24_blades.js ---- */
+'use strict';
+/* ===================================================================
+   24_blades.js — Wurfwaffen: Axt, Katana, Wurfmesser, Speer.
+
+   Die Waffen sind keine Starrkoerper, sondern einfache Flugobjekte: Position + Geschwindigkeit + Schwerkraft. Jeden Tick wird die
+   Flugstrecke gegen die Kapseln der Figur (Treffer) und gegen die Welt (Wand / Boden) getestet.
+     • Axt, Messer, Katana bleiben beim Treffer im Koerper stecken (sie "kleben" an dem getroffenen Koerperteil und fallen mit).
+       Die Axt im Kopf toetet; die Axt (und das Katana) am Hals trennen den Kopf ab.
+     • Der Speer durchstoesst alle Teile auf seiner Linie, bleibt stecken und ragt hinten (Austrittsseite) heraus.
+   Neue Waffe = Eintrag in BLADES + WEAPONS + Mesh in bladeMesh().
+   =================================================================== */
+const STEEL = [0.70, 0.72, 0.76], WOOD = [0.44, 0.28, 0.14], WRAP = [0.07, 0.07, 0.08], BRASS = [0.74, 0.56, 0.20], LEATHER = [0.30, 0.12, 0.08];
+MATS.set(STEEL, [0.20, 0.95]); MATS.set(WOOD, [0.62, 0.0]); MATS.set(WRAP, [0.55, 0.0]); MATS.set(BRASS, [0.30, 0.85]); MATS.set(LEATHER, [0.7, 0.0]);
+
+WEAPONS.axe = { name: 'Axe', key: 'T', rate: 0.55, auto: false, info: 'Thrown axe, sticks in the body' };
+WEAPONS.katana = { name: 'Katana', key: 'K', rate: 0.5, auto: false, info: 'Thrown blade, cuts deep' };
+WEAPONS.knife = { name: 'Throwing knife', key: 'L', rate: 0.14, auto: true, info: 'Fast knives, hold for a volley' };
+WEAPONS.spear = { name: 'Spear', key: 'P', rate: 0.9, auto: false, info: 'Goes right through and sticks out the back' };
+WEAPON_ORDER.push('axe', 'katana', 'knife', 'spear');
+const BLADE_KEYS = { t: 'axe', k: 'katana', l: 'knife', p: 'spear' };
+
+/* speed m/s, J = Impuls auf den Koerper (Ns), dmg = Grundschaden, tumble = Drehungen pro Sekunde Flugzeit (0 = fliegt spitz voran),
+   emb = Eindringtiefe in Waende (m), prof = Reaktionsprofil des Gehirns */
+const BLADES = {
+  axe:    { speed: 15, J: 60, dmg: 0.30, tumble: 2.2, emb: 0.07, prof: 'bullet', frac: 0.55, loud: 0.5 },
+  katana: { speed: 21, J: 36, dmg: 0.30, tumble: 0,   emb: 0.36, prof: 'bullet', frac: 0.25, loud: 0.3 },
+  knife:  { speed: 25, J: 14, dmg: 0.10, tumble: 3.0, emb: 0.09, prof: 'bullet', frac: 0.05, loud: 0.2 },
+  spear:  { speed: 27, J: 66, dmg: 0.45, tumble: 0,   emb: 0.45, prof: 'rifle',  frac: 0.5,  loud: 0.6, pierce: true, tip: 0.52 }
+};
+
+/* ---------- Mesh-Bausteine ---------- */
+function facePoly(mb, pts, col, nh) {          // ebenes Polygon mit eigenen Ecken (flache Schattierung); nh = gewuenschte Normale
+  let nx = 0, ny = 0, nz = 0;
+  for (let i = 0; i < pts.length; i++) { const a = pts[i], b = pts[(i + 1) % pts.length]; nx += (a[1] - b[1]) * (a[2] + b[2]); ny += (a[2] - b[2]) * (a[0] + b[0]); nz += (a[0] - b[0]) * (a[1] + b[1]); }
+  if (nx * nh[0] + ny * nh[1] + nz * nh[2] < 0) pts = pts.slice().reverse();
+  let cx = 0, cy = 0, cz = 0; for (const p of pts) { cx += p[0]; cy += p[1]; cz += p[2]; } const n = pts.length; cx /= n; cy /= n; cz /= n;
+  const c = mb.v(cx, cy, cz, col), b0 = mb.nv; for (const p of pts) mb.v(p[0], p[1], p[2], col);
+  for (let i = 0; i < n; i++) mb.tri(c, b0 + i, b0 + (i + 1) % n, false);
+}
+/* extrudiertes Polygon (XY-Ebene), ht[i] = halbe Dicke an jeder Ecke (Schneide duenn, Ruecken dick) */
+function extrudePoly(mb, poly, ht, col, dx, dy) {
+  const n = poly.length, T = poly.map((p, i) => [p[0] - dx, p[1] - dy, ht[i]]), B = poly.map((p, i) => [p[0] - dx, p[1] - dy, -ht[i]]);
+  facePoly(mb, T, col, [0, 0, 1]); facePoly(mb, B, col, [0, 0, -1]);
+  let cx = 0, cy = 0; for (const p of poly) { cx += p[0] - dx; cy += p[1] - dy; } cx /= n; cy /= n;
+  for (let i = 0; i < n; i++) {
+    const j = (i + 1) % n, ex = (T[i][0] + T[j][0]) / 2 - cx, ey = (T[i][1] + T[j][1]) / 2 - cy;
+    facePoly(mb, [T[i], T[j], B[j], B[i]], col, [ex, ey, 0]);
+  }
+}
+function bladeMesh(kind) {
+  const mb = new MB();
+  if (kind === 'axe') {                 // Ursprung = Mitte der Schneide, Kopf oben (+Y), Stiel nach unten
+    const E = [0.108, 0.27], ox = -E[0] + 0.0, shiftY = -E[1];
+    lathe(mb, [[-0.46 + shiftY, 0.021, 0.021, ox, 0], [-0.40 + shiftY, 0.0158, 0.0158, ox, 0], [0.20 + shiftY, 0.0150, 0.0150, ox, 0], [0.335 + shiftY, 0.0142, 0.0142, ox, 0]], 12, 1, () => WOOD, null, false);
+    const poly = [[-0.034, 0.235], [0.018, 0.213], [0.07, 0.188], [0.108, 0.213], [0.108, 0.327], [0.07, 0.352], [0.018, 0.327], [-0.034, 0.315]];
+    extrudePoly(mb, poly, [0.0155, 0.0145, 0.0085, 0.0018, 0.0018, 0.0085, 0.0145, 0.0155], STEEL, E[0], E[1]);
+    lathe(mb, [[0.205 + shiftY, 0.0185, 0.0185, ox, 0], [0.205 + shiftY + 0.002, 0.0185, 0.0185, ox, 0], [0.345 + shiftY - 0.002, 0.0185, 0.0185, ox, 0], [0.345 + shiftY, 0.0185, 0.0185, ox, 0]], 12, 1, () => STEEL, null, false);
+  } else if (kind === 'knife') {          // Ursprung = Spitze, Klinge zeigt nach -Y
+    extrudePoly(mb, [[0, 0], [0.0125, -0.05], [0.0155, -0.12], [0.0115, -0.155], [-0.0115, -0.155], [-0.0125, -0.12], [-0.0035, -0.05]].map(p => [p[0] * 0.95 + 0.001, p[1]]), [0.0003, 0.0021, 0.0026, 0.0026, 0.0026, 0.0026, 0.0014], STEEL, 0, 0);
+    lathe(mb, [[-0.155, 0.011, 0.011, 0, 0], [-0.165, 0.016, 0.006, 0, 0], [-0.170, 0.016, 0.006, 0, 0], [-0.176, 0.0105, 0.0105, 0, 0], [-0.265, 0.0125, 0.0125, 0, 0], [-0.275, 0.0135, 0.0135, 0, 0]], 10, 1, () => WRAP, null, false);
+    lathe(mb, [[-0.275, 0.013, 0.013, 0, 0], [-0.292, 0.0115, 0.0115, 0, 0], [-0.2945, 0.007, 0.007, 0, 0]], 10, 1, () => STEEL, null, false);
+  } else if (kind === 'katana') {         // Ursprung = Spitze; leicht gebogene Klinge, Parierstange, Griff
+    const N = 16, L = 0.72, left = [], right = [], hl = [], hr = [];
+    for (let i = 0; i <= N; i++) {
+      const t = i / N, y = -L * t, xc = 0.034 * t * t, w = 0.0152 * Math.min(1, 0.25 + t * 14), tp = Math.min(1, t * 16);
+      left.push([xc - w, y]); right.push([xc + w, y]); hl.push(0.0006 + 0.0008 * tp); hr.push(0.0036 * tp + 0.0004);
+    }
+    const KS = [0.76, 0.80, 0.86]; MATS.set(KS, [0.16, 0.97]);
+    for (let i = 0; i < N; i++) {
+      const a = left[i], b = left[i + 1], c = right[i + 1], d = right[i];
+      facePoly(mb, [[a[0], a[1], hl[i]], [b[0], b[1], hl[i + 1]], [c[0], c[1], hr[i + 1]], [d[0], d[1], hr[i]]], KS, [0, 0, 1]);
+      facePoly(mb, [[a[0], a[1], -hl[i]], [b[0], b[1], -hl[i + 1]], [c[0], c[1], -hr[i + 1]], [d[0], d[1], -hr[i]]], KS, [0, 0, -1]);
+      facePoly(mb, [[d[0], d[1], hr[i]], [c[0], c[1], hr[i + 1]], [c[0], c[1], -hr[i + 1]], [d[0], d[1], -hr[i]]], STEEL, [1, 0, 0]);
+      facePoly(mb, [[a[0], a[1], hl[i]], [b[0], b[1], hl[i + 1]], [b[0], b[1], -hl[i + 1]], [a[0], a[1], -hl[i]]], KS, [-1, 0, 0]);
+    }
+    const xe = 0.034;
+    lathe(mb, [[-L, 0.046, 0.034, xe, 0], [-L - 0.003, 0.046, 0.034, xe, 0], [-L - 0.008, 0.046, 0.034, xe, 0]], 14, 1, () => BRASS, null, false);
+    lathe(mb, [[-L - 0.008, 0.0125, 0.0165, xe, 0], [-L - 0.05, 0.0135, 0.0175, xe, 0], [-L - 0.20, 0.0145, 0.0185, xe, 0], [-L - 0.262, 0.0145, 0.0185, xe, 0]], 12, 1, () => WRAP, null, false);
+    lathe(mb, [[-L - 0.262, 0.0165, 0.0205, xe, 0], [-L - 0.276, 0.0155, 0.019, xe, 0], [-L - 0.280, 0.011, 0.014, xe, 0]], 12, 1, () => BRASS, null, false);
+  } else if (kind === 'spear') {          // Ursprung = Spitze
+    extrudePoly(mb, [[0, 0], [0.0175, -0.09], [0.0215, -0.15], [0.0085, -0.205], [-0.0085, -0.205], [-0.0215, -0.15], [-0.0175, -0.09]], [0.0004, 0.0036, 0.0036, 0.003, 0.003, 0.0036, 0.0036], STEEL, 0, 0);
+    lathe(mb, [[-0.19, 0.012, 0.012, 0, 0], [-0.205, 0.0175, 0.0175, 0, 0], [-0.27, 0.0165, 0.0165, 0, 0], [-0.29, 0.0135, 0.0135, 0, 0]], 12, 1, () => STEEL, null, false);
+    lathe(mb, [[-0.29, 0.0136, 0.0136, 0, 0], [-0.31, 0.0172, 0.0172, 0, 0], [-0.35, 0.0172, 0.0172, 0, 0], [-0.37, 0.0136, 0.0136, 0, 0]], 12, 1, () => LEATHER, null, false);
+    lathe(mb, [[-0.37, 0.0138, 0.0138, 0, 0], [-1.90, 0.0148, 0.0148, 0, 0], [-1.93, 0.0165, 0.0165, 0, 0], [-1.96, 0.012, 0.012, 0, 0]], 12, 1, () => WOOD, null, false);
+  }
+  return mb.finish();
+}
+
+const _kv = V3(), _kx = V3(), _ky = V3(), _kz = V3(), _kq = Q4(), _kq2 = Q4(), _kp = V3(), _kn1 = V3(), _kn2 = V3();
+const KUP = V3(0, 1, 0), KDN = V3(0, -1, 0);
+/* Achsen (x,y,z) der Waffe zu Flugrichtung dir und Drehwinkel th (Drehung in der XY-Ebene um die Quer-Achse z) */
+function bladeAxes(kind, dir, th, x, y, z) {
+  let x0, y0, z0;
+  if (kind === 'axe') {
+    x0 = V3(dir[0], dir[1] - 0.3, dir[2]); vnorm(x0, x0);
+    const d = KDN[0] * x0[0] + KDN[1] * x0[1] + KDN[2] * x0[2]; y0 = V3(KDN[0] - x0[0] * d, KDN[1] - x0[1] * d, KDN[2] - x0[2] * d); vnorm(y0, y0);
+    z0 = V3(x0[1] * y0[2] - x0[2] * y0[1], x0[2] * y0[0] - x0[0] * y0[2], x0[0] * y0[1] - x0[1] * y0[0]);
+  } else {
+    y0 = V3(dir[0], dir[1], dir[2]);
+    z0 = V3(dir[1] * 0 - dir[2] * 1, dir[2] * 0 - dir[0] * 0, dir[0] * 1 - dir[1] * 0);       // dir x up
+    if (Math.hypot(z0[0], z0[2]) < 1e-3) { z0[0] = 1; z0[1] = 0; z0[2] = 0; } else { z0[1] = 0; }
+    vnorm(z0, z0);
+    x0 = V3(y0[1] * z0[2] - y0[2] * z0[1], y0[2] * z0[0] - y0[0] * z0[2], y0[0] * z0[1] - y0[1] * z0[0]);
+  }
+  const c = Math.cos(th), s = Math.sin(th);
+  for (let i = 0; i < 3; i++) { x[i] = x0[i] * c + y0[i] * s; y[i] = -x0[i] * s + y0[i] * c; z[i] = z0[i]; }
+}
+function bladeQuat(kind, dir, th, out) { bladeAxes(kind, dir, th, _kx, _ky, _kz); return qfromBasis(out, _kx, _ky, _kz); }
+
+Object.assign(Game.prototype, {
+  bladeMeshFor(kind) { const M = this.bladeMeshes || (this.bladeMeshes = {}); return M[kind] || (M[kind] = this.gfx.upload(bladeMesh(kind))); },
+
+  throwBlade(kind, o, d, mz) {
+    const S = BLADES[kind], res = this.world.raycast(o, d, 60, this.rayOpt()), dist = res ? res.t : 14;
+    const tg = V3(o[0] + d[0] * dist, o[1] + d[1] * dist, o[2] + d[2] * dist);
+    let dx = tg[0] - mz[0], dy = tg[1] - mz[1], dz = tg[2] - mz[2]; const dl = Math.hypot(dx, dy, dz) || 1; dx /= dl; dy /= dl; dz /= dl;
+    const tt = Math.max(0.1, dl / S.speed), g = -this.world.gravity[1];
+    const v = V3(dx * S.speed + (Math.random() - 0.5) * 0.05, dy * S.speed + 0.5 * g * tt, dz * S.speed + (Math.random() - 0.5) * 0.05);
+    const k = S.tumble ? Math.max(0, Math.round(tt * S.tumble)) : 0;
+    const B = { kind, S, p: V3(mz[0], mz[1], mz[2]), v, age: 0, tt, wTot: 6.2831853 * k, state: 0, origin: V3(o[0], o[1], o[2]), model: M4.id(), q: Q4(), ext: V3() };
+    this.blades.push(B);
+    while (this.blades.length > 26) this.blades.shift();
+    this.stats.shots++; this.stats.hits += 0;
+    this.sfx.play('whoosh', { vol: kind === 'spear' ? 1.0 : 0.8, pitch: kind === 'knife' ? 1.5 : kind === 'spear' ? 0.8 : 1.05 });
+    this.fx.addShake(kind === 'spear' ? 0.14 : 0.07);
+    const br = this.brain; if (br.alive && this.realTime - (this.lastShotT || -9) > 2.0) { br.startle(mz, 0.18); this.lastShotT = this.realTime; }
+  },
+
+  stepBlades(dt) {
+    const bl = this.blades; if (!bl || !bl.length) return;
+    const g = -this.world.gravity[1];
+    for (let i = bl.length - 1; i >= 0; i--) {
+      const B = bl[i]; if (B.state !== 0) continue;
+      B.age += dt; B.v[1] -= g * dt;
+      const sp = Math.hypot(B.v[0], B.v[1], B.v[2]) || 1, seg = sp * dt, dir = _kv; dir[0] = B.v[0] / sp; dir[1] = B.v[1] / sp; dir[2] = B.v[2] / sp;
+      const sres = this.world.raycast(B.p, dir, seg, this.bulletRayOpt()), tw = sres ? sres.t : seg;
+      const span = this.dummyFirstSpan(B.p, dir, tw, null);
+      if (span) { this.bladeHitDummy(B, dir, span); continue; }
+      if (sres) { this.bladeHitWorld(B, sres, dir); continue; }
+      B.p[0] += B.v[0] * dt; B.p[1] += B.v[1] * dt; B.p[2] += B.v[2] * dt;
+      if (B.age > 6 || B.p[1] < -4 || Math.abs(B.p[0]) > 90 || Math.abs(B.p[2]) > 90) bl.splice(i, 1);
+    }
+  },
+
+  /* Treffer an der Wand / am Boden: stecken bleiben */
+  bladeHitWorld(B, res, dir) {
+    const S = B.S, n = V3(res.nx, res.ny, res.nz), pt = V3(res.x, res.y, res.z);
+    const d = V3(dir[0], dir[1], dir[2]); bladeQuat(B.kind, d, 0, B.q);
+    const emb = Math.min(S.emb, B.kind === 'spear' ? S.emb : S.emb);
+    B.p[0] = pt[0] + d[0] * emb; B.p[1] = pt[1] + d[1] * emb; B.p[2] = pt[2] + d[2] * emb; B.state = 2; B.v.fill(0);
+    this.fx.sparks(pt, n, 7, 3.5, [1, 0.85, 0.6]); this.fx.dust(pt, 4, 0.8, [0.85, 0.85, 0.8]); this.fx.addShake(0.12);
+    const sp = this.spatial(pt[0], pt[1], pt[2]); this.sfx.play('thunk', { vol: 0.9 * sp.vol, pan: sp.pan, pitch: B.kind === 'spear' ? 0.8 : 1.1 });
+    const br = this.brain; if (br.alive) br.setThreat(pt, 1.0);
+  },
+
+  /* der Schnitt / Stich in einem Koerperteil: Wunde, Blut, Impuls, Reaktion */
+  bladeWound(B, b, cap, P0, P1, dirIn, dmg, through, bone) {
+    const S = B.S, set = this.set, br = this.brain, part = b.tag.part, human = set.look !== 0;
+    if (!set.mortal) br.health = Math.max(br.health, Math.min(0.9, dmg) + 0.06);
+    const impDir = V3(dirIn[0], dirIn[1] * 0.5 + 0.04, dirIn[2]); vnorm(impDir, impDir);
+    this.applyImpulse(b, P0, impDir, S.J * set.impact * (part === 'head' ? 0.7 : 1));
+    br.hit({ body: b.name, point: P0, dir: V3(dirIn[0], dirIn[1], dirIn[2]), dmg, kind: 'bullet', prof: S.prof, from: B.origin, bone: !!bone, fracture: !!bone, through });
+    b.flash = 1;
+    const nIn = capNormalAt(cap, P0, _kn1), nin = [nIn[0], nIn[1], nIn[2]];
+    const col = this.woundColor(part), size = 0.02 + Math.min(0.02, dmg * 0.06);
+    if (set.holes !== false) this.fx.addDecal(b, P0, nin, size, [0.2, 0.04, 0.04]);
+    if (human) this.fx.puff(P0, nin, 5, 2.0, col); else this.fx.chips(P0, nin, 3, 2.5);
+    let nex = null;
+    if (through) { const nEx = capNormalAt(cap, P1, _kn2); nex = [nEx[0], nEx[1], nEx[2]]; if (set.holes !== false) this.fx.addDecal(b, P1, nex, size * 1.4, [0.2, 0.04, 0.04]); if (human) this.fx.puff(P1, nex, 8, 3.0, col); }
+    if (this.blood) this.blood.bullet(b, P0, nin, P1, nex, dirIn, { dmg: Math.max(0.12, Math.min(1, dmg)), stopped: !through }, false);
+    this.stats.hits++;
+  },
+
+  bladeHitDummy(B, dir, sp) {
+    const S = B.S, set = this.set, br = this.brain, kind = B.kind;
+    const spans = [{ b: sp.body, t0: sp.t0, t1: sp.t1, cap: sp.cap }];
+    const P0 = V3(B.p[0] + dir[0] * sp.t0, B.p[1] + dir[1] * sp.t0, B.p[2] + dir[2] * sp.t0);
+    let last = V3(B.p[0] + dir[0] * sp.t1, B.p[1] + dir[1] * sp.t1, B.p[2] + dir[2] * sp.t1);
+    if (S.pierce) {                         // der Speer geht durch alles auf seiner Linie
+      let o = V3(last[0] + dir[0] * 0.004, last[1] + dir[1] * 0.004, last[2] + dir[2] * 0.004), prev = sp.body;
+      for (let k = 0; k < 4; k++) {
+        const s2 = this.dummyFirstSpan(o, dir, 0.9, prev); if (!s2 || s2.t0 > 0.1) break;
+        const a = V3(o[0] + dir[0] * s2.t0, o[1] + dir[1] * s2.t0, o[2] + dir[2] * s2.t0), e = V3(o[0] + dir[0] * s2.t1, o[1] + dir[1] * s2.t1, o[2] + dir[2] * s2.t1);
+        spans.push({ b: s2.body, t0: 0, t1: s2.t1 - s2.t0, cap: s2.cap, a, e }); last = e; prev = s2.body; o = V3(e[0] + dir[0] * 0.004, e[1] + dir[1] * 0.004, e[2] + dir[2] * 0.004);
+      }
+    }
+    const first = spans[0].b, part = first.tag.part, speedK = Math.min(1.3, Math.hypot(B.v[0], B.v[1], B.v[2]) / S.speed);
+    // --- Schaden / Wunden je Koerperteil ---
+    let anchorBody = first, anchorSpan = spans[0], bigL = 0, anyBone = false;
+    spans.forEach((s, i) => {
+      const b = s.b, pt = b.tag.part, T = TISSUE[pt] || TISSUE.chest;
+      const a = i === 0 ? P0 : s.a, e = i === 0 ? V3(B.p[0] + dir[0] * s.t1, B.p[1] + dir[1] * s.t1, B.p[2] + dir[2] * s.t1) : s.e;
+      let dmg = S.dmg * T.vuln * (0.6 + 0.4 * speedK); if (S.pierce) dmg *= i === 0 ? 1 : 0.7;
+      if (kind === 'axe' && pt === 'head') dmg = 1.2;
+      const bone = !!T.bone && Math.random() < S.frac * 1.3 || (pt === 'head' && kind !== 'knife' && Math.random() < 0.7) || ((pt === 'chest') && kind === 'spear' && Math.random() < 0.8);
+      if (bone) { anyBone = true; this.markFracture(b.name, 0.7 + Math.random() * 0.3); }
+      this.bladeWound(B, b, s.cap, a, e, dir, dmg, S.pierce || (s.t1 - s.t0) < 0.09, bone);
+      const L = s.t1 - s.t0; if (L > bigL && (pt === 'chest' || pt === 'abdomen' || pt === 'pelvis' || bigL === 0)) { bigL = L; anchorBody = b; anchorSpan = s; }
+    });
+    // --- Sonderfaelle ---
+    const hp = this.dummy.b.head.p; let tag = null;
+    if (kind === 'axe' && part === 'head') { tag = 'AXE IN HEAD'; br.health = Math.min(br.health, 0); if (br.alive) br.die({ kind: 'blade' }); this.slowT = Math.max(this.slowT, 1.2); }
+    else if ((kind === 'axe' || kind === 'katana') && part === 'neck') { tag = 'DECAPITATED'; const j = this.dummy.j.neck; if (j && j.enabled) { this.severJoint(j); this.updateComps(); } br.health = Math.min(br.health, 0); if (br.alive) br.die({ kind: 'blade' }); this.slowT = Math.max(this.slowT, 1.2); }
+    else if (kind === 'spear') { tag = spans.length > 1 ? 'IMPALED' : 'SPEARED'; if (spans.length > 1 && set.mortal) { br.health = Math.min(br.health, 0.12); } this.slowT = Math.max(this.slowT, 0.8); }
+    else if (kind === 'knife' && part === 'head') { tag = 'HEADSHOT'; }
+    else if (kind === 'katana') tag = 'SLICED';
+    if (tag) this.popup(tag, [P0[0], P0[1] + 0.35, P0[2]], '#ff5a4a', 1.6);
+    const sa = this.spatial(P0[0], P0[1], P0[2]);
+    this.sfx.play(anyBone || part === 'head' ? 'crunch' : 'smack', { vol: 0.9 * sa.vol, pan: sa.pan, pitch: kind === 'spear' ? 0.75 : 0.95 });
+    if (br.alive && (part === 'head' || kind === 'spear' || kind === 'axe') && set.voice >= 2) this.sfx.play('scream', { vol: 1, pitch: 0.95 + Math.random() * 0.2, dur: 1.4 });
+    this.fx.addShake(kind === 'spear' ? 0.5 : 0.28);
+    if (set.bulletTime) this.slowT = Math.max(this.slowT, 0.5);
+    // --- stecken bleiben: Lage im Koerper-Raum merken, dann faehrt die Waffe mit ---
+    const d = V3(dir[0], dir[1], dir[2]); bladeQuat(kind, d, 0, B.q); bladeAxes(kind, d, 0, _kx, _ky, _kz);
+    const ax = V3(); let emb;
+    if (S.pierce) { ax[0] = last[0] + d[0] * S.tip; ax[1] = last[1] + d[1] * S.tip; ax[2] = last[2] + d[2] * S.tip; }
+    else if (kind === 'axe') { emb = part === 'head' ? 0.09 : 0.065; ax[0] = P0[0] + _kx[0] * emb; ax[1] = P0[1] + _kx[1] * emb; ax[2] = P0[2] + _kx[2] * emb; }
+    else { emb = Math.min(S.emb, (sp.t1 - sp.t0) + 0.05); ax[0] = P0[0] + d[0] * emb; ax[1] = P0[1] + d[1] * emb; ax[2] = P0[2] + d[2] * emb; }
+    const ab = kind === 'axe' || !S.pierce ? first : anchorBody, lp = ab.w2l(V3(), ax), lq = Q4(); qconj(lq, ab.q); qmul(lq, lq, B.q); qnorm(lq, lq);
+    B.state = 1; B.body = ab; B.lp = lp; B.lq = lq; B.v.fill(0);
+    if (br.alive) br.startle(B.origin, 0.4);
+  },
+
+  /* Zeichnen: Flug (mit Drehung), im Koerper steckend, in der Wand */
+  appendBlades(bd, a) {
+    const bl = this.blades; if (!bl || !bl.length) return;
+    const P = V3(), Qn = Q4(), wp = V3(), wq = Q4();
+    for (const B of bl) {
+      const mesh = this.bladeMeshFor(B.kind);
+      if (B.state === 0) {
+        const sp = Math.hypot(B.v[0], B.v[1], B.v[2]) || 1; _kp[0] = B.v[0] / sp; _kp[1] = B.v[1] / sp; _kp[2] = B.v[2] / sp;
+        const th = B.wTot ? -B.wTot * Math.max(0, 1 - (B.age + a * DT) / B.tt) : 0;
+        bladeQuat(B.kind, _kp, th, wq);
+        wp[0] = B.p[0] + B.v[0] * DT * a; wp[1] = B.p[1] + B.v[1] * DT * a; wp[2] = B.p[2] + B.v[2] * DT * a;
+        M4.trs(B.model, wp, wq, 1, 1, 1);
+      } else if (B.state === 1) {
+        this.lerpPose(B.body, a, P, Qn); qrot(wp, Qn, B.lp); wp[0] += P[0]; wp[1] += P[1]; wp[2] += P[2]; qmul(wq, Qn, B.lq); qnorm(wq, wq);
+        M4.trs(B.model, wp, wq, 1, 1, 1);
+      } else M4.trs(B.model, B.p, B.q, 1, 1, 1);
+      bd.push({ mesh, model: B.model, tint: _kt });
+    }
+  }
+});
+const _kt = [1, 1, 1];
+;
+
+;
+/* ---- 25_xray.js ---- */
+'use strict';
+/* ===================================================================
+   25_xray.js — Knochenbrueche + Roentgen-Skelett (Panel am rechten Rand).
+   Bruchquellen: harte Landungen (noteImpact), Treffer mit Knochen (markFracture aus woundBody / Klingen), Explosionen.
+   Gebrochene Knochen leuchten im Skelett rot und pulsieren.
+   =================================================================== */
+const _CAPL = [[1.0, [0.82, 0.58, 0.45]], [0.9, [0.48, 0.04, 0.05]], [0.30, [0.92, 0.88, 0.76]], [0.11, [0.30, 0.02, 0.03]]], _CAPL2 = [[1.0, null]];
+const FRAC_THR = { head: 9, neck: 11, chest: 10, abdomen: 10.5, pelvis: 9.5, uarm: 8, farm: 7, hand: 6.5, thigh: 8.5, shank: 7.5, foot: 7 };
+const XR_LABEL = { head: 'Skull', neck: 'Cervical spine', chest: 'Ribs', abdomen: 'Lumbar spine', pelvis: 'Pelvis', uarm: 'Upper arm', farm: 'Forearm', hand: 'Hand', thigh: 'Thigh', shank: 'Shin', foot: 'Foot' };
+
+Object.assign(Game.prototype, {
+  /* Aufprall eines Koerperteils (m/s): kann einen Knochen brechen */
+  noteImpact(b, speed) {
+    if (!this.set.fallDamage || !b.tag || !b.tag.part) return;
+    const thr = FRAC_THR[b.tag.part]; if (!thr || speed < thr) return;
+    const now = this.realTime; if (now - (b._fracT || -9) < 0.3) return; b._fracT = now;
+    const p = Math.min(1, 0.25 + (speed - thr) / 6) * Math.min(1.5, this.set.fallScale || 1);
+    if (Math.random() < p) this.markFracture(b.name, Math.min(1, 0.55 + (speed - thr) / 8));
+  },
+  markFracture(name, sev) {
+    const F = this.fract || (this.fract = {}), f = F[name]; if (f && f.sev >= sev) return;
+    F[name] = { sev: Math.min(1, sev), t: this.realTime };
+    if (!f) {
+      this.fracVer = (this.fracVer || 0) + 1;
+      const b = this.dummy.b[name];
+      if (b && this.realTime - (this._fracPop || -9) > 0.5) {
+        this._fracPop = this.realTime; this.sfx.play('crack', { vol: 0.9 });
+        this.popup('BONE BREAK', [b.p[0], b.p[1] + 0.3, b.p[2]], '#ff7a5a', 1.3);
+      }
+      if (this.ui) this.ui.xrayPing();
+    }
+  }
+});
+
+/* ---------- Skelett (Frontansicht, Koordinaten 200 x 400). Links/rechts wie auf einem Roentgenbild: Linke Koerperseite = rechts im Bild ---------- */
+const XR = (() => {
+  const B = [], ln = (c, a, b, w) => { c.lineWidth = w; c.beginPath(); c.moveTo(a[0], a[1]); c.lineTo(b[0], b[1]); c.stroke(); };
+  const add = (body, mid, draw) => B.push({ body, mid, draw });
+  add('head', [100, 34], c => {
+    c.lineWidth = 2.2; c.beginPath(); c.ellipse(100, 33, 20, 23, 0, 0, 6.2832); c.stroke();
+    c.lineWidth = 1.8; c.beginPath(); c.moveTo(86, 50); c.lineTo(91, 62); c.lineTo(109, 62); c.lineTo(114, 50); c.stroke();
+    c.lineWidth = 1.6; c.beginPath(); c.ellipse(92, 35, 5.5, 4.2, 0, 0, 6.2832); c.moveTo(113.5, 35); c.ellipse(108, 35, 5.5, 4.2, 0, 0, 6.2832); c.stroke();
+    c.beginPath(); c.moveTo(100, 40); c.lineTo(97.5, 49); c.lineTo(102.5, 49); c.closePath(); c.stroke();
+    for (let i = -3; i <= 3; i++) ln(c, [100 + i * 2.6, 55], [100 + i * 2.6, 58.5], 1.4);
+  });
+  add('neck', [100, 74], c => { for (let y = 64; y <= 86; y += 5.5) { c.lineWidth = 1.8; c.strokeRect(95, y, 10, 4.2); } });
+  add('chest', [100, 112], c => {
+    for (let y = 88; y <= 138; y += 6.4) c.strokeRect(95.5, y, 9, 5);                       // Brustwirbel
+    ln(c, [100, 92], [100, 140], 5); ln(c, [100, 140], [100, 148], 3.4);                     // Brustbein
+    const wd = [20, 28, 33, 35, 31, 25];
+    for (let i = 0; i < 6; i++) for (const s of [-1, 1]) {
+      const y = 94 + i * 8.6, w = wd[i]; c.lineWidth = 2.3; c.beginPath(); c.moveTo(100 + s * 5, y); c.bezierCurveTo(100 + s * w * 1.25, y - 4, 100 + s * w * 1.2, y + 12, 100 + s * 4, y + 15); c.stroke();
+    }
+    for (const s of [-1, 1]) { ln(c, [100 + s * 4, 88], [100 + s * 36, 91], 3.4); c.lineWidth = 1.6; c.beginPath(); c.moveTo(100 + s * 40, 94); c.lineTo(100 + s * 52, 112); c.lineTo(100 + s * 38, 118); c.closePath(); c.stroke(); }
+  });
+  add('abdomen', [100, 166], c => { for (let y = 146; y <= 186; y += 8.4) { c.lineWidth = 2.2; c.strokeRect(92.5, y, 15, 6.8); } });
+  add('pelvis', [100, 210], c => {
+    c.lineWidth = 2.6; c.beginPath(); c.moveTo(100, 190); c.lineTo(78, 186); c.bezierCurveTo(58, 186, 54, 208, 62, 224); c.lineTo(82, 240); c.lineTo(100, 228); c.lineTo(118, 240); c.lineTo(138, 224);
+    c.bezierCurveTo(146, 208, 142, 186, 122, 186); c.closePath(); c.stroke();
+    c.lineWidth = 2; c.beginPath(); c.moveTo(92, 192); c.lineTo(100, 218); c.lineTo(108, 192); c.stroke();
+    c.beginPath(); c.ellipse(100, 230, 8, 5, 0, 0, 6.2832); c.stroke();
+  });
+  for (const [sd, m] of [['L', 1], ['R', -1]]) {
+    const X = v => 100 + m * v;
+    add('uarm' + sd, [X(-60) , 128], c => { ln(c, [X(-66), 94], [X(-54), 160], 8.5); c.lineWidth = 2; c.beginPath(); c.arc(X(-66), 94, 7, 0, 6.2832); c.stroke(); });
+    add('farm' + sd, [X(-50), 194], c => { ln(c, [X(-53), 166], [X(-45), 228], 4.6); ln(c, [X(-48), 166], [X(-41), 228], 3.6); c.lineWidth = 1.8; c.beginPath(); c.arc(X(-54), 162, 5, 0, 6.2832); c.stroke(); });
+    add('hand' + sd, [X(-42), 242], c => { for (let i = 0; i < 4; i++) ln(c, [X(-47 + i * 3.4), 233], [X(-51 + i * 5.2), 258 - (i === 1 || i === 2 ? 4 : 0)], 2.6); ln(c, [X(-40), 232], [X(-30), 246], 2.8); c.lineWidth = 1.8; c.strokeRect(X(-48) - (m < 0 ? 12 : 0), 226, 12, 7); });
+    add('thigh' + sd, [X(-80), 270], c => { ln(c, [X(-84), 244], [X(-78), 312], 11); c.lineWidth = 2.2; c.beginPath(); c.arc(X(-90), 238, 8, 0, 6.2832); c.stroke(); ln(c, [X(-90), 244], [X(-84), 250], 6); });
+    add('shank' + sd, [X(-76), 352], c => { ln(c, [X(-77), 324], [X(-76), 384], 8); ln(c, [X(-70), 326], [X(-70), 382], 3.8); c.lineWidth = 1.8; c.beginPath(); c.ellipse(X(-78), 318, 6, 5, 0, 0, 6.2832); c.stroke(); });
+    add('foot' + sd, [X(-76), 394], c => { c.lineWidth = 2.2; c.beginPath(); c.moveTo(X(-82), 388); c.lineTo(X(-68), 388); c.lineTo(X(-60), 398); c.lineTo(X(-86), 398); c.closePath(); c.stroke(); for (let i = 0; i < 5; i++) ln(c, [X(-86 + i * 6), 398], [X(-86 + i * 6.2), 403], 2.2); });
+  }
+  return B;
+})();
+
+Object.assign(UI.prototype, {
+  xrayPing() { const el = this.$('xr'); if (!el) return; el.classList.add('show', 'ping'); clearTimeout(this._xp); this._xp = setTimeout(() => el.classList.remove('ping'), 1400); this._xl = -1; },
+  xrayToggle() { const el = this.$('xr'); el.classList.toggle('show'); this.$('btn-xray').classList.toggle('on', el.classList.contains('show')); this._xl = -1; },
+  xrayList() {
+    const F = this.g.fract || {}, out = [];
+    for (const n in F) { const m = n.match(/^(.*?)([LR])?$/), part = m[1], sd = m[2] || ''; out.push('<li><b>' + esc_(T(XR_LABEL[part] || part)) + (sd ? ' ' + T(sd === 'L' ? 'left' : 'right') : '') + '</b><span>' + T('Fractured') + '</span></li>'); }
+    this.$('xrl').innerHTML = out.length ? '<ul>' + out.join('') + '</ul>' : '<p>' + T('No fractures') + '</p>';
+  },
+  xrayTick(dt) {
+    const el = this.$('xr'); if (!el || !el.classList.contains('show')) return;
+    this._xt = (this._xt || 0) - dt; if (this._xt > 0) return; this._xt = 0.04;
+    if (this._xl !== (this.g.fracVer || 0)) { this._xl = this.g.fracVer || 0; this.xrayList(); }
+    const cv = this.$('xrc'), c = this._xc || (this._xc = cv.getContext('2d')), F = this.g.fract || {}, t = performance.now() / 1000, pulse = 0.6 + 0.4 * Math.sin(t * 7);
+    c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, cv.width, cv.height); c.setTransform(1.5, 0, 0, 1.5, 0, 0); c.lineCap = 'round'; c.lineJoin = 'round';
+    const bg = c.createRadialGradient(100, 190, 20, 100, 200, 230); bg.addColorStop(0, 'rgba(30,58,90,.55)'); bg.addColorStop(1, 'rgba(8,14,24,.2)'); c.fillStyle = bg; c.fillRect(0, 0, 200, 408);
+    c.font = '700 11px system-ui,sans-serif'; c.fillStyle = 'rgba(160,200,240,.55)'; c.fillText('R', 8, 14); c.fillText('L', 184, 14);
+    for (const b of XR) {
+      const f = F[b.body], sev = f ? f.sev : 0;
+      if (sev > 0) { const a = 0.55 + 0.45 * pulse; c.strokeStyle = `rgba(255,${60 + 40 * (1 - pulse)},${55},${a})`; c.shadowColor = 'rgba(255,40,40,.95)'; c.shadowBlur = 8 + 10 * pulse; }
+      else { c.strokeStyle = 'rgba(176,222,255,.88)'; c.shadowColor = 'rgba(110,180,255,.7)'; c.shadowBlur = 5; }
+      b.draw(c);
+      if (sev > 0) {                         // Bruchstelle: gezackte Linie quer durch den Knochen
+        const [mx, my] = b.mid; c.shadowBlur = 12; c.strokeStyle = `rgba(255,235,220,${0.6 + 0.4 * pulse})`; c.lineWidth = 2;
+        c.beginPath(); c.moveTo(mx - 9, my - 3); c.lineTo(mx - 3, my + 3); c.lineTo(mx + 1, my - 4); c.lineTo(mx + 5, my + 3); c.lineTo(mx + 10, my - 2); c.stroke();
+      }
+    }
+    c.shadowBlur = 0;
+  }
+});
+;
+
+;
+/* ---- 26_split.js ---- */
+'use strict';
+/* ===================================================================
+   26_split.js — Laengsschnitt: eine Linie von oben durch Kopf, Brust und Bauch teilt die Figur in eine linke und eine rechte Haelfte.
+
+   Physikalisch bekommt jedes Rumpfteil (Becken, Bauch, Brust, Hals, Kopf) einen zweiten Koerper ("~R"): die Originale werden zur linken Haelfte,
+   die neuen zur rechten. Die rechte Seite (Schulter, Huefte, Wirbelkette) haengt danach an den rechten Haelften – beide Haelften
+   fallen also wirklich auseinander. Gezeichnet wird das Modell zweimal (links: x>0, rechts: x<0, im Shader abgeschnitten),
+   dazu kommen rote Schnittflaechen mit Wirbelsaeule und Organen (kleine abgeflachte Ellipsoide).
+   =================================================================== */
+const HALF_PARTS = ['pelvis', 'abdomen', 'chest', 'neck', 'head'];
+/* Schnittflaechen-Schichten je Teil: [y-Anteil, z-Anteil, Breite y, Breite z, Farbe] (Anteile von ry/rz) */
+const CAP_BASE = [[0, 0, 1.0, 1.0, [0.86, 0.62, 0.48]], [0, 0, 0.9, 0.9, [0.50, 0.045, 0.05]]];
+const CAP_BONE = [0.90, 0.86, 0.72], CAP_PINK = [0.88, 0.52, 0.52], CAP_DEEP = [0.38, 0.03, 0.04];
+const CAP_DETAIL = {
+  pelvis: [[0, -0.52, 0.55, 0.20, CAP_BONE], [-0.15, 0.25, 0.30, 0.22, CAP_PINK]],
+  abdomen: [[0, -0.55, 0.92, 0.11, CAP_BONE], [0.35, 0.22, 0.25, 0.28, CAP_PINK], [-0.05, 0.28, 0.25, 0.30, [0.80, 0.42, 0.45]], [-0.42, 0.2, 0.22, 0.26, CAP_PINK], [0.0, -0.05, 0.4, 0.10, CAP_DEEP]],
+  chest: [[0, -0.55, 0.92, 0.11, CAP_BONE], [0.18, 0.12, 0.28, 0.30, [0.58, 0.06, 0.09]], [0.55, -0.30, 0.30, 0.07, [0.72, 0.78, 0.84]], [0, 0.78, 0.9, 0.07, CAP_BONE], [-0.45, 0.1, 0.25, 0.3, [0.85, 0.45, 0.47]]],
+  neck: [[0, -0.5, 0.9, 0.22, CAP_BONE], [0, 0.18, 0.7, 0.14, [0.72, 0.78, 0.84]]],
+  head: [[0, 0, 1.0, 1.0, [0.90, 0.86, 0.75]], [0.05, 0, 0.84, 0.84, [0.82, 0.58, 0.60]], [0.18, 0, 0.5, 0.05, [0.95, 0.9, 0.9]], [-0.55, 0.62, 0.22, 0.2, CAP_DEEP]]
+};
+
+function cloneJoint(j, A, B, at) {
+  const n = new Joint(j.name + '~R', A, B, at);
+  for (const k of ['tmin', 'tmax', 'smax', 'sxmin', 'sxmax', 'szmin', 'szmax', 'kBase', 'dBase', 'tmaxBase', 'kS', 'dS', 'tS', 'passive', 'kind', 'side', 'group', 'lam', 'use', 'err', 'enabled']) n[k] = j[k];
+  qcopy(n.tq, j.tq); vcopy(n.ff, j.ff); vcopy(n.wt, j.wt);
+  n.soft = j.soft ? { cs: j.soft.cs, ks: j.soft.ks, kn: j.soft.kn, lo: j.soft.lo.slice(), hi: j.soft.hi.slice(), zw: j.soft.zw.slice(), n: j.soft.n.slice() } : null;
+  return n;
+}
+
+Object.assign(Game.prototype, {
+  /* passt die gezogene Linie zu einem Laengsschnitt? (Linie folgt der Koerperachse und geht durch Kopf, Brust und Bauch) */
+  splitDetect(x0, y0, x1, y1) {
+    if (this.halves) return false;
+    const d = this.dummy, P = n => { const b = d.b[n], p = b.rp || b.p; return this.project(p, [0, 0]); };
+    const H = P('head'), C = P('chest'), A = P('abdomen'), Pl = P('pelvis'); if (!H || !C || !A || !Pl) return false;
+    const ax = H[0] - Pl[0], ay = H[1] - Pl[1], al = Math.hypot(ax, ay); if (al < 30) return false;
+    const dx = x1 - x0, dy = y1 - y0, dl = Math.hypot(dx, dy); if (dl < al * 0.5) return false;
+    if (Math.abs(ax * dx + ay * dy) / (al * dl) < 0.82) return false;
+    const dist = p => Math.abs((p[0] - x0) * dy - (p[1] - y0) * dx) / dl, par = p => ((p[0] - x0) * dx + (p[1] - y0) * dy) / (dl * dl), tol = al * 0.22;
+    if (dist(H) > tol || dist(C) > tol || dist(A) > tol) return false;
+    for (const p of [H, A]) { const t = par(p); if (t < -0.04 || t > 1.04) return false; }
+    return true;
+  },
+
+  splitBody() {
+    const d = this.dummy, w = this.world, br = this.brain, bl = this.blood;
+    if (this.halves) return 0;
+    br.health = Math.min(br.health, 0); const wasAlive = br.alive; if (br.alive) br.die({ kind: 'split' });
+    const H = this.halves = { b: {}, cap: {}, t: 0 }, torso = new Set(HALF_PARTS.map(n => d.b[n]));
+    // 1. rechte Haelften anlegen, Formen und Massen halbieren
+    const capMap = new Map();
+    for (const name of HALF_PARTS) {
+      const L = d.b[name], I = L.I, R = new Body(name + '~R', L.mass * 0.5, [I[0] * 0.5, I[1] * 0.5, I[2] * 0.5]);
+      R.fric = L.fric; R.rest = L.rest; R.damp = L.damp; R.adamp = L.adamp; R.gravityScale = L.gravityScale; R.tag = { half: true, part: name, side: 0 };
+      vcopy(R.p, L.p); qcopy(R.q, L.q); vcopy(R.v, L.v); vcopy(R.w, L.w); vcopy(R.pp, L.pp); qcopy(R.pq, L.pq); R.updateRot();
+      let y0 = 1e9, y1 = -1e9, z0 = 1e9, z1 = -1e9;
+      for (const c of L.caps) for (const [pt, r] of [[c.a, c.r0], [c.b, c.r1]]) { y0 = Math.min(y0, pt[1] - r); y1 = Math.max(y1, pt[1] + r); z0 = Math.min(z0, pt[2] - r); z1 = Math.max(z1, pt[2] + r); }
+      H.cap[name] = { yc: (y0 + y1) / 2, zc: (z0 + z1) / 2, ry: (y1 - y0) / 2 * 0.95, rz: (z1 - z0) / 2 * 0.95 };
+      for (const c of L.caps) { const nc = R.addCapsule(c.a, c.b, c.r0, c.r1, { name: c.name + '~R' }); capMap.set(c, nc); }
+      L.mass *= 0.5; L.invMass = 1 / L.mass; L.I = [I[0] * 0.5, I[1] * 0.5, I[2] * 0.5]; L.iI = [1 / L.I[0], 1 / L.I[1], 1 / L.I[2]]; L.updateRot();
+      for (const [body, sg] of [[L, 1], [R, -1]]) {      // jede Haelfte: schmaler und zur eigenen Seite verschoben
+        for (const c of body.caps) {
+          const off = sg * 0.42 * 0.5 * (c.r0 + c.r1); c.a[0] += off; c.b[0] += off; c.r0 *= 0.62; c.r1 *= 0.62;
+          for (let k = 0; k < c.ns; k++) { c.sl[k][0] += off; c.sr[k] *= 0.62; }
+        }
+        body.updateShapes();
+      }
+      w.addBody(R); H.b[name] = R;
+    }
+    // Kollisionspaare: rechte Haelften verhalten sich wie das Original
+    const pairs = w.pairs.slice(), mc = c => capMap.get(c) || c;
+    for (const [a, b] of pairs) { const na = mc(a), nb = mc(b); if (na !== a || nb !== b) w.addPair(na, nb); }
+    // Gelenke: Wirbelkette klonen, Schulter/Huefte der rechten Seite umhaengen
+    const mb = b => (torso.has(b) ? H.b[b.tag.part] : b);
+    for (const j of d.jlist.slice()) {
+      if (torso.has(j.A) && torso.has(j.B)) { const at = V3(); d.jointPos(j, at); w.addJoint(cloneJoint(j, mb(j.A), mb(j.B), at)); }
+      else if (torso.has(j.A) && j.side < 0) j.A = mb(j.A);
+    }
+    // 2. auseinanderdruecken
+    const chest = d.b.chest, ax = qrot(V3(), chest.q, V3(1, 0, 0)), fw = qrot(V3(), chest.q, V3(0, 0, 1)), up = qrot(V3(), chest.q, V3(0, 1, 0));
+    for (const name of HALF_PARTS) {
+      const L = d.b[name], R = H.b[name], k = 1 + 0.3 * (HALF_PARTS.indexOf(name) / 4);
+      for (let i = 0; i < 3; i++) { L.v[i] += ax[i] * 1.5 * k; R.v[i] -= ax[i] * 1.5 * k; L.w[i] += -fw[i] * 1.0; R.w[i] += fw[i] * 1.0; }
+    }
+    // 3. Blut: Spritzer aus der Schnittflaeche, Wunden, Lachen
+    if (bl && BLOOD_LV[bl.level]) {
+      const lv = BLOOD_LV[bl.level], P = V3(), n = V3();
+      for (const name of HALF_PARTS) {
+        const L = d.b[name], c = H.cap[name]; L.l2w(P, V3(0, c.yc, c.zc)); n[0] = -ax[0]; n[1] = -ax[1]; n[2] = -ax[2];
+        const wd = bl.wound(L, P, n, 0.6, true); if (wd) { wd.art = 1; wd.tau = 100; wd.rate = Math.min(90, wd.rate * 2.4); }
+        bl.burst(P, n, n, 0.8, true, lv, true);
+        for (let k = 0; k < 22; k++) {
+          const sg = k & 1 ? 1 : -1, yy = (Math.random() * 2 - 1) * c.ry, zz = c.zc + (Math.random() * 2 - 1) * c.rz * 0.9; L.l2w(P, V3(0, c.yc + yy, zz));
+          const s = 1.2 + Math.random() * 4.2, a = Math.random() - 0.5;
+          bl.drop(P[0], P[1], P[2], sg * ax[0] * s + up[0] * a * 2 + fw[0] * a * 2, sg * ax[1] * s + 1.0 + Math.random() * 1.8, sg * ax[2] * s + up[2] * a * 2 + fw[2] * a * 2, 0.7 + Math.random() * 1.4);
+        }
+      }
+    }
+    // 4. Rueckmeldung
+    const hp = d.b.head.p; this.popup('SPLIT IN HALF', [hp[0], hp[1] + 0.5, hp[2]], '#ff4a4a', 2.0);
+    this.sfx.unlock(); this.sfx.play('slash', { vol: 1.0, pitch: 0.85 }); this.sfx.play('crunch', { vol: 1.0, pitch: 0.8 }); this.sfx.play('splat', { vol: 0.9 });
+    if (wasAlive) this.sfx.play('scream', { vol: 1.0, pitch: 1.0, dur: 1.2 });
+    this.fx.addShake(0.7); this.slowT = Math.max(this.slowT, 1.4); this.stats.hits++; this.stats.cuts = (this.stats.cuts || 0) + 1;
+    return 1;
+  },
+
+  /* Schnittflaechen beider Haelften (Ellipsoid-Scheiben in der Ebene x = 0 des jeweiligen Koerpers) */
+  appendHalfCaps(bd, a) {
+    const H = this.halves; if (!H) return;
+    const P = V3(), Q = Q4(), wp = V3(), loc = V3();
+    this._hcm = this._hcm || {}; let mi = 0;
+    for (const name of HALF_PARTS) {
+      const c = H.cap[name], layers = CAP_BASE.concat(CAP_DETAIL[name] || []);
+      for (const [b, sg] of [[this.dummy.b[name], 1], [H.b[name], -1]]) {
+        this.lerpPose(b, a, P, Q);
+        layers.forEach((L, li) => {
+          loc[0] = -sg * (0.0015 + 0.0009 * li); loc[1] = c.yc + L[0] * c.ry; loc[2] = c.zc + L[1] * c.rz;
+          qrot(wp, Q, loc); wp[0] += P[0]; wp[1] += P[1]; wp[2] += P[2];
+          const key = mi++, m = this._hcm[key] || (this._hcm[key] = M4.id()); M4.trs(m, wp, Q, 0.0035, Math.max(0.004, L[2] * c.ry), Math.max(0.004, L[3] * c.rz));
+          const tn = L[4]; bd.push({ mesh: this.ballMesh, model: m, tint: tn });
+        });
+      }
+    }
+  },
+
+  /* Matrizen der zweiten (rechten) Knochensaetze fuers Skinning */
+  fillBonesB(a) {
+    if (!this.bonesB) { this.bonesB = new Float32Array(17 * 16); this.boneVB = []; for (let i = 0; i < 17; i++) this.boneVB.push(this.bonesB.subarray(i * 16, i * 16 + 16)); }
+    this.bonesB.set(this.bones);
+    const P = V3(), Q = Q4(), cv = V3(), t = V3();
+    HALF_PARTS.forEach((n, i) => { this.lerpPose(this.halves.b[n], a, P, Q); qrot(cv, Q, this.boneCom[i]); t[0] = P[0] - cv[0]; t[1] = P[1] - cv[1]; t[2] = P[2] - cv[2]; M4.trs(this.boneVB[i], t, Q, 1, 1, 1); });
+  },
+
+  /* Crash-Test-Dummy-Modell: zweite Kopie eines Rumpfteils fuer die rechte Haelfte */
+  halfDraw(i, a, it) {
+    const R = this.halves.b[HALF_PARTS[i]], P = V3(), Q = Q4(), nm = R.name, m = this.dMat[nm] || (this.dMat[nm] = M4.id());
+    this.lerpPose(R, a, P, Q); M4.trs(m, P, Q, 1, 1, 1);
+    return { mesh: it.mesh, model: m, tint: it.tint, mask: it.mask, dirt: it.dirt, stain: it.stain, clip: -1 };
+  }
+});
+;
+
+;
 /* ---- 20_main.js ---- */
 'use strict';
 /* ===================================================================
