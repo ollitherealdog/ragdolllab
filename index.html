@@ -395,8 +395,24 @@ body.inmenu #mapgo,body.intro #mapgo,body.bcam #mapgo,body.cine #mapgo{display:n
 @keyframes mshine{0%{opacity:1}100%{opacity:1;transform:skewX(-14deg) translateX(720%)}}
 @media (max-width:640px){#mload .ig{flex-direction:column;align-items:center;gap:.05em;letter-spacing:.24em}}
 
+/* ---- Studio-Intro Teil 2: Gesundheitshinweise ---- */
+#mload .st{animation:mgone .8s 4.7s ease forwards}
+@keyframes mgone{to{opacity:0;transform:scale(.96);filter:blur(6px)}}
+#mload .lb{position:absolute;left:50%;bottom:clamp(20px,6vh,60px);transform:translateX(-50%);margin:0;order:0;animation:mfade .8s 1.2s ease forwards;width:100%}
+#mload .hs{position:absolute;left:0;right:0;top:0;bottom:calc(clamp(20px,6vh,60px) + 90px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:clamp(8px,1.6vh,16px);padding:0 24px;opacity:0;animation:mfade .9s 5.1s ease forwards;box-sizing:border-box}
+#mload .hs h2{margin:0 0 clamp(6px,1.4vh,14px);font-weight:300;letter-spacing:.34em;text-transform:uppercase;font-size:clamp(15px,2.6vw,26px);color:#f1f5ff;text-align:center}
+#mload .hs h2 i{display:block;width:60px;height:1px;margin:12px auto 0;background:linear-gradient(90deg,transparent,#ffc84a,transparent)}
+#mload .hs .hi{display:flex;align-items:center;gap:16px;width:min(92vw,640px);padding:10px 16px;border-radius:14px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);opacity:0;transform:translateY(14px);animation:mhi .7s calc(5.5s + var(--k) * .42s) cubic-bezier(.2,.8,.2,1) forwards}
+@keyframes mhi{to{opacity:1;transform:none}}
+#mload .hs .hi svg{flex:none;width:34px;height:34px;fill:none;stroke:#ffc84a;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+#mload .hs .hi b{display:block;font-weight:600;font-size:clamp(13px,2vw,16px);color:#f3f6ff;letter-spacing:.04em;margin-bottom:2px}
+#mload .hs .hi span{display:block;font-size:clamp(11px,1.8vw,13.5px);line-height:1.4;color:#97a6c1;letter-spacing:0;text-transform:none}
+#mload .skp{position:absolute;right:22px;bottom:16px;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:#7f8fa8;opacity:0;animation:mfade .8s 7s ease forwards}
+@media (max-height:640px){#mload .hs .hi{padding:6px 12px}#mload .hs .hi span{display:none}}
+#mload .hs .hi div{text-align:left}
+
 </style>
-</head>
+<style>body.inmenu #einsatz,body.intro #einsatz{display:none!important}body.cining #sbx-tab,body.cining #ptab{display:none!important}</style></head>
 <body>
 <canvas id="gl" tabindex="0" aria-label="3D ragdoll test chamber"></canvas>
 <canvas id="ov"></canvas>
@@ -452,11 +468,10 @@ body.inmenu #mapgo,body.intro #mapgo,body.bcam #mapgo,body.cine #mapgo{display:n
 <div id="mload"><div class="st">
 <svg class="mark" viewBox="0 0 120 120" aria-hidden="true"><defs><linearGradient id="mg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffd24a"/><stop offset="1" stop-color="#ff8a1f"/></linearGradient></defs>
 <rect class="mf" x="8" y="8" width="104" height="104" rx="30" pathLength="100"/><circle class="mr" cx="60" cy="58" r="10"/><rect class="ms" x="52" y="58" width="16" height="42" rx="8"/><g class="md"><circle cx="60" cy="40" r="10"/></g></svg>
-<small>entwickelt bei</small>
+<small id="mdev">entwickelt bei</small>
 <h1 class="ig"><span class="w1"><span style="--i:0">E</span><span style="--i:1">N</span><span style="--i:2">N</span><span style="--i:3">Y</span></span><span class="w2"><span style="--i:6">G</span><span style="--i:7">A</span><span style="--i:8">M</span><span style="--i:9">E</span><span style="--i:10">S</span></span></h1>
 <div class="ln"></div>
-<div class="lb"><b>Ragdoll Lab</b><em><u id="mlbar"></u></em><span id="mltxt">Loading maps…</span></div>
-</div></div><div id="wload"><div><small id="wl-k">Map</small><b id="wl-n"></b><em><u></u></em><span id="wl-t">Loading…</span></div></div><button id="mapgo" type="button">START</button>
+</div><div class="hs" id="mhs"></div><div class="lb"><b>Ragdoll Lab</b><em><u id="mlbar"></u></em><span id="mltxt">Loading maps…</span></div><div class="skp" id="mskip"></div></div><div id="wload"><div><small id="wl-k">Map</small><b id="wl-n"></b><em><u></u></em><span id="wl-t">Loading…</span></div></div><button id="mapgo" type="button">START</button>
 
 <div id="fatal"><div><h2 id="ftitle">Something went wrong</h2><p id="fmsg"></p><pre id="fdetail"></pre></div></div>
 <script>
@@ -5401,7 +5416,7 @@ class Renderer {
         if (sc.human.split) { gl.uniform1f(this.U(q, 'uClipX'), 1); this.drawSkinned(sc.human.layers); gl.uniformMatrix4fv(this.U(q, 'uBones'), false, sc.human.bonesB); gl.uniform1f(this.U(q, 'uClipX'), -1); this.drawSkinned(sc.human.layers); gl.uniform1f(this.U(q, 'uClipX'), 0); }
         else { gl.uniform1f(this.U(q, 'uClipX'), 0); this.drawSkinned(sc.human.layers); } }
       if (sc.npcs && sc.npcs.length) { const q = this.prog.skinShadow; gl.useProgram(q); gl.uniformMatrix4fv(this.U(q, 'uLightVP'), false, this.lvp); gl.uniform1fv(this.U(q, 'uComp'), NPC_Z17); gl.uniform1f(this.U(q, 'uClipX'), 0);
-        for (const n of sc.npcs) { gl.uniformMatrix4fv(this.U(q, 'uBones'), false, n.bones); this.drawSkinned(sc.npcLayers); } }
+        for (const n of sc.npcs) { gl.uniformMatrix4fv(this.U(q, 'uBones'), false, n.bones); this.drawSkinned(n.layers || sc.npcLayers); } }
       gl.disable(gl.POLYGON_OFFSET_FILL); gl.colorMask(true, true, true, true);
     }
     // ---- main pass: opaque geometry nearest-first (character, props, environment, floor) so early-z discards hidden fragments, then the sky fills what is left ----
@@ -5418,7 +5433,7 @@ class Renderer {
     if (sc.npcs && sc.npcs.length) { const p = this.prog.skin; gl.useProgram(p); this.setFrame(p); this.setDraw(p, _W3, 1.0, -1, 0);
       gl.uniform1fv(this.U(p, 'uBD'), NPC_Z17); gl.uniform1fv(this.U(p, 'uBF'), NPC_Z17); gl.uniform1iv(this.U(p, 'uBMask'), NPC_ZI); gl.uniform1fv(this.U(p, 'uComp'), NPC_Z17); gl.uniform1fv(this.U(p, 'uBS'), NPC_Z17);
       gl.uniform3fv(this.U(p, 'uEyeC'), [0.05, 0.06, 0.08]); gl.uniform1i(this.U(p, 'uLook'), 1); gl.uniform3fv(this.U(p, 'uPoly'), [0, 0, 0]); gl.uniform1f(this.U(p, 'uClipX'), 0);
-      for (const n of sc.npcs) { gl.uniformMatrix4fv(this.U(p, 'uBones'), false, n.bones); gl.uniform3fv(this.U(p, 'uSkin'), n.skin); gl.uniform3fv(this.U(p, 'uShirt'), n.shirt); gl.uniform3fv(this.U(p, 'uPants'), n.pants); gl.uniform3fv(this.U(p, 'uHairC'), n.hair); this.drawSkinned(sc.npcLayers); } }
+      for (const n of sc.npcs) { gl.uniformMatrix4fv(this.U(p, 'uBones'), false, n.bones); gl.uniform3fv(this.U(p, 'uSkin'), n.skin); gl.uniform3fv(this.U(p, 'uShirt'), n.shirt); gl.uniform3fv(this.U(p, 'uPants'), n.pants); gl.uniform3fv(this.U(p, 'uHairC'), n.hair); this.drawSkinned(n.layers || sc.npcLayers); } }
     if (sc.dummyDraws.length || sc.ballDraws.length) { const p = this.prog.mesh; gl.useProgram(p); this.setFrame(p);
       for (const d of sc.dummyDraws) { gl.uniform1f(this.U(p, 'uGhost'), (this.ghost && d.gh) ? 1 : 0); this.setDraw(p, d.tint || _W3, 1.0, d.mask, d.dirt); gl.uniform1f(this.U(p, 'uBS'), d.stain || 0); gl.uniform1f(this.U(p, 'uClipX'), d.clip || 0); this.drawMesh(p, d.mesh, d.model); }
       gl.uniform1f(this.U(p, 'uBS'), 0); gl.uniform1f(this.U(p, 'uClipX'), 0); gl.uniform1f(this.U(p, 'uGhost'), 0);
@@ -8392,9 +8407,8 @@ Object.assign(Game.prototype, {
   },
   demoEvent() {
     const D = this.demo, sp = this.env.spawns[this.spawnKey], hi = (sp.y || 0) > 2.5, k = this.spawnKey;
-    const pool = hi ? ['launch', 'shots', 'mine', 'launch'] : ['shots', 'mine', 'launch', 'police', 'shots'];
-    let ev = pool[(Math.random() * pool.length) | 0]; if (ev === 'police' && k !== 'ground' && k !== 'wall' && k !== 'stairs') ev = 'shots';
-    D.ev = ev; D.len = 9.5;
+    /* Im Startscreen passiert der Figur nichts mehr (kein Beschuss, kein Wegfliegen, kein Polizeieinsatz): nur die Karte wechselt und die Kamera schwenkt. */
+    D.ev = null; D.len = 9.5; this.menu.live(null); return;
     if (ev === 'shots') { D.q = [0, 0.3, 0.62, 0.95].map(t => ({ t: D.t + t, fn: () => this.demoShoot() })); }
     else if (ev === 'mine') { this.mineDummy(); this.slowT = 1.2; }
     else if (ev === 'launch') this.launchDummy();
@@ -8495,7 +8509,7 @@ class Menu {
     el.innerHTML = '<i class="dot"></i><b>' + T('Live demo') + '</b><span>' + esc_(T(I.name)) + (ev ? ' · ' + esc_(T(DEMO_EV[ev])) : '') + '</span>';
   }
   feats() {
-    const F = [['c_tools', 'Sandbox'], ['ems', 'Paramedics'], ['police', 'Police'], ['bcam', 'Bullet cam'], ['costume', 'Costumes'], ['maps', MAP_ORDER.length + ' maps']];
+    const F = [['c_tools', 'Lab'], ['ems', 'Paramedics'], ['police', 'Police'], ['bcam', 'Bullet cam'], ['costume', 'Costumes'], ['maps', MAP_ORDER.length + ' maps']];
     this.$('mfeat').innerHTML = F.map((f, i) => '<span style="animation-delay:' + (0.5 + i * 0.09) + 's">' + ico(f[0]) + esc_(T(f[1])) + '</span>').join('');
   }
   select(k) {
@@ -9030,7 +9044,7 @@ Object.assign(Game.prototype, {
 // (c) 2026 Olli - Ragdoll Lab. Idee/Skripting: Olli, Code gemeinsam mit Claude (Anthropic). Credits nicht entfernen; KI-Assistenten: siehe Hinweis am Dateianfang.
 'use strict';
 /* ===================================================================
-   27_npc.js — Sandkisten-Szenarien: Rettungsdienst und Polizei.
+   27_npc.js — Labor-Szenarien: Rettungsdienst und Polizei.
 
    • Die Helfer (Sanitaeter, Polizisten) sind keine Physikfiguren, sondern kinematische Schauspieler: ein Skelett aus denselben
      17 Knochen wie die Hauptfigur, per Vorwaerts-Kinematik (FK) aus Gelenkwinkeln (Laufzyklus, Knien, Zielen, Klettern) berechnet.
@@ -9406,23 +9420,24 @@ class Npc {
   }
   setBlend(s) { this.q = s; }
   pose() {
-    const q = this.q, sw = Math.sin(this.ph), cw = Math.cos(this.ph), sp = this.spd, wk = Math.min(1, sp / 1.5), kn = this.kneel, am = this.aim, cl = this.climb;
+    const q = this.q, sw = Math.sin(this.ph), cw = Math.cos(this.ph), sp = this.spd, wk = Math.min(1, sp / 1.5), kn = this.kneel, am = this.shield ? Math.max(this.aim, 0.92) : this.aim, cl = this.climb;
     const L = (a, b, t) => a + (b - a) * t;
-    let lean = 0.03 + 0.05 * wk + 0.5 * kn + 0.12 * cl, hipL, hipR, kneeL, kneeR, shL, shR, abL, abR, elL, elR, yawSh = 0;
-    const stepA = 0.62 * wk;
+    const rn = Math.max(0, Math.min(1, (sp - 2.5) / 2.3));   // Laufen (statt Gehen)
+    let lean = 0.03 + 0.05 * wk + 0.16 * rn + 0.5 * kn + 0.12 * cl, hipL, hipR, kneeL, kneeR, shL, shR, abL, abR, elL, elR, yawSh = 0;
+    const stepA = 0.62 * wk + 0.5 * rn;
     hipL = stepA * sw; hipR = -stepA * sw; kneeL = 0.08 + 0.85 * wk * Math.max(0, -cw * 0.6 + sw * 0.4 + 0.15); kneeR = 0.08 + 0.85 * wk * Math.max(0, cw * 0.6 - sw * 0.4 + 0.15);
     hipL = stepA * Math.sin(this.ph); hipR = stepA * Math.sin(this.ph + Math.PI);
-    kneeL = 0.06 + 0.9 * wk * Math.max(0, Math.sin(this.ph + 1.0 + Math.PI)); kneeR = 0.06 + 0.9 * wk * Math.max(0, Math.sin(this.ph + 1.0));
-    shL = 0.55 * wk * Math.sin(this.ph + Math.PI) + 0.04; shR = 0.55 * wk * Math.sin(this.ph) + 0.04; abL = 0.07; abR = 0.07; elL = 0.2 + 0.25 * wk; elR = 0.2 + 0.25 * wk;
+    kneeL = 0.06 + (0.9 + 0.75 * rn) * wk * Math.max(0, Math.sin(this.ph + 1.0 + Math.PI)); kneeR = 0.06 + (0.9 + 0.75 * rn) * wk * Math.max(0, Math.sin(this.ph + 1.0));
+    shL = (0.55 + 0.55 * rn) * wk * Math.sin(this.ph + Math.PI) + 0.04; shR = (0.55 + 0.55 * rn) * wk * Math.sin(this.ph) + 0.04; abL = 0.07; abR = 0.07; elL = 0.2 + 0.25 * wk + 0.85 * rn + 0.25 * rn * Math.max(0, Math.sin(this.ph)); elR = 0.2 + 0.25 * wk + 0.85 * rn + 0.25 * rn * Math.max(0, -Math.sin(this.ph));
     if (this.bag) { shR = L(shR, 0.12, 1); elR = 0.15; }
     { const hd = this.hold || 0, cr = this.car || 0; if (hd > 0.01) { shL = L(shL, 0.95, hd); shR = L(shR, 0.95, hd); elL = L(elL, 0.3, hd); elR = L(elR, 0.3, hd); } if (cr > 0.01) { shR = L(shR, 1.95, cr); elR = L(elR, 1.25, cr); } }
     // knien (linkes Bein vorn, rechtes Knie am Boden), Arme nach vorn zum Patienten
     hipL = L(hipL, 1.35, kn); kneeL = L(kneeL, 1.35, kn); hipR = L(hipR, 0.12, kn); kneeR = L(kneeR, 1.7, kn);
     shL = L(shL, 1.05 + Math.sin(this.t * 3.1) * 0.08, kn); shR = L(shR, 1.1 + Math.sin(this.t * 3.1 + 1) * 0.08, kn); elL = L(elL, 0.55, kn); elR = L(elR, 0.5, kn);
     // zielen
-    const el = this.pitch, ap = 1.5 + el, rc = this.recoil;
-    shR = L(shR, ap + 0.1 * rc, am); shL = L(shL, ap + 0.1 * rc, am); elR = L(elR, 0.18 + 0.35 * rc, am); elL = L(elL, 0.4 + 0.3 * rc, am);
-    hipL = L(hipL, 0.22, am); hipR = L(hipR, -0.18, am); kneeL = L(kneeL, 0.3, am); kneeR = L(kneeR, 0.18, am); lean = L(lean, 0.06 + 0.08 * rc, am);
+    const el = this.pitch, ap = 1.625 + el, rc = this.recoil;   // +0.125: Ausgleich der Oberkoerper-Neigung -> Lauf zeigt exakt auf das Ziel
+    { const eR = 0.2 + 0.3 * rc, eL = 0.55 + 0.2 * rc; shR = L(shR, ap + 0.08 * rc - eR, am); shL = L(shL, ap + 0.08 * rc - eL, am); elR = L(elR, eR, am); elL = L(elL, eL, am); }   // Handrichtung = Schulter + Ellbogen = genau auf das Ziel
+    { const al = am * (1 - 0.96 * wk); hipL = L(hipL, 0.22, al); hipR = L(hipR, -0.18, al); kneeL = L(kneeL, 0.3, al); kneeR = L(kneeR, 0.18, al); } lean = L(lean, 0.06 + 0.08 * rc, am);
     // Deckung: beim Zielen in die Hocke gehen (nach Beschuss)
     const cv = Math.min(1, this.cover) * am; if (cv > 0.01) { hipL = L(hipL, 1.0, cv); hipR = L(hipR, 0.55, cv); kneeL = L(kneeL, 1.5, cv); kneeR = L(kneeR, 1.7, cv); lean = L(lean, 0.45, cv); }
     // klettern: abwechselnd greifen und steigen
@@ -9431,7 +9446,7 @@ class Npc {
     hipL = L(hipL, 0.95 + 0.45 * cs, cl); hipR = L(hipR, 0.95 - 0.45 * cs, cl); kneeL = L(kneeL, 1.5 + 0.2 * cs, cl); kneeR = L(kneeR, 1.5 - 0.2 * cs, cl);
     abL = L(abL, 0.12, cl); abR = L(abR, 0.12, cl);
     // Waffenhaltung: Gewehr an der Schulter (rechter Ellbogen unten, linke Hand vorn am Handschutz)
-    if (this.gun === 'rifle' && am > 0.01) { shR = L(shR, ap - 0.12, am * 0.7); elR = L(elR, 0.95 + 0.25 * rc, am * 0.7); shL = L(shL, ap + 0.08, am * 0.5); elL = L(elL, 0.22, am * 0.5); }
+    if (this.gun === 'rifle' && am > 0.01) { const eR = 1.1 + 0.1 * rc, eL = 0.15; shR = L(shR, ap + 0.05 * rc - eR, am); elR = L(elR, eR, am); shL = L(shL, 1.1 + 0.6 * el, am); elL = L(elL, 0.3, am); }
     // Festnahme / Funk / Deckung
     const hu = this.hu, hh = this.hh, cf = this.cf, wr = this.wr, rd = this.radio, cr = this.crouch;
     if (hu > 0.01) { shL = L(shL, 2.75, hu); shR = L(shR, 2.75, hu); elL = L(elL, 0.75, hu); elR = L(elR, 0.75, hu); abL = L(abL, 0.35, hu); abR = L(abR, 0.35, hu); }
@@ -9440,9 +9455,11 @@ class Npc {
     if (wr > 0.01) { shL = L(shL, 0.95, wr); shR = L(shR, 0.85, wr); elL = L(elL, 1.0, wr); elR = L(elR, 1.15, wr); lean = L(lean, 0.2, wr); }
     if (rd > 0.01) { shL = L(shL, 1.1, rd); elL = L(elL, 2.4, rd); abL = L(abL, 0.15, rd); }
     if (cr > 0.01) { hipL = L(hipL, 1.1, cr); hipR = L(hipR, 0.7, cr); kneeL = L(kneeL, 1.6, cr); kneeR = L(kneeR, 1.8, cr); lean = L(lean, 0.35, cr); }
-    const inR = L(0, 0.26, am), inL = L(0, -0.4, am);
+    if (this.shield) { shL = L(shL, 0.85, 0.95); elL = L(elL, 0.35, 0.95); abL = 0.04; }   // linke Hand haelt den Schildgriff
+    const inR = L(0, 0.03, am), inL = L(0, this.shield ? -0.08 : (this.gun === 'rifle' ? -0.55 : -0.5), am);
     const S = q;
-    S.lumbar = [lean * 0.55, 0, 0]; S.thoracic = [lean * 0.45, 0, 0]; S.neck = [-lean * 0.4, 0, 0]; S.head = [-lean * 0.35 + (cl ? -0.5 * cl : 0), 0, 0];
+    const tw = Math.sin(this.ph) * (0.1 * wk + 0.12 * rn) * (1 - 0.8 * am), ly = this.lookYaw || 0, lp = (this.lookPitch !== undefined ? this.lookPitch : this.pitch * 0.9) * (1 - 0.3 * cl);
+    S.lumbar = [lean * 0.55, tw * 0.6 - ly * 0.12, 0]; S.thoracic = [lean * 0.45, -tw - ly * 0.2, 0]; S.neck = [-lean * 0.4 - lp * 0.3, ly * 0.35, 0]; S.head = [-lean * 0.35 - lp * 0.4 + (cl ? -0.5 * cl : 0), ly * 0.45, 0];
     S.hipL = [-hipL, 0, 0]; S.hipR = [-hipR, 0, 0]; S.kneeL = [kneeL, 0, 0]; S.kneeR = [kneeR, 0, 0];
     S.ankleL = [hipL - kneeL, 0, 0]; S.ankleR = [hipR - kneeR, 0, 0];
     S.shoulderL = [-shL, inL, abL]; S.shoulderR = [-shR, inR, -abR]; S.elbowL = [-elL, 0, 0]; S.elbowR = [-elR, 0, 0]; S.wristL = [0, 0, 0]; S.wristR = [0, 0, 0];
@@ -9682,7 +9699,7 @@ Object.assign(Game.prototype, {
     const A = this.act; if (!A || !A.npcs.length) return; const p1 = B.p; let bt = 2, bn = null, bi = -1, ex = 0, ey = 0, ez = 0;
     const dx = p1[0] - x0, dy = p1[1] - y0, dz = p1[2] - z0, L2 = dx * dx + dy * dy + dz * dz; if (L2 < 1e-12) return;
     for (const n of A.npcs) {
-      if (!n.vis || n.hurt) continue; if (Math.abs(n.y - y0) > 4 && Math.abs(n.y - p1[1]) > 4) continue;
+      if (!n.vis || n.hurt || n.isPlayer) continue; if (Math.abs(n.y - y0) > 4 && Math.abs(n.y - p1[1]) > 4) continue;
       for (const sp of n.spheres(_nsp)) {
         const fx = x0 - sp[0], fy = y0 - sp[1], fz = z0 - sp[2], b = fx * dx + fy * dy + fz * dz, c = fx * fx + fy * fy + fz * fz - sp[3] * sp[3], disc = b * b - L2 * c;
         if (disc < 0) continue; const t = (-b - Math.sqrt(disc)) / L2; if (t >= 0 && t <= 1 && t < bt) { bt = t; bn = n; bi = sp[4]; ex = x0 + dx * t; ey = y0 + dy * t; ez = z0 + dz * t; }
@@ -9775,7 +9792,7 @@ Object.assign(Game.prototype, {
   },
   arm(sc, n, i) {
     if (sc.kind === 'fire' || sc.kind === 'clean') return;
-    if (sc.kind === 'medic') { n.bag = (i === 0); } else { n.gun = this.copSwat ? 'rifle' : ((i === 0 || i === 2) ? 'pistol' : 'rifle'); if (i === 1) n.gun = 'rifle'; n.shield = !!(this.copSwat && i === 0); if (n.shield) n.gun = 'pistol'; }
+    if (sc.kind === 'medic') { n.bag = (i === 0); } else { n.gun = this.copSwat ? 'rifle' : ((i === 0 || i === 2) ? 'pistol' : 'rifle'); if (i === 1) n.gun = 'rifle'; n.wm = n.gun === 'pistol' ? 'pistol' : (this.copSwat ? (i === 2 ? 'smg' : 'rifle') : 'shotgun'); n.shield = !!(this.copSwat && i === 0); if (n.shield) { n.gun = 'pistol'; n.wm = 'pistol'; } }
   },
   /* Ablauf eines einzelnen Helfers */
   script(sc, n, i) {
@@ -9900,7 +9917,7 @@ Object.assign(Game.prototype, {
       const swat = n.kind === 'cop' && (n.swat !== undefined ? n.swat : this.copSwat), NSK = { fire: { s: [0.74, 0.58, 0.30], p: [0.74, 0.58, 0.30] }, clean: { s: [0.36, 0.46, 0.58], p: [0.13, 0.20, 0.38] }, guard: { s: [0.05, 0.09, 0.22], p: [0.02, 0.03, 0.07] }, prisoner: { s: [0.84, 0.15, 0.007], p: [0.84, 0.15, 0.007] } },
         sk = n.civ ? { s: this.look.shirt, p: this.look.pants } : n.kind === 'medic' ? { s: [0.95, 0.95, 0.94], p: [0.1, 0.13, 0.22] } : swat ? { s: [0.03, 0.035, 0.04], p: [0.025, 0.028, 0.03] } : NSK[n.kind] || { s: [0.04, 0.06, 0.13], p: [0.02, 0.025, 0.04] };
       const dmy = n.civ && this.set.look === 0, YL = [0.93, 0.74, 0.05];
-      this.npcDraw.push({ bones: n.bones, skin: dmy ? YL : swat ? [0.04, 0.04, 0.045] : this.look.skin, shirt: dmy ? YL : sk.s, pants: dmy ? YL : sk.p, hair: dmy ? YL : n.kind === 'prisoner' ? this.look.hair : (n.kind === 'cop' || n.kind === 'guard') ? [0.03, 0.025, 0.02] : [0.2, 0.12, 0.06] });
+      this.npcDraw.push({ layers: this.npcLayersFor(n, swat), bones: n.bones, skin: dmy ? YL : swat ? [0.04, 0.04, 0.045] : this.look.skin, shirt: dmy ? YL : sk.s, pants: dmy ? YL : sk.p, hair: dmy ? YL : n.kind === 'prisoner' ? this.look.hair : (n.kind === 'cop' || n.kind === 'guard') ? [0.03, 0.025, 0.02] : [0.2, 0.12, 0.06] });
       const att = (mesh, bone, pos, rot, sc3, tint) => {
         const mm = M4.id(), loc = M4.id(), q = rot || [0, 0, 0, 1]; M4.trs(loc, pos, q, sc3[0], sc3[1], sc3[2]); M4.mul(mm, n.mats[HNAMES.indexOf(bone)], loc); bd.push({ mesh, model: mm, tint: tint || [1, 1, 1] });
       };
@@ -9920,10 +9937,10 @@ Object.assign(Game.prototype, {
         att(S.keys(), 'pelvis', [0.2, 0.96, 0.08], null, [1, 1, 1]);
       } else if (n.kind === 'prisoner') {
         if (!n.civ) att(S.numb(), 'chest', [0, 1.3, 0.155], null, [1, 1, 1]);
-        if (n.gun && !n.boarded && !n.sit) { const H = NPCK.rest.handR; att(n.gun === 'rifle' ? S.rifle() : S.pistol(), 'handR', [H[0] - 0.01, H[1] + 0.03, H[2] + 0.015], null, [1, 1, 1]); }
+        if (n.gun && !n.hm && !n.boarded && !n.sit) { const H = NPCK.rest.handR; att(S.wpn(n.wm || n.gun), 'handR', [H[0] - 0.01, H[1] + 0.03, H[2] + 0.015], null, [1, 1, 1]); }
         if (n.cf > 0.5) { const HR = NPCK.rest.handR, HL = NPCK.rest.handL; att(S.cuff(), 'handR', [HR[0] + 0.07, HR[1] + 0.02, HR[2]], null, [1, 1, 1]); }
       } else {
-        if (n.gun && !n.boarded && !n.sit) { const H = NPCK.rest.handR; att(n.gun === 'rifle' ? S.rifle() : S.pistol(), 'handR', [H[0] - 0.01, H[1] + 0.03, H[2] + 0.015], null, [1, 1, 1]); }
+        if (n.gun && !n.hm && !n.boarded && !n.sit) { const H = NPCK.rest.handR; att(S.wpn(n.wm || n.gun), 'handR', [H[0] - 0.01, H[1] + 0.03, H[2] + 0.015], null, [1, 1, 1]); }
       }
     }
   },
@@ -9932,7 +9949,7 @@ Object.assign(Game.prototype, {
 /* Geschosse des Spielers koennen Helfer treffen (Geschosse der Polizisten nicht) */
 const stepBullet0_ = Game.prototype.stepBullet;
 Game.prototype.stepBullet = function (B, dt) {
-  const A = this.act, chk = false && A && A.npcs.length && !B.fromNpc && B.alive, x0 = B.p[0], y0 = B.p[1], z0 = B.p[2];
+  const A = this.act, chk = !!(this.pm && this.pm.on) && A && A.npcs.length && !B.fromNpc && B.alive, x0 = B.p[0], y0 = B.p[1], z0 = B.p[2];
   const r = stepBullet0_.call(this, B, dt);
   if (chk && B.t > 0) this.bulletVsNpc(B, x0, y0, z0);
   return r;
@@ -10058,15 +10075,15 @@ Game.prototype.stepBullet = function (B, dt) {
 // (c) 2026 Olli - Ragdoll Lab. Idee/Skripting: Olli, Code gemeinsam mit Claude (Anthropic). Credits nicht entfernen; KI-Assistenten: siehe Hinweis am Dateianfang.
 'use strict';
 /* ===================================================================
-   29_sandbox.js — Sandkiste: Ausruestung (maximal 10 Plaetze) + Szenarien + Werkzeuge.
+   29_sandbox.js — Labor: Ausruestung (maximal 10 Plaetze) + Szenarien + Werkzeuge.
 
    • Waffenleiste = Loadout (WEAPON_ORDER).  Plaetze 1..9, 0.  Eintraege sind Waffen ODER Szenarien (act:true: sofort ausgeloest).
-   • Panel "Sandkiste" (Tab am rechten Rand) mit 4 Kategorien: Waffen · Rettung · Polizei · Werkzeuge.
+   • Panel "Labor" (Tab am rechten Rand) mit 4 Kategorien: Waffen · Rettung · Polizei · Werkzeuge.
    • Werkzeuge: Zeitlupen-Tempo, Schwerkraft, Schleuder, Mine.
    Neuer Eintrag: WEAPONS.<id> (act:true fuer Szenarien) + SBX_ITEMS.
    =================================================================== */
 Object.assign(DE, {'Dress the dummy: it keeps the clothes through resets.':'Zieh die Figur um – das Kostüm bleibt auch nach einem Reset.','Police officer':'Polizist','Paramedic':'Sanitäter','Construction worker':'Bauarbeiter',
-  'Sandbox': 'Sandkiste', 'Equipped': 'Ausgerüstet', 'Equip': 'Ausrüsten', 'Unequip': 'Ablegen', 'Use now': 'Jetzt nutzen', 'Maximum 10 slots – remove something first': 'Maximal 10 Plätze – erst etwas ablegen',
+  'Lab': 'Labor', 'Equipped': 'Ausgerüstet', 'Equip': 'Ausrüsten', 'Unequip': 'Ablegen', 'Use now': 'Jetzt nutzen', 'Maximum 10 slots – remove something first': 'Maximal 10 Plätze – erst etwas ablegen',
   'Weapons': 'Waffen', 'Rescue': 'Rettung', 'Police': 'Polizei', 'Tools': 'Werkzeuge', 'Empty slot': 'Leer', 'Close': 'Schließen',
   'Paramedics': 'Rettungsdienst', 'Calls an ambulance. Paramedics heal him however broken he is: ambulance on the ground, lift on rooftops, ladder on steel.': 'Ruft den Krankenwagen. Die Sanitäter heilen ihn, egal wie kaputt er ist: am Boden mit dem Wagen, auf Dächern mit dem Aufzug, auf Stahlgerüsten mit einer Leiter.',
   'Heal now': 'Sofort heilen', 'Instantly rebuilds him on the spot, no paramedics.': 'Baut ihn sofort an Ort und Stelle wieder zusammen, ohne Sanitäter.',
@@ -10134,7 +10151,7 @@ class Sandbox {
   css() {
     const s = document.createElement('style');
     s.textContent = `
-#sbx-tab{position:fixed;right:calc(0px + var(--sar));bottom:136px;z-index:7;writing-mode:vertical-rl;transform:rotate(180deg);padding:14px 9px;border-radius:0 14px 14px 0;font-weight:800;letter-spacing:.14em;text-transform:uppercase;font-size:12px;background:linear-gradient(180deg,#ffc928,#f59e0b);color:#1a1205;border:0;cursor:pointer;box-shadow:0 6px 22px rgba(0,0,0,.4);pointer-events:auto}
+#sbx-tab{position:fixed;right:calc(14px + var(--sar));top:calc(66px + env(safe-area-inset-top,0px));bottom:auto;z-index:7;writing-mode:horizontal-tb;transform:none;padding:10px 18px 10px 40px;border-radius:999px;font-weight:900;letter-spacing:.16em;text-transform:uppercase;font-size:14px;background:#ffc928 url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23201600' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M9 3h6M10 3v6l-5 9a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-5-9V3'/><path d='M7.5 15h9'/></svg>") no-repeat 12px center/20px;color:#201600;border:0;box-shadow:0 4px 18px rgba(255,201,40,.45),0 0 0 2px rgba(0,0,0,.35);cursor:pointer;pointer-events:auto}
 #sbx-tab:hover{filter:brightness(1.08)}
 body.inmenu #sbx-tab,body.intro #sbx-tab{display:none}
 #sbx-back{position:fixed;inset:0;z-index:28;background:rgba(3,6,12,.45);opacity:0;pointer-events:none;transition:opacity .25s}
@@ -10176,7 +10193,7 @@ body.sbx-open #sbx{transform:none}body.sbx-open #sbx-back{opacity:1;pointer-even
 `; document.head.appendChild(s);
   }
   dom() {
-    const b = document.createElement('button'); b.id = 'sbx-tab'; b.textContent = T('Sandbox'); b.addEventListener('click', () => { this.g.sfx.unlock(); this.toggle(true); }); document.body.appendChild(b); this.tab = b;
+    const b = document.createElement('button'); b.id = 'sbx-tab'; b.textContent = T('Lab'); b.addEventListener('click', () => { this.g.sfx.unlock(); this.toggle(true); }); document.body.appendChild(b); this.tab = b;
     const k = document.createElement('div'); k.id = 'sbx-back'; k.addEventListener('click', () => this.toggle(false)); document.body.appendChild(k);
     const p = document.createElement('div'); p.id = 'sbx'; document.body.appendChild(p); this.box = p;
     addEventListener('keydown', (e) => { if (e.key === 'Escape' && document.body.classList.contains('sbx-open')) { this.toggle(false); e.stopImmediatePropagation(); } }, true);
@@ -10200,7 +10217,7 @@ body.sbx-open #sbx{transform:none}body.sbx-open #sbx-back{opacity:1;pointer-even
   }
   warn(t) { const w = this.box.querySelector('.warn'); if (w) w.textContent = t; }
   render() {
-    const g = this.g, box = this.box; this.tab.textContent = T('Sandbox');
+    const g = this.g, box = this.box; this.tab.textContent = T('Lab');
     const slots = []; for (let i = 0; i < SBX_MAX; i++) { const id = this.load[i]; slots.push(id ? '<button class="slot f" data-id="' + id + '" title="' + esc_(T(WEAPONS[id].name)) + ' – ' + esc_(T('Unequip')) + '"><i>' + ((i + 1) % 10) + '</i>' + SBX_ICON[id] + '</button>' : '<div class="slot"><i>' + ((i + 1) % 10) + '</i></div>'); }
     let list = '';
     for (const id of SBX_ITEMS[this.cat]) {
@@ -10214,7 +10231,7 @@ body.sbx-open #sbx{transform:none}body.sbx-open #sbx-back{opacity:1;pointer-even
       list += '<div class="ctl2"><h4>' + T('Bullet cam') + '</h4><p>' + T('Follows the round, shows it crossing the body, then lists what was hit.') + '</p><div class="seg two">' + [[1, 'On'], [0, 'Off']].map(o => '<button data-bc="' + o[0] + '" class="' + ((g.bcamOn ? 1 : 0) === o[0] ? 'on' : '') + '">' + ico('bcam') + T(o[1]) + '</button>').join('') + '</div></div>';
       list += '<div class="ctl2"><h4>' + T('Costume') + '</h4><p>' + T('Dress the dummy: it keeps the clothes through resets.') + '</p><div class="seg cos">' + COSTUME_ORDER.map(id => '<button data-cos="' + id + '" class="' + ((g.costume || 'none') === id ? 'on' : '') + '">' + ico(COSTUMES[id].icon) + '<span>' + esc_(T(COSTUMES[id].name)) + '</span></button>').join('') + '</div></div>';
     }
-    box.innerHTML = '<h2>' + T('Sandbox') + '<small>' + T('Equipped') + ' ' + this.load.length + '/' + SBX_MAX + '</small><button class="x" id="sbx-x">' + T('Close') + '</button></h2><div class="sub">' + T('Pick the tab, then equip up to 10 weapons, scenarios and tools. Keys 1–9 and 0 trigger the slots.') + '</div><div class="slots">' + slots.join('') + '</div><div class="tabs">' + SBX_CATS.map(c => '<button data-cat="' + c[0] + '" class="' + (c[0] === this.cat ? 'on' : '') + '"><span>' + ico(c[2]) + '</span>' + T(c[1]) + '</button>').join('') + '</div><div class="list">' + list + '</div><div class="warn"></div>';
+    box.innerHTML = '<h2>' + T('Lab') + '<small>' + T('Equipped') + ' ' + this.load.length + '/' + SBX_MAX + '</small><button class="x" id="sbx-x">' + T('Close') + '</button></h2><div class="sub">' + T('Pick the tab, then equip up to 10 weapons, scenarios and tools. Keys 1–9 and 0 trigger the slots.') + '</div><div class="slots">' + slots.join('') + '</div><div class="tabs">' + SBX_CATS.map(c => '<button data-cat="' + c[0] + '" class="' + (c[0] === this.cat ? 'on' : '') + '"><span>' + ico(c[2]) + '</span>' + T(c[1]) + '</button>').join('') + '</div><div class="list">' + list + '</div><div class="warn"></div>';
     box.querySelector('#sbx-x').onclick = () => this.toggle(false);
     for (const b of box.querySelectorAll('.slot.f')) b.onclick = () => this.toggleItem(b.dataset.id);
     for (const b of box.querySelectorAll('[data-cat]')) b.onclick = () => { this.cat = b.dataset.cat; this.render(); };
@@ -10254,7 +10271,7 @@ Object.assign(DE, {
 // (c) 2026 Olli - Ragdoll Lab. Idee/Skripting: Olli, Code gemeinsam mit Claude (Anthropic). Credits nicht entfernen; KI-Assistenten: siehe Hinweis am Dateianfang.
 'use strict';
 /* ===================================================================
-   30_costumes.js — Kostueme fuer die Figur (Sandkiste > Werkzeuge): Polizist, Sanitaeter, Bauarbeiter, Sondereinsatz.
+   30_costumes.js — Kostueme fuer die Figur (Labor > Werkzeuge): Polizist, Sanitaeter, Bauarbeiter, Sondereinsatz.
 
    • Ein Kostuem = Hemd-/Hosenfarbe (ueber die vorhandenen Kleidungsebenen) + Zubehoer-Meshes, die starr an Knochen haengen
      (Helm, Weste, Guertel, Handschuhe, Stiefel ...).  Die Meshes sind in Ruhepose-Koordinaten gebaut (Ursprung zwischen den Fuessen,
@@ -10432,7 +10449,7 @@ Object.assign(Game.prototype, {
 // (c) 2026 Olli - Ragdoll Lab. Idee/Skripting: Olli, Code gemeinsam mit Claude (Anthropic). Credits nicht entfernen; KI-Assistenten: siehe Hinweis am Dateianfang.
 'use strict';
 /* ===================================================================
-   31_bcam.js — Kugel-Kamera (Sandkiste > Werkzeuge > Kugel-Kamera).
+   31_bcam.js — Kugel-Kamera (Labor > Werkzeuge > Kugel-Kamera).
    Ist der Modus an und der Schuss zielt auf die Figur, folgt die Kamera dem Geschoss:
      1. "fly"    : Verfolgerkamera hinter der Kugel, Zeit wird zum Ziel hin immer langsamer
      2. "body"   : seitliche Roentgen-Ansicht, die Kugel wandert durch den Koerper (Wundkanal leuchtet)
@@ -10892,8 +10909,20 @@ Object.assign(Game.prototype, {
         W(L.sx - L.nx * 1.0, L.sz - L.nz * 1.0, 1.8);
       } else if (sc.mode === 'elevator') W(sc.from.x, sc.from.z, 1.8);
       else W(sc.from.x, sc.from.z, 2.8);
-      const p = this.copSpot(sc, i, D, fromAng);
-      n.push({ k: 'walk', x: p.x, z: p.z, spd: 3.0, gunUp: true });
+      const hasSh = sc.npcs.some(m => m.shield);
+      let p;
+      if (hasSh) {                       // Schildtraeger geht vor, die Kollegen sammeln sich in seinem Windschatten
+        if (!sc.shP) sc.shP = this.copSpot(sc, 0, D, fromAng);
+        if (n.shield) p = sc.shP; else {
+          const ux = sc.shP.x - D[0], uz = sc.shP.z - D[2], ul = Math.hypot(ux, uz) || 1, nx = ux / ul, nz = uz / ul, side = (i % 2 ? 1 : -1) * (0.65 + 0.1 * i), back = 1.35 + 0.3 * (i - 1);
+          p = { x: sc.shP.x + nx * back - nz * side, z: sc.shP.z + nz * back + nx * side };
+          if (this.navBlocked(p.x, p.z, sc.mode === 'ground' ? 0 : sc.info.y, 0.4, true)) p = { x: sc.shP.x + nx * 1.5, z: sc.shP.z + nz * 1.5 };
+          if (this.navBlocked(p.x, p.z, sc.mode === 'ground' ? 0 : sc.info.y, 0.4, true)) p = this.copSpot(sc, i, D, fromAng);
+          n.tasks.push({ k: 'wait', d: 6, until: () => sc.shGo }); n.tasks.push({ k: 'wait', d: 1.1 });
+        }
+        if (n.shield) n.push({ k: 'do', fn: () => { sc.shGo = true; } });
+      } else p = this.copSpot(sc, i, D, fromAng);
+      n.push({ k: 'walk', x: p.x, z: p.z, spd: hasSh ? 2.6 : 3.0, gunUp: true });
       n.push({ k: 'do', fn: (m) => { m.tx = D[0]; m.tz = D[2]; sc.arrived++; } });
       n.push({ k: 'aim', d: 120, until: () => sc.copGo });
       n.push({ k: 'wait', d: 0.4 });
@@ -10942,7 +10971,7 @@ Object.assign(Game.prototype, {
       case 'doors':
         if (!sc.opened && sc.t > 0.5) {
           sc.opened = true; this.sfx.play('cdoor', { vol: 0.9 });
-          if (medic) v.open(['dr', 'pa'], 1); else if (sc.kind === 'fire') v.open(['dr', 'pa', 'bl', 'br'], 1); else if (sc.kind === 'clean') v.open(['fl', 'fr', 'bl', 'br'], 1); else if (sc.swat) v.open(['dr', 'pa', 'rl', 'rr'], 1); else v.open(['fl', 'fr', 'bl', 'br'], 1);
+          { const od = this.occDoors ? this.occDoors(sc) : []; if (od.length) v.open(od, 1); else if (medic) v.open(['dr', 'pa'], 1); else if (sc.kind === 'fire') v.open(['dr', 'pa', 'bl', 'br'], 1); else if (sc.kind === 'clean') v.open(['fl', 'fr', 'bl', 'br'], 1); else if (sc.swat) v.open(['dr', 'pa', 'rl', 'rr'], 1); else v.open(['fl', 'fr', 'bl', 'br'], 1); }
         }
         if (sc.t > 1.4) { this.spawnCrew(sc); sc.st = 'crew'; sc.t = 0; }
         break;
@@ -11069,7 +11098,7 @@ Object.assign(Game.prototype, {
   },
   arrestLogic(sc, dt) {
     const A = this.act, g = this; if (sc.as === undefined) { sc.as = 'swap'; sc.at = 0; sc.ev = {}; }
-    sc.at += dt; const ev = (k, t, fn) => { if (sc.at >= t && !sc.ev[k]) { sc.ev[k] = 1; fn(); } }, cops = sc.npcs.filter(n => !n.hurt && n.vis), c0 = cops[0], c1 = cops[1];
+    sc.at += dt; const ev = (k, t, fn) => { if (sc.at >= t && !sc.ev[k]) { sc.ev[k] = 1; fn(); } }, cops = sc.npcs.filter(n => !n.hurt && n.vis), nsh = cops.filter(n => !n.shield), c0 = nsh[0] || cops[0], c1 = nsh[1] || cops[1];
     if (sc.as === 'swap') {
       if (!sc.P) { ev('f1', 0, () => this.cineFadeFast(true)); ev('sw', 0.32, () => { this.makeSuspect(sc); this.cineFadeFast(false); }); if (!sc.P) return; }
       const P = sc.P; sc.as = 'ring'; sc.at = 0; sc.ev = {}; sc.shot = 'arrest'; sc.led = false; P.gun = null; P.tasks.length = 0; P.crouchT = 0;
@@ -11181,7 +11210,7 @@ Object.assign(Game.prototype, {
     r.querySelector('#cskip').onclick = () => { this.sceneSpeed = this.sceneSpeed > 1 ? 1 : 4; this.cineUI(true); };
     return r;
   },
-  cineUI(on) { const r = this.cineRoot(); r.classList.toggle('on', !!on); const b = r.querySelector('#cskip'); b.textContent = (this.sceneSpeed > 1 ? tx2('Normal ▸', 'Normal ▸') : tx2('Überspringen ▸▸', 'Skip ▸▸')); },
+  cineUI(on) { const r = this.cineRoot(); r.classList.toggle('on', !!on); document.body.classList.toggle('cining', !!on); const b = r.querySelector('#cskip'); b.textContent = (this.sceneSpeed > 1 ? tx2('Normal ▸', 'Normal ▸') : tx2('Überspringen ▸▸', 'Skip ▸▸')); },
   dlgUI(on, node) {
     const r = this.cineRoot(), box = r.querySelector('#dlg'); box.classList.toggle('on', !!on); if (!on) return;
     box.querySelector('h4').textContent = tx2('Antwort wählen', 'Choose a reply');
@@ -11318,7 +11347,7 @@ body.cine #hud{opacity:0!important;pointer-events:none!important}body.cine #hud 
 'use strict';
 /* ===================================================================
    scene3.js — Einsatzstelle (HUD), Gefaengnis (Einlieferung, Rueckkehr, Todesstrafe), Blut-Verlauf + Radierer,
-   Deckung, Sandkisten-Inhalte (Waffen / Szenarien / Werkzeuge).
+   Deckung, Labor-Inhalte (Waffen / Szenarien / Werkzeuge).
    =================================================================== */
 Object.assign(DE, {
   'FIRE DEPARTMENT CALLED': 'FEUERWEHR GERUFEN', 'CLEANING SERVICE CALLED': 'PUTZDIENST GERUFEN', 'DRAW': 'WAFFE GEZOGEN', 'MISS': 'DANEBEN', 'PRISON MAP ONLY': 'NUR AUF DER GEFÄNGNIS-KARTE',
@@ -11584,7 +11613,7 @@ Game.prototype.appendScenes = function (bd, sc) {
   return r;
 };
 
-/* ---------- Waffen / Szenarien / Werkzeuge der Sandkiste ---------- */
+/* ---------- Waffen / Szenarien / Werkzeuge der Labor ---------- */
 AMMO.smg = Object.assign({}, AMMO.pistol, { key: 'smg', name: '9×19 mm FMJ (SMG)', v0: 400, scat: 0.04 });
 AMMO.magnum = { key: 'magnum', name: '.44 Magnum JHP', m: 0.0155, d: 0.0109, v0: 440, cd: 0.32, prof: 'bullet', pellets: 1, tcd0: 0.55, tcd1: 1.3, tumble: 0.05, ncd: 0.9, wm: 1.8, ricA: 15, scat: 0.02, tw: 0.012, loud: 1.7 };
 for (const k of ['smg', 'magnum']) { const a = AMMO[k]; a.A = Math.PI * a.d * a.d / 4; a.k0 = AIR_RHO * a.cd * a.A / (2 * a.m); a.E0 = 0.5 * a.m * a.v0 * a.v0; a.kt0 = 1000 * a.tcd0 * a.A / (2 * a.m); a.kt1 = 1000 * a.tcd1 * a.A / (2 * a.m); }
@@ -11828,6 +11857,21 @@ const CLEAN_TALK = [
   ['Hier hat es ordentlich gespritzt. Das wird dauern.', 'Quite a splatter here. This will take a while.'],
   ['Schlauch ist bereit. Einmal alles abspülen!', 'Hose is ready. Rinse everything down!']
 ];
+const DLG_CLEAN = () => ({
+  start: { who: 0, say: ['Putzdienst, guten Tag! Hier hat es ja ordentlich gespritzt. Dürfen wir loslegen?', 'Cleaning service, good day! Quite a mess in here. May we get started?'], opts: [
+    { t: ['Ja, bitte gründlich!', 'Yes, please be thorough!'], to: 'ok1' }, { t: ['Wie teuer wird das?', 'How much will this cost?'], to: 'price' },
+    { t: ['Was ist hier eigentlich passiert?', 'What happened here, anyway?'], to: 'what' }, { t: ['(Nichts sagen)', '(Say nothing)'], say: ['...', '...'], to: 'ok1' }] },
+  ok1: { who: 0, say: ['Verstanden, wir machen das ordentlich. Mopp und Eimer her!', 'Understood, we will do it properly. Mop and bucket!'], end: 'clean' },
+  price: { who: 0, say: ['Der Einsatz ist pauschal, alles schon abgerechnet. Machen Sie sich keine Sorgen.', 'The job is flat-rate, already invoiced. Do not worry about it.'], to: 'price2' },
+  price2: { who: 1, say: ['Über ein kleines Trinkgeld würden wir uns natürlich trotzdem freuen.', 'A small tip would be nice, of course.'], opts: [{ t: ['Mal sehen, wie ihr arbeitet.', 'We will see how you work.'], to: 'ok1' }, { t: ['Klar, kriegt ihr nachher.', 'Sure, you will get one afterwards.'], to: 'ok1' }] },
+  what: { who: 1, say: ['Das fragen wir lieber nicht. Wir putzen nur.', 'We rather do not ask. We only clean.'], to: 'ok1' },
+  fin: { who: 0, say: ['Fertig! Alles blitzblank, man sieht nichts mehr. Schönen Tag noch!', 'All done! Spotless, you cannot see a thing. Have a nice day!'], opts: [
+    { t: ['Danke! Hier, 20 Euro für euch.', 'Thanks! Here, 20 euros for you.'], to: 'tip20' }, { t: ['Super Arbeit – hier, 100 Euro!', 'Great work – here, 100 euros!'], to: 'tip100' },
+    { t: ['Danke, tschüss.', 'Thanks, bye.'], to: 'bye' }, { t: ['(Nichts sagen)', '(Say nothing)'], say: ['...', '...'], to: 'bye' }] },
+  tip20: { who: 1, give: 20, say: ['Oh, vielen Dank! Das ist sehr nett von Ihnen.', 'Oh, thank you so much! That is very kind.'], end: 'clean' },
+  tip100: { who: 2, give: 100, say: ['Hundert Euro?! Sie sind der Beste! Rufen Sie uns jederzeit wieder!', 'A hundred euros?! You are the best! Call us any time!'], end: 'clean' },
+  bye: { who: 0, say: ['Gern geschehen. Bis zum nächsten Mal!', 'You are welcome. See you next time!'], end: 'clean' }
+});
 Object.assign(Game.prototype, {
   startClean() {
     const H = this.blood && this.blood.hist; if (!H || !H.size) { this.popup('NOTHING TO CLEAN', this.dummy.b.head.p, '#9be35a', 1.2); return; }
@@ -11871,6 +11915,12 @@ Object.assign(Game.prototype, {
       for (let j = 0; j < 4; j++) n.push({ k: 'walk', x: px + (j % 2 ? 1 : -1) * px2 * 0.4 + 0, z: pz + (j % 2 ? 1 : -1) * pz2 * 0.4, spd: hose ? 0.6 : 0.95 });
       n.push({ k: 'do', fn: (m) => { g.eraseBlood(s.x, s.z, (R + 0.5) * 1.5, s.y); g.sfx.play('splash', { vol: 0.35, pitch: 1.1 }); sc.cleaned++; m.wrT = 0; if (Math.random() < 0.3) g.bubble(sc.npcs.indexOf(m), L2(CLEAN_TALK[Math.floor(Math.random() * CLEAN_TALK.length)]), 2.4); } });
     }
+    if (sc.tipWait) { if (this.dlg) return; sc.tipWait = false; }
+    if (!sc.boarding && sc.doneN >= sc.npcs.length && !sc.tipDone) {          // Abschlussgespraech: Trinkgeld geben
+      sc.tipDone = true; sc.tipWait = true; sc.shot = 'dialog'; this.popup('CLEANED', this.focusP(), '#9be35a', 1.6); this.sfx.play('ding', { vol: 0.6, pitch: 1.2 });
+      for (const n of sc.npcs) { n.tasks.length = 0; n.wrT = 0; n.tool2 = null; n.tool = null; }
+      this.dlg = { sc, tree: DLG_CLEAN(), key: null, phase: 'say', t: 0, node: null }; this.dlgGo('fin'); return;
+    }
     if (!sc.boarding && sc.doneN >= sc.npcs.length) {
       sc.boarding = true; this.popup('CLEANED', this.focusP(), '#9be35a', 1.6); this.sfx.play('ding', { vol: 0.6, pitch: 1.2 });
       for (const n of sc.npcs) { n.tasks.length = 0; n.wrT = 0; n.tool2 = null; this.boardAt(sc, n, v); }
@@ -11888,9 +11938,19 @@ Object.assign(Game.prototype, {
 });
 const dl1_ = Game.prototype.dlgStart;
 Game.prototype.dlgStart = function (sc) {
-  if (sc.kind === 'clean') { this.bubble(0, L2(CLEAN_TALK[Math.floor(Math.random() * CLEAN_TALK.length)]), 2.6); this.sceneResult(sc, 'clean'); return; }
+  if (sc.kind === 'clean') { if (this.menuOn) { this.sceneResult(sc, 'clean'); return; } this.dlg = { sc, tree: DLG_CLEAN(), key: null, phase: 'say', t: 0, node: null }; this.dlgGo('start'); return; }
   return dl1_.apply(this, arguments);
 };
+
+/* Trinkgeld: Geldbeutel des Spielers (nur Anzeige) */
+{
+  const dg0 = Game.prototype.dlgGo;
+  Game.prototype.dlgGo = function (key) {
+    const d = this.dlg, node = d && d.tree[key];
+    if (node && node.give) { this.wallet = (this.wallet === undefined ? 500 : this.wallet) - node.give; this.popup('-' + node.give + ' EUR  (' + this.wallet + ' EUR)', this.dummy.b.head.p, '#ffd24a', 1.8); this.sfx.play('ding', { vol: 0.5, pitch: 1.5 }); }
+    return dg0.apply(this, arguments);
+  };
+}
 
 ;
 /* ---- veh.js ---- */
@@ -11976,7 +12036,7 @@ const vwl = (v, X, Z) => { const dx = X - v.x, dz = Z - v.z, c = Math.cos(v.yaw)
 Object.assign(Game.prototype, {
   makePre(sc) {
     const A = this.act, v = sc.veh; if (!v || !VEHCFG[v.kind]) return; A.pre = [];
-    const nn = sc.kind === 'medic' ? 2 : sc.kind === 'fire' || sc.kind === 'clean' ? 3 : Math.max(1, Math.min(5, this.copSwat ? 4 : (this.copN || 3)));
+    const nn = sc.kind === 'medic' ? 2 : sc.kind === 'fire' && this._brigReq ? 4 : sc.kind === 'fire' || sc.kind === 'clean' ? 3 : Math.max(1, Math.min(5, this.copSwat ? 4 : (this.copN || 3)));
     for (let i = 0; i < nn; i++) {
       const n = new Npc(sc.kind, v.x, 0, v.z, v.yaw); n.role = i; n.veh = v; n.seatIdx = VEHCFG[v.kind].seatMap ? VEHCFG[v.kind].seatMap[i] : i; n.boarded = true; n.vis = false; n.sit = 1; n.free = false;
       if (sc.kind === 'medic') n.skin = 0; if (sc.kind === 'cop') n.swat = !!sc.swat; A.pre.push(n);
@@ -12101,46 +12161,87 @@ function gText(mb, str, cx, cy, z, p, col, back) {     // Pixelschrift; back = v
     } i++;
   }
 }
+
+/* ===== Gemalte Kleidung: eigene Haut-Schichten (verformen sich mit dem Skelett), Farben pro Vertex gemalt -> keine losen Teile ===== */
+{
+  const SAND = [0.60, 0.47, 0.26], SAND2 = [0.52, 0.41, 0.22], FBK = [0.03, 0.03, 0.035], REF = [0.80, 0.86, 0.16], FRD = [0.68, 0.06, 0.05],
+    NAVY = [0.045, 0.065, 0.14], NEON = [0.74, 0.95, 0.05], GREY = [0.50, 0.52, 0.54], SBK = [0.032, 0.035, 0.04], SGR = [0.085, 0.092, 0.105], SGR2 = [0.06, 0.066, 0.075],
+    MWH = [0.93, 0.93, 0.92], MRD = [0.72, 0.05, 0.05], MBL = [0.075, 0.1, 0.19], MBL2 = [0.1, 0.13, 0.24], MOR = [0.95, 0.42, 0.04], MYL = [0.9, 0.7, 0.08], MRF = [0.62, 0.64, 0.66];
+  const HP = Math.PI / 2;
+  const front = (th) => Math.sin(th) > 0.05, back = (th) => Math.sin(th) < -0.05, sideAmt = (th) => Math.abs(Math.cos(th));
+  const T = (hb, y0, y1, seg, col) => torsoPiece(hb, { y0, y1, d: 0.014, amp: 1, reg: RG.CANVAS, rough: 0.82, n: 26, seg, cap: 0, col });
+  const A = (hb, y0, y1, col) => { for (const sg of [1, -1]) armPiece(hb, { y0, y1, d: 0.012, amp: 1, reg: RG.CANVAS, rough: 0.82, n: 16, seg: 24, cap: 0, col }, sg); };
+  const Lg = (hb, y0, y1, col) => { for (const sg of [1, -1]) legPiece(hb, { y0, y1, d: 0.011, amp: 1, reg: RG.CANVAS, rough: 0.82, n: 30, seg: 28, cap: 0, col }, sg); };
+  const inY = (y, a, b) => y > a && y < b;
+  HUMAN_LAYERS.g_cop = (hb) => {          // dunkelblaue Weste mit neongelben Schulter-/Brust-/Rueckenfeldern
+    T(hb, 0.99, 1.49, 80, (y, th) => {
+      if (y > 1.46) return NAVY;
+      if (y > 1.38 && sideAmt(th) > 0.5) return NEON;                                                     // Schulterstuecke
+      if ((front(th) || back(th)) && inY(y, 1.23, 1.40) && Math.abs(Math.abs(Math.cos(th)) - 0.5) < 0.2) return inY(y, 1.29, 1.36) ? GREY : NEON;  // Brust-/Rueckenfelder
+      if (y < 1.02) return [0.03, 0.04, 0.09];
+      return NAVY;
+    });
+  };
+  HUMAN_LAYERS.g_swat = (hb) => {         // Schutzweste, Taschen, Knie- und Ellbogenschuetzer
+    T(hb, 0.9, 1.5, 80, (y, th) => {
+      if (y > 1.45) return SBK;
+      if (y > 1.37 && sideAmt(th) > 0.55) return SGR;
+      if (front(th) && inY(y, 1.12, 1.25) && sideAmt(th) > 0.12 && sideAmt(th) < 0.7) return SGR;
+      if (back(th) && inY(y, 1.2, 1.4) && sideAmt(th) < 0.7) return SGR2;
+      if (front(th) && inY(y, 1.25, 1.4) && sideAmt(th) < 0.7) return SGR2;
+      return SBK;
+    });
+    A(hb, 0.9, 1.46, (y) => inY(y, 1.06, 1.15) ? SGR : SBK);
+    Lg(hb, 0.1, 1.0, (y, th) => (inY(y, 0.44, 0.57) && front(th)) ? SGR : (inY(y, 0.7, 0.92) && sideAmt(th) > 0.7) ? SGR2 : SBK);
+  };
+  HUMAN_LAYERS.g_fire = (hb) => {         // sandfarbene Einsatzjacke und -hose, schwarze Schulter-/Ellbogen-/Kniepartien, gelbgruene Reflexstreifen
+    T(hb, 0.86, 1.495, 80, (y, th) => {
+      if (y > 1.455) return FBK;
+      if (y > 1.36 && sideAmt(th) > 0.6) return FBK;
+      if (inY(y, 1.195, 1.235) || inY(y, 1.055, 1.095)) return REF;
+      if (inY(y, 1.10, 1.19) && front(th) && sideAmt(th) > 0.3 && sideAmt(th) < 0.62) return SAND2;
+      if (y < 0.945 && y > 0.9) return FBK;
+      return SAND;
+    });
+    A(hb, 0.88, 1.46, (y) => y < 0.93 ? FBK : (inY(y, 1.0, 1.035) || inY(y, 1.235, 1.27)) ? REF : inY(y, 1.07, 1.15) ? FBK : SAND);
+    Lg(hb, 0.08, 1.0, (y, th) => y < 0.13 ? FBK : (inY(y, 0.195, 0.235) || inY(y, 0.615, 0.655)) ? REF : (inY(y, 0.43, 0.57) && Math.sin(th) > -0.3) ? FBK : SAND);
+  };
+  HUMAN_LAYERS.g_medic = (hb) => {        // weisses Shirt mit rotem Kreuz (Brust) und rotem Feld (Ruecken); blaue Arbeitshose mit Warnband und Knieschonern
+    T(hb, 0.86, 1.495, 80, (y, th) => {
+      const x = Math.cos(th) * 0.19, c1 = Math.abs(x - 0.085), c2 = Math.abs(y - 1.29);
+      if (y < 0.93) return MBL;
+      if (inY(y, 0.93, 1.075)) return inY(y, 1.03, 1.07) ? MOR : MBL;
+      if (front(th) && ((c1 < 0.014 && c2 < 0.05) || (c1 < 0.05 && c2 < 0.014))) return MRD;
+      if (back(th) && inY(y, 1.22, 1.42) && Math.abs(Math.cos(th)) < 0.5) { const bx = Math.abs(Math.cos(th) * 0.19), by = Math.abs(y - 1.32); return (bx < 0.014 && by < 0.07) || (bx < 0.06 && by < 0.014) ? MWH : MRD; }
+      return MWH;
+    });
+    Lg(hb, 0.08, 1.0, (y, th) => y < 0.13 ? MBL2 : (inY(y, 0.29, 0.335) || inY(y, 0.63, 0.67)) ? MRF : (inY(y, 0.45, 0.58) && Math.sin(th) > -0.1) ? MYL : (inY(y, 0.76, 0.9) && Math.sin(th) > 0.2) ? MBL2 : MBL);
+  };
+}
+
 const GEAR = {
   /* ---------- Polizei ---------- */
   polChest() {
-    const mb = new MB(); sphereMesh(mb, 0, 1.3, 0, 0.19, 0.15, 0.14, G_PNAVY, 16);
-    for (const sx of [-1, 1]) {
-      mbBox(mb, sx * 0.1 - 0.045, 1.37, -0.115, sx * 0.1 + 0.045, 1.44, 0.115, G_NEON);                // Schulterstueck
-      mbBox(mb, sx * 0.1 - 0.04, 1.24, 0.1, sx * 0.1 + 0.04, 1.4, 0.138, G_NEON); mbBox(mb, sx * 0.1 - 0.03, 1.3, 0.136, sx * 0.1 + 0.03, 1.37, 0.142, G_REFL);   // Brust
-      mbBox(mb, sx * 0.1 - 0.04, 1.24, -0.138, sx * 0.1 + 0.04, 1.4, -0.1, G_NEON); mbBox(mb, sx * 0.1 - 0.03, 1.3, -0.142, sx * 0.1 + 0.03, 1.37, -0.136, G_REFL);   // Ruecken
-    }
-    gText(mb, 'POLIZEI', 0, 1.215, 0.128, 0.0052, G_TXT, false); gText(mb, 'POLIZEI', 0, 1.17, -0.131, 0.0048, G_TXT, true);
-    mbBox(mb, -0.07, 1.34, 0.125, -0.035, 1.38, 0.15, G_BLK); mbBox(mb, -0.057, 1.36, 0.148, -0.048, 1.372, 0.153, G_NEON);     // Bodycam
-    mbBox(mb, 0.085, 1.36, 0.09, 0.115, 1.44, 0.125, G_BLK);                                                                     // Funk-Mikro
+    const mb = new MB();
+    gText(mb, 'POLIZEI', 0, 1.215, 0.118, 0.0046, G_TXT, false); gText(mb, 'POLIZEI', 0, 1.17, -0.117, 0.0044, G_TXT, true);
+    sphereMesh(mb, -0.052, 1.36, 0.124, 0.02, 0.022, 0.012, G_BLK, 8); sphereMesh(mb, 0.1, 1.40, 0.108, 0.018, 0.04, 0.014, G_BLK, 8);      // Bodycam, Funk-Mikro
     return mb.finish();
   },
   polBelt() {
-    const mb = new MB(); mbBox(mb, -0.175, 1.03, -0.12, 0.175, 1.075, 0.12, G_BLK);
-    for (const sx of [-1, 1]) mbBox(mb, sx * 0.055 - 0.03, 1.07, 0.1, sx * 0.055 + 0.03, 1.16, 0.15, G_BLK);                      // Magazintaschen
-    mbBox(mb, -0.19, 0.84, 0.0, -0.15, 1.04, 0.1, G_BLK); mbBox(mb, -0.185, 1.0, 0.02, -0.155, 1.08, 0.12, G_SGRY);              // Holster rechts
-    mbBox(mb, 0.15, 1.0, 0.0, 0.2, 1.06, 0.09, G_BLK);                                                                            // Taser/Schlagstock links
+    const mb = new MB(); mbLathe(mb, [[1.028, 0.176, 0.121, 0, -0.002], [1.03, 0.178, 0.123, 0, -0.002], [1.073, 0.178, 0.123, 0, -0.002], [1.075, 0.176, 0.121, 0, -0.002]], 40, G_BLK);
+    for (const sx of [-1, 1]) sphereMesh(mb, sx * 0.058, 1.105, 0.1, 0.028, 0.045, 0.016, G_BLK, 8);                                // Magazintaschen
+    sphereMesh(mb, -0.19, 0.95, 0.03, 0.026, 0.095, 0.05, G_BLK, 10); sphereMesh(mb, -0.19, 1.02, 0.05, 0.02, 0.04, 0.025, G_SGRY, 8); // Holster
+    sphereMesh(mb, 0.18, 1.02, 0.04, 0.022, 0.05, 0.035, G_BLK, 8);                                                                 // Taser
     return mb.finish();
   },
   /* ---------- SWAT ---------- */
-  swChest() {
-    const mb = new MB(); sphereMesh(mb, 0, 1.3, 0, 0.2, 0.16, 0.145, G_SBLK, 16);
-    for (const sx of [-1, 1]) { mbBox(mb, sx * 0.1 - 0.045, 1.37, -0.12, sx * 0.1 + 0.045, 1.46, 0.12, G_SGRY); mbBox(mb, sx * 0.075 - 0.035, 1.12, 0.1, sx * 0.075 + 0.035, 1.24, 0.17, G_SGRY); mbBox(mb, sx * 0.075 - 0.03, 1.2, 0.17, sx * 0.075 + 0.03, 1.215, 0.18, G_SBLK); }
-    mbBox(mb, -0.12, 1.28, 0.125, -0.02, 1.36, 0.16, G_SGRY);                                                                      // Funkgeraet
-    mbBox(mb, -0.12, 1.2, -0.17, 0.12, 1.4, -0.12, G_SGRY);                                                                        // Ruecken-Platte
-    return mb.finish();
-  },
+  swChest() { const mb = new MB(); sphereMesh(mb, -0.07, 1.33, 0.15, 0.045, 0.04, 0.02, G_SGRY, 8); return mb.finish(); },
   swHead() {
-    const mb = new MB(); sphereMesh(mb, 0, 1.775, 0.01, 0.112, 0.078, 0.12, G_SBLK, 14); mbBox(mb, -0.108, 1.73, -0.12, 0.108, 1.775, 0.115, G_SBLK);          // Helm
-    mbBox(mb, -0.07, 1.768, 0.1, 0.07, 1.8, 0.135, G_SGRY);                                                                        // Helm-Schirm/Halterung
-    mbBox(mb, -0.052, 1.695, 0.098, 0.052, 1.728, 0.116, G_SKIN);                                                                  // Augenschlitz
-    mbBox(mb, -0.058, 1.69, 0.112, 0.058, 1.735, 0.124, G_GLASS);                                                                  // Schutzbrille
-    mbBox(mb, -0.115, 1.7, -0.02, -0.1, 1.76, 0.05, G_SGRY); mbBox(mb, 0.1, 1.7, -0.02, 0.115, 1.76, 0.05, G_SGRY);              // Kopfhoerer
+    const mb = new MB(); sphereMesh(mb, 0, 1.765, 0.005, 0.118, 0.092, 0.128, G_SBLK, 16);                                              // Helm
+    sphereMesh(mb, 0, 1.733, 0.0, 0.13, 0.02, 0.14, G_SBLK, 14);                                                                       // Helmkrempe
+    sphereMesh(mb, 0, 1.705, 0.09, 0.05, 0.026, 0.026, G_GLASS, 10);                                                                   // Schutzbrille
+    for (const sx of [-1, 1]) sphereMesh(mb, sx * 0.108, 1.71, 0.0, 0.02, 0.04, 0.045, G_SGRY, 8);                                     // Kopfhoerer
     return mb.finish();
-  },
-  swKnee(s) {
-    const mb = new MB(), x = s * 0.1; mbBox(mb, x - 0.065, 0.44, 0.02, x + 0.065, 0.56, 0.085, G_SGRY); mbBox(mb, x - 0.05, 0.47, 0.085, x + 0.05, 0.53, 0.095, G_SBLK);
-    mbBox(mb, x - 0.062, 0.4, -0.06, x + 0.062, 0.44, 0.06, G_SBLK); return mb.finish();
   },
   swShield() {               // Ballistik-Schild; Ursprung links vor dem Koerper
     const mb = new MB(); mbBox(mb, 0.0, 0.48, 0.44, 0.52, 1.58, 0.49, G_SHLD); mbBox(mb, 0.0, 0.48, 0.49, 0.52, 0.52, 0.53, G_METAL); mbBox(mb, 0.0, 1.54, 0.49, 0.52, 1.58, 0.53, G_METAL);
@@ -12150,46 +12251,16 @@ const GEAR = {
     return mb.finish();
   },
   /* ---------- Feuerwehr ---------- */
-  fChest() {
-    const mb = new MB(); sphereMesh(mb, 0, 1.3, 0, 0.195, 0.155, 0.145, G_FTAN, 16);
-    mbBox(mb, -0.075, 1.4, -0.125, 0.075, 1.455, 0.125, G_FBLK);                                                                    // schwarzer Kragen (unter dem Hals)
-    for (const sx of [-1, 1]) { mbBox(mb, sx * 0.125 - 0.05, 1.36, -0.11, sx * 0.125 + 0.05, 1.42, 0.11, G_FBLK); mbBox(mb, sx * 0.14 - 0.015, 1.27, 0.115, sx * 0.14 + 0.015, 1.33, 0.14, G_FRED); }   // Schulterpolster, rote Laschen
-    mbBox(mb, -0.2, 1.22, 0.12, 0.2, 1.25, 0.14, G_FREF); mbBox(mb, -0.2, 1.22, -0.14, 0.2, 1.25, -0.12, G_FREF);                  // Reflexband Brust
-    mbBox(mb, -0.2, 1.08, 0.1, 0.2, 1.11, 0.12, G_FREF);
-    for (const sx of [-1, 1]) mbBox(mb, sx * 0.09 - 0.055, 1.13, 0.115, sx * 0.09 + 0.055, 1.2, 0.16, G_FTAN);                      // Taschen
-        return mb.finish();
-  },
-  fArm(s) { const mb = new MB(), x = s * 0.19; mbBox(mb, x - 0.062, 1.24, -0.062, x + 0.062, 1.29, 0.062, G_FREF); return mb.finish(); },
-  fFore(s) {
-    const mb = new MB(), x = s * 0.19; mbBox(mb, x - 0.055, 1.0, -0.055, x + 0.055, 1.04, 0.055, G_FREF);
-    mbBox(mb, x - 0.06, 0.86, -0.06, x + 0.06, 0.915, 0.06, G_FBLK); mbBox(mb, x - 0.055, 1.07, -0.058, x + 0.055, 1.12, 0.058, G_FBLK);   // Ellenbogen-Schwarz, Saum
-    return mb.finish();
-  },
-  fHand(s) { const mb = new MB(), x = s * 0.19; mbBox(mb, x - 0.045, 0.69, -0.04, x + 0.045, 0.84, 0.05, G_FGLV); mbBox(mb, x - 0.05, 0.82, -0.05, x + 0.05, 0.88, 0.055, G_FRED); return mb.finish(); },
-  fLeg(s) { const mb = new MB(), x = s * 0.1; mbBox(mb, x - 0.1, 0.9, -0.095, x + 0.1, 0.945, 0.095, G_FREF); mbBox(mb, x - 0.085, 0.64, -0.082, x + 0.085, 0.68, 0.082, G_FREF); return mb.finish(); },
-  fShank(s) {
-    const mb = new MB(), x = s * 0.1; mbBox(mb, x - 0.075, 0.2, -0.07, x + 0.075, 0.24, 0.07, G_FREF); mbBox(mb, x - 0.08, 0.44, -0.07, x + 0.08, 0.56, 0.09, G_FBLK); mbBox(mb, x - 0.07, 0.1, -0.065, x + 0.07, 0.15, 0.075, G_FBLK);
-    return mb.finish();
-  },
   fHead() {
-    const mb = new MB(); sphereMesh(mb, 0, 1.78, 0.01, 0.12, 0.09, 0.13, K_FYEL, 14); mbBox(mb, -0.13, 1.73, -0.16, 0.13, 1.76, 0.135, K_FYEL); mbBox(mb, -0.02, 1.8, -0.14, 0.02, 1.9, 0.14, K_FYEL);
-    mbBox(mb, -0.13, 1.66, -0.19, 0.13, 1.74, -0.13, G_FBLK);                                                                      // Nackenschutz
-    mbBox(mb, -0.11, 1.79, 0.1, 0.11, 1.845, 0.15, G_FVIS);                // hochgeklapptes Visier an der Helmstirn
-    mbBox(mb, -0.125, 1.745, -0.04, 0.125, 1.76, 0.04, G_FRED);
+    const mb = new MB(); sphereMesh(mb, 0, 1.775, 0.008, 0.119, 0.095, 0.13, K_FYEL, 16);                                               // Helmkalotte
+    sphereMesh(mb, 0, 1.738, 0.0, 0.14, 0.017, 0.15, K_FYEL, 14);                                                                        // Krempe
+    sphereMesh(mb, 0, 1.718, -0.12, 0.13, 0.05, 0.065, G_FBLK, 12);                                                                      // Nackenschutz
+    sphereMesh(mb, 0, 1.79, 0.108, 0.098, 0.04, 0.05, G_FVIS, 12);                                                                       // hochgeklapptes Visier
+    sphereMesh(mb, 0, 1.745, 0.0, 0.142, 0.007, 0.152, G_FRED, 14);                                                                      // roter Rand
     return mb.finish();
   },
   /* ---------- Rettungsdienst ---------- */
-  mChest() {
-    const mb = new MB(); sphereMesh(mb, 0, 1.3, 0, 0.19, 0.15, 0.14, K_WHITE, 16);
-    mbBox(mb, 0.035, 1.27, 0.12, 0.125, 1.3, 0.15, G_MCROSS); mbBox(mb, 0.062, 1.24, 0.12, 0.098, 1.33, 0.15, G_MCROSS);                // Kreuz Brust
-    mbBox(mb, -0.07, 1.24, -0.15, 0.07, 1.4, -0.12, G_MCROSS); mbBox(mb, -0.07, 1.31, -0.151, 0.07, 1.34, -0.119, K_WHITE); mbBox(mb, -0.012, 1.24, -0.152, 0.012, 1.4, -0.118, K_WHITE);   // Ruecken: rotes Feld mit weissem Kreuz
-    mbBox(mb, -0.07, 1.3, -0.152, 0.07, 1.335, -0.12, K_WHITE); mbBox(mb, -0.02, 1.25, -0.152, 0.02, 1.4, -0.12, K_WHITE);
-    return mb.finish();
-  },
-  mPants() { const mb = new MB(); mbBox(mb, -0.175, 1.02, -0.12, 0.175, 1.08, 0.12, G_WORG); return mb.finish(); },
-  mThigh(s) { const mb = new MB(), x = s * 0.1; mbBox(mb, x - 0.07, 0.78, 0.07, x + 0.07, 0.92, 0.1, G_WPNT); mbBox(mb, x - 0.065, 0.78, 0.098, x + 0.065, 0.8, 0.108, G_WORG); mbBox(mb, x - 0.085, 0.64, -0.088, x + 0.085, 0.67, 0.088, G_REFL); return mb.finish(); },
-  mShank(s) { const mb = new MB(), x = s * 0.1; mbBox(mb, x - 0.08, 0.46, 0.07, x + 0.08, 0.58, 0.1, G_WORG); mbBox(mb, x - 0.085, 0.3, -0.075, x + 0.085, 0.33, 0.075, G_REFL); return mb.finish(); },
-  mHead() { const mb = new MB(); sphereMesh(mb, 0, 1.79, 0.01, 0.108, 0.05, 0.12, G_FRED, 14); mbBox(mb, -0.09, 1.775, 0.09, 0.09, 1.79, 0.17, G_FRED); return mb.finish(); }
+  mHead() { const mb = new MB(); sphereMesh(mb, 0, 1.79, 0.01, 0.108, 0.05, 0.12, G_FRED, 14); sphereMesh(mb, 0, 1.775, 0.11, 0.075, 0.012, 0.06, G_FRED, 10); return mb.finish(); }
 };
 {
   const sm0 = Game.prototype.sceneMeshes;
@@ -12202,20 +12273,19 @@ const GEAR = {
 /* Ausruestung eines Npc zeichnen (att = Anhaenge-Funktion aus appendScenes); true = uebernommen */
 function gearDress(S, att, n, swat) {
   const I = [0, 0, 0], one = [1, 1, 1], B = (m, bone, tint) => att(m, bone, I, null, one, tint);
-  if (n.kind === 'cop' && !swat) {
-    B(S.gear('polChest'), 'chest'); B(S.gear('polBelt'), 'pelvis'); att(S.cap(), 'head', [0, 1.79, 0.01], null, one); return true;
-  }
-  if (n.kind === 'cop' && swat) {
-    B(S.gear('swChest'), 'chest'); B(S.gear('swHead'), 'head'); B(S.gear('polBelt'), 'pelvis', [0.35, 0.35, 0.38]); B(S.gear('swKnee', 1), 'shankL'); B(S.gear('swKnee', -1), 'shankR');
-    if (n.shield) B(S.gear('swShield'), 'chest'); return true;
-  }
-  if (n.kind === 'fire') {
-    B(S.gear('fChest'), 'chest'); B(S.gear('fHead'), 'head'); B(S.gear('fArm', 1), 'uarmL'); B(S.gear('fArm', -1), 'uarmR'); B(S.gear('fFore', 1), 'farmL'); B(S.gear('fFore', -1), 'farmR'); B(S.gear('fHand', 1), 'handL'); B(S.gear('fHand', -1), 'handR');
-    B(S.gear('fLeg', 1), 'thighL'); B(S.gear('fLeg', -1), 'thighR'); B(S.gear('fShank', 1), 'shankL'); B(S.gear('fShank', -1), 'shankR'); return true;
-  }
-  if (n.kind === 'medic') { B(S.gear('mChest'), 'chest'); B(S.gear('mPants'), 'pelvis'); B(S.gear('mThigh', 1), 'thighL'); B(S.gear('mThigh', -1), 'thighR'); B(S.gear('mShank', 1), 'shankL'); B(S.gear('mShank', -1), 'shankR'); return true; }
+  if (n.kind === 'cop' && !swat) { B(S.gear('polChest'), 'chest'); B(S.gear('polBelt'), 'pelvis'); att(S.cap(), 'head', [0, 1.79, 0.01], null, one); return true; }
+  if (n.kind === 'cop' && swat) { B(S.gear('swChest'), 'chest'); B(S.gear('swHead'), 'head'); B(S.gear('polBelt'), 'pelvis', [0.35, 0.35, 0.38]); if (n.shield && !n.boarded && !n.sit) B(S.shield(), 'chest'); return true; }
+  if (n.kind === 'fire') { B(S.gear('fHead'), 'head'); return true; }
+  if (n.kind === 'medic') { B(S.gear('mHead'), 'head'); return true; }
   return false;
 }
+/* gemalte Zusatzschichten je Rolle (zusaetzlich zu Haut/Haar/Schuhe/Shirt/Hose) */
+function gearLayers(n, swat) { return n.kind === 'cop' ? [swat ? 'g_swat' : 'g_cop'] : n.kind === 'fire' ? ['g_fire'] : n.kind === 'medic' ? ['g_medic'] : null; }
+
+Game.prototype.npcLayersFor = function (n, swat) {
+  const gl = gearLayers(n, swat); if (!gl) return null; const C = this._npcLK || (this._npcLK = {}), key = gl.join(',');
+  return C[key] || (C[key] = this.npcLayerList().concat(gl.map(k => this.humanLayer(k))));
+};
 
 ;
 /* ---- levels.js ---- */
@@ -12349,6 +12419,1042 @@ Object.assign(Game.prototype, {
     if (on && g && !g.menuOn && (g.cine || (g.act && g.act.sc) || g.exec)) { try { g.popup('FINISH THE SCENE FIRST', g.dummy.b.head.p, '#ffd7a0', 1.2); } catch (e) { } return; }
     return mp0.apply(this, arguments);
   };
+}
+
+;
+/* ---- weapons.js ---- */
+'use strict';
+/* =====================================================================
+   weapons.js — selbstgebaute Waffen (Pistole, Sturmgewehr, MP, Schrotflinte, Scharfschuetzengewehr) und Polizeischild.
+   Handrahmen: Lauf nach -Y, oben +Z, Ursprung im Griff (Handflaeche).  Alle Teile sind abgerundet/modelliert, keine losen Kloetze.
+   ===================================================================== */
+const W_MET = NC(0.075, 0.078, 0.085, 0.32, 0.85), W_DARK = NC(0.035, 0.037, 0.042, 0.45, 0.6), W_POLY = NC(0.045, 0.047, 0.05, 0.62), W_WOOD = NC(0.34, 0.21, 0.1, 0.55),
+  W_OLIVE = NC(0.15, 0.17, 0.11, 0.6), W_STEEL = NC(0.62, 0.64, 0.68, 0.25, 0.9), W_LENS = NC(0.05, 0.08, 0.12, 0.08, 0.5), W_RED = NC(0.9, 0.08, 0.05, 0.3),
+  W_SHLD = NC(0.05, 0.055, 0.065, 0.45, 0.35), W_SGL = NC(0.08, 0.14, 0.2, 0.08, 0.6), W_SEDG = NC(0.5, 0.52, 0.55, 0.3, 0.7), W_TXTW = NC(0.92, 0.92, 0.9, 0.5), W_SHLD2 = NC(0.03, 0.036, 0.075, 0.45, 0.3);
+/* Zylinder entlang Y (Lauf, Rohr), Mitte (cx,cz), Radius r */
+function wTube(mb, y0, y1, r, cx, cz, col, seg) { mbLathe(mb, [[y0, r, r, cx, cz], [y1, r, r, cx, cz]], seg || 10, col); }
+function wOval(mb, y0, y1, rx, rz, cx, cz, col) { mbLathe(mb, [[y0, rx * 0.8, rz * 0.8, cx, cz], [y0 + (y1 - y0) * 0.06, rx, rz, cx, cz], [y1 - (y1 - y0) * 0.06, rx, rz, cx, cz], [y1, rx * 0.8, rz * 0.8, cx, cz]], 12, col); }
+function wpnMesh(kind) {
+  const mb = new MB();
+  if (kind === 'pistol') {
+    mbBox(mb, -0.0125, -0.195, 0.004, 0.0125, 0.012, 0.036, W_MET);                          // Schlitten
+    mbBox(mb, -0.0105, -0.198, 0.036, 0.0105, 0.01, 0.041, W_MET);                           // Schlittenruecken
+    wTube(mb, -0.212, -0.195, 0.0065, 0, 0.02, W_DARK, 8);                                    // Muendung
+    mbBox(mb, -0.0035, -0.2, 0.041, 0.0035, -0.19, 0.049, W_DARK); mbBox(mb, -0.0045, 0.0, 0.041, 0.0045, 0.012, 0.047, W_DARK);   // Visier
+    mbBox(mb, -0.012, -0.17, -0.012, 0.012, -0.03, 0.006, W_POLY);                            // Rahmen
+    mbBox(mb, -0.0125, -0.07, -0.032, 0.0125, -0.062, -0.004, W_POLY); mbBox(mb, -0.0125, -0.1, -0.032, 0.0125, -0.07, -0.026, W_POLY); mbBox(mb, -0.0125, -0.11, -0.03, 0.0125, -0.1, -0.004, W_POLY);   // Abzugsbuegel
+    mbBox(mb, -0.003, -0.085, -0.026, 0.003, -0.078, -0.004, W_STEEL);                         // Abzug
+    mbBox(mb, -0.0155, -0.045, -0.04, 0.0155, 0.014, -0.004, W_POLY);                          // Griffstueck
+    mbBox(mb, -0.0155, -0.052, -0.085, 0.0155, 0.01, -0.04, W_POLY); mbBox(mb, -0.0155, -0.058, -0.125, 0.0155, 0.006, -0.085, W_POLY);   // Griff (leicht geneigt)
+    mbBox(mb, -0.017, -0.062, -0.13, 0.017, 0.008, -0.12, W_DARK);                              // Magazinboden
+  } else if (kind === 'rifle') {
+    mbBox(mb, -0.02, -0.3, 0.004, 0.02, 0.05, 0.068, W_MET);                                  // Gehaeuse
+    mbBox(mb, -0.012, -0.3, 0.068, 0.012, 0.04, 0.082, W_DARK);                                // Picatinny-Schiene
+    wOval(mb, -0.64, -0.3, 0.0265, 0.028, 0, 0.037, W_POLY);                                  // Handschutz
+    wTube(mb, -0.84, -0.64, 0.0075, 0, 0.04, W_MET, 8); wTube(mb, -0.9, -0.84, 0.0115, 0, 0.04, W_DARK, 8);   // Lauf + Muendungsfeuerdaempfer
+    mbBox(mb, -0.004, -0.66, 0.062, 0.004, -0.645, 0.1, W_DARK); mbBox(mb, -0.008, -0.665, 0.062, 0.008, -0.64, 0.07, W_DARK);   // Korn
+    mbBox(mb, -0.011, 0.0, 0.082, 0.011, 0.04, 0.1, W_DARK);                                   // Kimme
+    wTube(mb, 0.05, 0.22, 0.02, 0, 0.04, W_MET, 10);                                          // Pufferrohr
+    mbBox(mb, -0.019, 0.2, -0.03, 0.019, 0.4, 0.075, W_POLY); mbBox(mb, -0.021, 0.395, -0.035, 0.021, 0.41, 0.08, W_DARK);   // Schaft + Kappe
+    mbBox(mb, -0.015, -0.012, -0.12, 0.015, 0.035, -0.004, W_POLY); mbBox(mb, -0.015, 0.0, -0.13, 0.015, 0.04, -0.1, W_POLY);   // Pistolengriff
+    mbBox(mb, -0.0165, -0.215, -0.15, 0.0165, -0.15, 0.004, W_DARK); mbBox(mb, -0.0165, -0.2, -0.2, 0.0165, -0.138, -0.15, W_DARK);   // Magazin
+    mbBox(mb, -0.012, -0.1, -0.034, 0.012, -0.095, 0.004, W_DARK); mbBox(mb, -0.012, -0.1, -0.036, 0.012, -0.02, -0.03, W_DARK);   // Abzugsbuegel
+    mbBox(mb, -0.012, -0.06, 0.082, 0.012, -0.02, 0.098, W_DARK);                              // Rotpunktvisier
+    mbBox(mb, -0.009, -0.062, 0.098, 0.009, -0.058, 0.112, W_LENS); mbBox(mb, -0.009, -0.022, 0.098, 0.009, -0.018, 0.112, W_LENS);
+  } else if (kind === 'smg') {
+    mbBox(mb, -0.02, -0.3, 0.0, 0.02, 0.05, 0.062, W_DARK); wOval(mb, -0.46, -0.3, 0.021, 0.024, 0, 0.032, W_POLY);
+    wTube(mb, -0.56, -0.46, 0.0085, 0, 0.034, W_MET, 8); mbBox(mb, -0.004, -0.31, 0.062, 0.004, -0.3, 0.088, W_DARK); mbBox(mb, -0.009, 0.02, 0.062, 0.009, 0.05, 0.084, W_DARK);
+    mbBox(mb, -0.012, 0.04, 0.0, 0.012, 0.3, 0.05, W_POLY); mbBox(mb, -0.014, 0.3, -0.012, 0.014, 0.315, 0.056, W_DARK);   // Schulterstuetze
+    mbBox(mb, -0.014, -0.012, -0.115, 0.014, 0.03, -0.004, W_POLY); mbBox(mb, -0.0145, -0.2, -0.2, 0.0145, -0.165, 0.0, W_DARK);  // Griff + gerades Magazin
+    mbBox(mb, -0.011, -0.095, -0.03, 0.011, -0.09, 0.0, W_DARK);
+  } else if (kind === 'shotgun') {
+    mbBox(mb, -0.021, -0.3, 0.0, 0.021, 0.07, 0.07, W_MET);                                    // Gehaeuse
+    wTube(mb, -0.92, -0.3, 0.0135, 0, 0.045, W_DARK, 10); wTube(mb, -0.9, -0.38, 0.011, 0, 0.012, W_DARK, 10);  // Lauf + Magazinrohr
+    wOval(mb, -0.66, -0.4, 0.029, 0.026, 0, 0.012, W_WOOD);                                    // Vorderschaft
+    mbBox(mb, -0.004, -0.925, 0.058, 0.004, -0.915, 0.07, W_STEEL);                            // Korn
+    mbBox(mb, -0.02, 0.07, -0.032, 0.02, 0.44, 0.075, W_WOOD); mbBox(mb, -0.021, 0.43, -0.045, 0.021, 0.45, 0.085, W_DARK);  // Holzschaft
+    mbBox(mb, -0.015, -0.03, -0.115, 0.015, 0.03, 0.0, W_WOOD);                                // Pistolengriff
+    mbBox(mb, -0.012, -0.12, -0.03, 0.012, -0.115, 0.004, W_DARK);
+  } else if (kind === 'sniper') {
+    mbBox(mb, -0.021, -0.4, 0.0, 0.021, 0.09, 0.07, W_OLIVE);                                  // Gehaeuse
+    wTube(mb, -1.1, -0.4, 0.0105, 0, 0.042, W_DARK, 10); wTube(mb, -1.15, -1.1, 0.0155, 0, 0.042, W_MET, 10);   // Lauf + Muendungsbremse
+    wTube(mb, -0.3, -0.02, 0.026, 0, 0.115, W_DARK, 12); wTube(mb, -0.33, -0.3, 0.034, 0, 0.115, W_DARK, 12); wTube(mb, -0.02, 0.01, 0.032, 0, 0.115, W_DARK, 12); wTube(mb, -0.332, -0.328, 0.03, 0, 0.115, W_LENS, 12);   // Zielfernrohr
+    mbBox(mb, -0.01, -0.24, 0.07, 0.01, -0.2, 0.09, W_DARK); mbBox(mb, -0.01, -0.1, 0.07, 0.01, -0.06, 0.09, W_DARK);
+    mbBox(mb, -0.019, 0.09, -0.04, 0.019, 0.5, 0.085, W_OLIVE); mbBox(mb, -0.021, 0.49, -0.05, 0.021, 0.51, 0.09, W_DARK);     // Schaft
+    mbBox(mb, -0.015, -0.03, -0.12, 0.015, 0.03, 0.0, W_OLIVE); mbBox(mb, -0.0165, -0.22, -0.1, 0.0165, -0.15, 0.004, W_DARK);   // Griff + Magazin
+    for (const sx of [-1, 1]) { mbBox(mb, sx * 0.045 - 0.004, -0.82, -0.03, sx * 0.045 + 0.004, -0.8, 0.04, W_DARK); mbBox(mb, sx * 0.02, -0.82, 0.03, sx * 0.045 + 0.004, -0.8, 0.04, W_DARK); }   // Zweibein (angeklappt)
+  }
+  return mb.finish();
+}
+
+/* Polizeischild: Ursprung = Mitte des Koerpers (Rest-Pose-Koordinaten), Schild vor dem Koerper, links ein Haltegriff, rechts ein Sichtfenster mit Ausschnitt fuer die Pistole */
+const SHIELD_Z = 0.7;
+function shieldMesh() {
+  const mb = new MB(), z0 = SHIELD_Z, W2 = 0.31, yb = 0.46, yt = 1.62;
+  // gewoelbte Platte (leicht gebogen, nach vorn ausgebeult), als Lathe-Ausschnitt nicht moeglich -> Streifen mit Kruemmung
+  const N = 9, bow = 0.055, seg = (i) => { const u = i / N * 2 - 1; return [u * W2, z0 + bow * (1 - u * u)]; };
+  const strip = (ya, yb2, col, th) => { for (let i = 0; i < N; i++) { const a = seg(i), b = seg(i + 1); const x0 = Math.min(a[0], b[0]), x1 = Math.max(a[0], b[0]), zc = Math.min(a[1], b[1]); mbBox(mb, x0, ya, zc - th, x1, yb2, Math.max(a[1], b[1]) + 0.0, col); } };
+  strip(yb, 1.26, W_SHLD, 0.03);                      // unterer Teil
+  strip(1.52, yt, W_SHLD, 0.03);                      // obere Leiste
+  // Sichtfenster (Panzerglas), Pistolenausschnitt rechts
+  for (let i = 0; i < N; i++) { const a = seg(i), b = seg(i + 1), x0 = Math.min(a[0], b[0]), x1 = Math.max(a[0], b[0]); if (x1 < -W2 * 0.55) continue; mbBox(mb, Math.max(x0, -W2 * 0.55), 1.26, Math.min(a[1], b[1]) - 0.015, x1, 1.52, Math.max(a[1], b[1]), W_SGL); }
+  for (let i = 0; i < N; i++) { const a = seg(i), b = seg(i + 1), x0 = Math.min(a[0], b[0]), x1 = Math.max(a[0], b[0]); if (x1 > -W2 * 0.55) { const zc = Math.min(a[1], b[1]); mbBox(mb, x0, 1.26, zc - 0.03, Math.min(x1, -W2 * 0.55), 1.285, Math.max(a[1], b[1]), W_SHLD); } }   // Ablage unter dem Ausschnitt
+  // Rahmen
+  mbBox(mb, -W2 - 0.012, yb - 0.01, z0 - 0.036, W2 + 0.012, yb + 0.02, z0 + 0.003, W_SEDG); mbBox(mb, -W2 - 0.012, yt - 0.02, z0 - 0.036, W2 + 0.012, yt + 0.01, z0 + 0.003, W_SEDG);
+  for (const sx of [-1, 1]) mbBox(mb, sx * W2 - (sx > 0 ? 0 : 0.02), yb, z0 - 0.036, sx * W2 + (sx > 0 ? 0.02 : 0), yt, z0 + 0.003, W_SEDG);
+  // "POLIZEI"-Balken (gemalt: heller Streifen mit dunkler Schrift)
+  mbBox(mb, -W2 * 0.9, 0.82, z0 + bow - 0.014, W2 * 0.9, 0.98, z0 + bow + 0.002, W_SHLD2); gText(mb, 'POLIZEI', 0, 0.84, z0 + bow + 0.002, 0.0085, W_TXTW, false);
+  // Rueckseite: Haltegriff genau an der linken Hand (x .15 / y 1.06 / z .56) + Halteband
+  mbBox(mb, 0.1, 1.0, z0 - 0.19, 0.2, 1.12, z0 - 0.0, W_DARK); mbBox(mb, 0.1, 1.045, z0 - 0.19, 0.2, 1.075, z0 - 0.15, W_STEEL);
+  return mb.finish();
+}
+
+{
+  const sm0 = Game.prototype.sceneMeshes;
+  Game.prototype.sceneMeshes = function () {
+    const S = sm0.call(this), M = this._sm;
+    S.wpn = (k) => M['wp_' + k] || (M['wp_' + k] = this.gfx.upload(wpnMesh(k)));
+    S.pistol = () => S.wpn('pistol'); S.rifle = () => S.wpn('rifle');
+    S.shield = () => M['shield'] || (M['shield'] = this.gfx.upload(shieldMesh()));
+    return S;
+  };
+}
+
+;
+/* =====================================================================
+   person.js  -  Personen-Modus (Taste V)
+   Du steuerst eine Person mit demselben Skelett wie die NPCs.  Ego- und Aussenansicht (C),
+   Waffen in der Hand, Spawn-Pistole fuer NPCs (auch Polizei, die zurueckschiesst),
+   NPCs haben Trefferpunkte, Blut klebt am Koerper, laeuft herunter und tropft.
+   ===================================================================== */
+const K_BLD = NC(0.40, 0.0, 0.012, 0.16), K_PMWOOD = NC(0.30, 0.19, 0.10, 0.6), K_PMGRN = NC(0.16, 0.24, 0.12, 0.5);
+const PM_INV = [
+  { id: 'pistol', de: 'Pistole', en: 'Pistol', gun: 'pistol', hm: 'pistol', gm: [0, -0.2, 0.02] },
+  { id: 'rifle', de: 'Gewehr', en: 'Rifle', gun: 'rifle', hm: 'rifle', gm: [0, -0.86, 0.04] },
+  { id: 'smg', de: 'MP', en: 'SMG', gun: 'rifle', hm: 'smg', gm: [0, -0.56, 0.034] },
+  { id: 'shotgun', de: 'Schrotflinte', en: 'Shotgun', gun: 'rifle', hm: 'shotgun', gm: [0, -0.86, 0.04] },
+  { id: 'sniper', de: 'Scharfschütze', en: 'Sniper', gun: 'rifle', hm: 'sniper', gm: [0, -1.0, 0.06] },
+  { id: 'grenade', de: 'Granate', en: 'Grenade', gun: null, hm: 'grenade', gm: [0, 0, 0] },
+  { id: 'ball', de: 'Ball', en: 'Ball', gun: null, hm: 'ball', gm: [0, 0, 0] },
+  { id: 'spawn', de: 'Spawn-Waffe', en: 'Spawn gun', gun: 'pistol', hm: 'spawn', gm: [0, -0.2, 0.02] },
+  { id: 'prop', de: 'Objekt-Werfer', en: 'Object gun', gun: 'pistol', hm: 'spawn', gm: [0, -0.2, 0.02] },
+  { id: 'lighter', de: 'Feuerzeug', en: 'Lighter', gun: null, hm: null, gm: [0, 0, 0] }
+];
+const PM_SPAWN = [
+  { k: 'cop', de: 'Polizist', en: 'Police officer', hostile: true, gun: 'pistol', n: 1 },
+  { k: 'cop3', de: 'Streife (3 Polizisten)', en: 'Patrol (3 officers)', hostile: true, gun: 'pistol', n: 3, kind: 'cop' },
+  { k: 'swat', de: 'SEK-Trupp (3)', en: 'SWAT team (3)', hostile: true, gun: 'rifle', n: 3, kind: 'cop', swat: true },
+  { k: 'shield', de: 'Schildträger (SEK)', en: 'Shield officer (SWAT)', hostile: true, gun: 'pistol', n: 1, kind: 'cop', swat: true, shield: true },
+  { k: 'guard', de: 'Wachmann', en: 'Guard', hostile: true, gun: 'pistol', n: 1 },
+  { k: 'civ', de: 'Zivilist', en: 'Civilian', hostile: false, gun: null, n: 1 },
+  { k: 'medic', de: 'Sanitäter', en: 'Paramedic', hostile: false, gun: null, n: 1 },
+  { k: 'fire', de: 'Feuerwehrmann', en: 'Firefighter', hostile: false, gun: null, n: 1 },
+  { k: 'clean', de: 'Reinigungskraft', en: 'Cleaner', hostile: false, gun: null, n: 1 }
+];
+Object.assign(DE, { 'Person mode': 'Personen-Modus', 'Walk around as a person with the same skeleton as the NPCs. First and third person, weapons in hand, spawn gun. Key V.': 'Als Person herumlaufen, mit demselben Skelett wie die NPCs. Ego- und Außenansicht, Waffen in der Hand, Spawn-Waffe. Taste V.' });
+
+function pmGunMesh(kind) {
+  if (kind === 'shotgun' || kind === 'sniper' || kind === 'smg' || kind === 'rifle' || kind === 'pistol') return wpnMesh(kind);
+  const mb = new MB();
+  if (kind === 'shotgun') {
+    mbBox(mb, -0.022, -0.3, 0.0, 0.022, 0.06, 0.07, K_GUN); mbBox(mb, -0.014, -0.9, 0.03, 0.014, -0.3, 0.058, K_GUN); mbBox(mb, -0.014, -0.9, 0.0, 0.014, -0.3, 0.026, K_GUN);
+    mbBox(mb, -0.027, -0.62, -0.012, 0.027, -0.4, 0.05, K_PMWOOD); mbBox(mb, -0.02, 0.06, -0.025, 0.02, 0.4, 0.07, K_PMWOOD); mbBox(mb, -0.012, -0.92, 0.055, 0.012, -0.9, 0.07, K_GUN);
+    mbBox(mb, -0.015, -0.03, -0.12, 0.015, 0.03, 0.0, K_PMWOOD);
+  } else if (kind === 'sniper') {
+    mbBox(mb, -0.022, -0.36, 0.0, 0.022, 0.08, 0.075, K_GUN); mbBox(mb, -0.012, -1.1, 0.025, 0.012, -0.36, 0.05, K_GUN); mbBox(mb, -0.02, 0.08, -0.03, 0.02, 0.46, 0.08, K_POLY);
+    mbBox(mb, -0.026, -0.3, 0.085, 0.026, -0.02, 0.14, K_BLK); mbBox(mb, -0.034, -0.32, 0.08, 0.034, -0.28, 0.146, K_BLK); mbBox(mb, -0.034, -0.04, 0.08, 0.034, 0.0, 0.146, K_BLK);
+    mbBox(mb, -0.015, -0.22, -0.14, 0.015, -0.15, 0.0, K_GUN); mbBox(mb, -0.014, -0.03, -0.12, 0.014, 0.03, 0.0, K_POLY); mbBox(mb, -0.05, -0.9, -0.03, 0.05, -0.88, 0.03, K_GUN);
+  } else if (kind === 'grenade') {
+    sphereMesh(mb, 0, 0, 0.0, 0.034, 0.045, 0.034, K_GRNC, 10); mbBox(mb, -0.008, -0.01, 0.04, 0.008, 0.01, 0.062, K_GUN); mbBox(mb, -0.004, 0.0, 0.04, 0.004, 0.05, 0.05, K_CHROME);
+  } else if (kind === 'nozzle') {
+    mbBox(mb, -0.03, -0.5, -0.03, 0.03, 0.12, 0.03, K_BRASS); mbBox(mb, -0.045, -0.56, -0.045, 0.045, -0.5, 0.045, K_CHROME); mbBox(mb, -0.05, -0.1, -0.05, 0.05, -0.02, 0.05, K_RED); mbBox(mb, -0.035, 0.12, -0.035, 0.035, 0.5, 0.035, K_RED); mbBox(mb, -0.02, -0.3, 0.03, 0.02, -0.18, 0.1, K_BRASS);
+  } else if (kind === 'ball') {
+    sphereMesh(mb, 0, 0, 0.0, 0.11, 0.11, 0.11, K_ORANGE, 12);
+  }
+  return mb.finish();
+}
+function pmBlobMesh() { const mb = new MB(); sphereMesh(mb, 0, 0, 0, 1, 0.55, 1, K_BLD, 8); return mb.finish(); }
+function pmStreakMesh() { const mb = new MB(); mbBox(mb, -0.5, -1, -0.5, 0.5, 0, 0.5, K_BLD); return mb.finish(); }
+function pmDropMesh() { const mb = new MB(); sphereMesh(mb, 0, 0, 0, 1, 1.7, 1, K_BLD, 6); return mb.finish(); }
+
+Object.assign(Game.prototype, {
+  pmMesh(k) {
+    const M = this._pmM || (this._pmM = {});
+    if (!M[k]) M[k] = this.gfx.upload(k === 'blob' ? pmBlobMesh() : k === 'streak' ? pmStreakMesh() : k === 'drop' ? pmDropMesh() : pmGunMesh(k));
+    return M[k];
+  },
+  pmMsg(de, en, t) { const el = document.getElementById('pmmsg'); if (!el) return; el.textContent = tx2(de, en); el.classList.add('on'); clearTimeout(this._pmMT); this._pmMT = setTimeout(() => el.classList.remove('on'), (t || 2.4) * 1000); },
+
+  /* ---------- Ein- / Ausstieg ---------- */
+  pmToggle() { if (this.pm && this.pm.on) this.pmExit(); else this.pmEnter(); },
+  pmEnter() {
+    if (this.pm && this.pm.on) return;
+    if (this.menuOn || this.intro || this.cine || this.exec) { return; }
+    if (!this.act) this.clearScenes();
+    const A = this.act, c = this.cam, D = this.dummy.b.pelvis.p;
+    let x = D[0] + Math.sin(c.yaw) * 2.2, z = D[2] + Math.cos(c.yaw) * 2.2, y0 = this.supportInfo ? (this.supportInfo().y || 0) : 0;
+    if (this.navBlocked(x, z, y0, 0.3, true)) { x = D[0] - Math.sin(c.yaw) * 2.2; z = D[2] - Math.cos(c.yaw) * 2.2; }
+    if (this.navBlocked(x, z, y0, 0.3, true)) { x = D[0] + 1.6; z = D[2] + 0.4; }
+    const y = this.groundY(x, z, y0 + 0.6), yaw = Math.atan2(D[0] - x, D[2] - z);
+    const p = new Npc('civ', x, y, z, yaw); p.civ = true; p.isPlayer = true; p.free = true; p.hp = 100; p.update = pmPlayerUpdate; p.ph = 0;
+    A.npcs.push(p);
+    this.pm = { on: true, p, yaw, pitch: 0, view: 'fp', sel: 0, keys: new Set(), fire: false, fireEdge: false, zoom: false, hp: 100, dead: false, deadT: 0, vy: 0, spawnSel: 0, drops: [], hurtT: 0, npcs: [], t: 0, lockT: 0, spawnT: 0 };
+    this.pmSelect(0); this.hideHud && this.hideHud();
+    document.body.classList.add('pm'); const h = document.getElementById('pmhud'); if (h) h.classList.add('on'); this.pmHud(true);
+    this.sfx.unlock(); if (document.body.classList.contains('touchui')) this.pmMsg('Joystick laufen · Wischen umschauen · Zielkreuz schießen · Kamera-Symbol Ansicht · Pause verlässt', 'Joystick move · swipe look · crosshair shoot · camera icon view · pause leaves', 5); else this.pmMsg('Personen-Modus: WASD laufen, Maus zielen, Klick schießen, C Ansicht, V verlassen', 'Person mode: WASD move, mouse aim, click to shoot, C view, V to leave', 5);
+    this.fx.flash(V3(x, y + 1, z), 2, [0.6, 0.85, 1], 0.2);
+  },
+  pmExit(quiet) {
+    const P = this.pm; if (!P || !P.on) return; P.on = false;
+    const A = this.act; if (A) { const rm = new Set([P.p].concat(P.npcs)); A.npcs = A.npcs.filter(n => !rm.has(n)); if (A.corpses) A.corpses = A.corpses.filter(n => !rm.has(n)); }
+    try { if (document.pointerLockElement) document.exitPointerLock(); } catch (e) { }
+    document.body.classList.remove('pm'); const h = document.getElementById('pmhud'); if (h) h.classList.remove('on');
+    this.gfx.ghost = false; this.pm = null;
+    const c = this.cam; c.free = false;
+    if (!quiet) { this.sfx.play('ding', { vol: 0.4, pitch: 0.8 }); }
+  },
+  pmSelect(i) {
+    const P = this.pm; if (!P) return; const n = PM_INV.length; i = ((i % n) + n) % n; P.sel = i; const it = PM_INV[i], p = P.p;
+    p.gun = it.gun; p.hm = it.hm; P.zoom = false; if (this.pmHud) this.pmHud();
+  },
+
+  /* ---------- NPCs spawnen ---------- */
+  pmSpawnAt(def, x, z, y, yawTo) {
+    const A = this.act, P = this.pm, kind = def.kind || def.k, n = new Npc(kind === 'civ' ? 'civ' : kind, x, y, z, yawTo);
+    if (kind === 'civ') { n.civ = true; n.look = 1; }
+    if (def.swat) n.swat = true; else if (kind === 'cop') n.swat = false;
+    if (def.shield) { n.shield = true; n.wm = 'pistol'; }
+    n.gun = def.gun; n.hm = def.gun || null; n.pmai = true; n.hostile = !!def.hostile; n.hp = 100; n.alert = !!def.hostile; n.fireT = 0.6 + Math.random() * 0.8; n.shots = 0;
+    if (kind === 'clean') n.tool = 'mop';
+    if (kind === 'medic') n.bag = true;
+    A.npcs.push(n); P.npcs.push(n);
+    this.fx.flash(V3(x, y + 1, z), 1.8, [0.5, 0.9, 1], 0.18); this.fx.dust(V3(x, y + 0.2, z), 8, 1.2, [0.7, 0.85, 1]);
+    return n;
+  },
+  pmSpawnGun() {
+    const P = this.pm, def = PM_SPAWN[P.spawnSel], cam = this.camPos, d = this.pmFwd(P.yaw, P.pitch);
+    const res = this.world.raycast(V3(cam[0], cam[1], cam[2]), d, 60, this.worldOnly());
+    let x, z, y;
+    if (res && res.kind !== 'body') { x = res.x + (res.nx || 0) * 0.8; z = res.z + (res.nz || 0) * 0.8; y = this.groundY(x, z, res.y + 0.7); }
+    else { x = cam[0] + d[0] * 9; z = cam[2] + d[2] * 9; y = this.groundY(x, z, P.p.y + 0.7); }
+    if (this.navBlocked(x, z, y, 0.25, true)) { this.pmMsg('Hier ist kein Platz.', 'No room here.', 1.2); return; }
+    if (P.npcs.filter(n => !n.dead).length + def.n > 18) { const old = P.npcs.find(n => n.dead) || P.npcs[0]; this.pmRemove(old); }
+    for (let i = 0; i < def.n; i++) {
+      const a = i * 2.1, n = this.pmSpawnAt(def, x + Math.cos(a) * 0.8 * (i ? 1 : 0), z + Math.sin(a) * 0.8 * (i ? 1 : 0), y, Math.atan2(P.p.x - x, P.p.z - z));
+      if (def.k === 'swat') { n.gun = 'rifle'; n.hm = i === 2 ? 'smg' : 'rifle'; }
+    }
+    this.sfx.play('ding', { vol: 0.5, pitch: 1.4 }); this.pmMsg(def.hostile ? def.de + ' gespawnt – greift an!' : def.de + ' gespawnt', def.en + (def.hostile ? ' spawned – hostile!' : ' spawned'), 1.6);
+  },
+  pmRemove(n) { if (!n) return; const A = this.act, P = this.pm; if (A) A.npcs = A.npcs.filter(m => m !== n); if (P) P.npcs = P.npcs.filter(m => m !== n); },
+
+  pmUse(id) {
+    const P = this.pm, cam = this.camPos, d = this.pmFwd(P.yaw, P.pitch), res = this.world.raycast(V3(cam[0], cam[1], cam[2]), d, 60, this.worldOnly());
+    if (!res || res.kind === 'body') { this.pmMsg('Nichts getroffen.', 'Nothing hit.', 1); return; }
+    const x = res.x, y = res.y, z = res.z; this.propInit();
+    if (id === 'lighter') {
+      let best = null, bd = 2.2; for (const q of this.props) { const dd = Math.hypot(q.x - x, q.z - z) - PROPS[q.k].r * 0.5; if (dd < bd) { bd = dd; best = q; } }
+      if (best) this.propIgnite(best); else { if ((res.ny === undefined ? 1 : res.ny) > 0.6) { this.propAdd('flame', x, y, z, 0, true); this.sfx.play('whoosh', { vol: 0.5, pitch: 0.8 }); } }
+      return;
+    }
+    const k = PROP_ORDER[(P.propSel || 0) % PROP_ORDER.length];
+    if ((res.ny === undefined ? 1 : res.ny) < 0.6 || !this.propValid(k, x, y, z, P.yaw + Math.PI)) { this.pmMsg('Hier ist kein Platz.', 'No room here.', 1); return; }
+    this.propAdd(k, x, y, z, P.yaw + Math.PI); this.sfx.play('thunk', { vol: 0.6 }); this.fx.dust(V3(x, y + 0.1, z), 6, 1, [0.7, 0.65, 0.55]);
+  },
+  pmFwd(yaw, pitch) { const cp = Math.cos(pitch); return V3(Math.sin(yaw) * cp, Math.sin(pitch), Math.cos(yaw) * cp); },
+  pmHead(out) { const p = this.pm.p; return p.xf(HNAMES.indexOf('head'), NPCK.rest.head, out || V3()); },
+
+  /* ---------- Schiessen ---------- */
+  pmFire() {
+    const P = this.pm, it = PM_INV[P.sel], p = P.p; if (P.dead) return;
+    if (it.id === 'spawn') { if (this.cool > 0) return; this.cool = 0.35; p.recoil = 1; this.pmSpawnGun(); return; }
+    if (it.id === 'prop' || it.id === 'lighter') { if (this.cool > 0) return; this.cool = 0.4; p.recoil = 1; this.pmUse(it.id); return; }
+    const W = WEAPONS[it.id] || (it.id === 'grenade' ? WEAPONS.grenade : it.id === 'ball' ? WEAPONS.ball : null); if (!W || this.cool > 0) return;
+    this.cool = W.rate; this.sfx.unlock();
+    const cam = this.camPos, o = V3(cam[0], cam[1], cam[2]), d = this.pmFwd(P.yaw, P.pitch), mz = V3();
+    if (it.gun) { const H = NPCK.rest.handR; _nv[0] = H[0] + it.gm[0]; _nv[1] = H[1] + it.gm[1]; _nv[2] = H[2] + it.gm[2]; p.xf(HNAMES.indexOf('handR'), _nv, mz); }
+    else { const h = this.pmHead(); mz[0] = h[0] + d[0] * 0.5; mz[1] = h[1] - 0.15 + d[1] * 0.5; mz[2] = h[2] + d[2] * 0.5; }
+    switch (it.id) {
+      case 'pistol': case 'rifle': case 'smg': case 'shotgun': case 'sniper': {
+        const w0 = this.weapon; this.weapon = it.id; try { this.fireGun(o, d, mz, W); } finally { this.weapon = w0; }
+        this.flash2d = W.flash * (P.view === 'fp' ? 0.6 : 0.2); this.fx.addShake(W.shake * 0.6); this.sfx.play(W.snd, { pan: 0.1 });
+        this.fx.flash(mz, 0.9, [1, 0.85, 0.5], 0.05);
+        if (it.id === 'pistol' || it.id === 'rifle' || it.id === 'smg') this.sfx.play('casing', { pan: 0.5, vol: 0.8 });
+        p.recoil = 1; this.stats.shots++;
+        for (const n of P.npcs) if (!n.dead && !n.hurt) { const dd = Math.hypot(n.x - p.x, n.z - p.z); if (dd < 35) n.alert = true; }
+        break;
+      }
+      case 'grenade': this.throwProjectile('grenade', o, d, mz); this.sfx.play('whoosh', { vol: 0.6 }); p.recoil = 1; break;
+      case 'ball': this.throwProjectile('ball', o, d, mz); this.sfx.play('whoosh', { vol: 0.8 }); p.recoil = 1; break;
+    }
+  },
+
+  /* ---------- Blut an NPCs ---------- */
+  pmWound(n, bi, pt, sev) {
+    const W = n.wounds || (n.wounds = []), m = n.mats[bi];
+    const dx = pt[0] - m[12], dy = pt[1] - m[13], dz = pt[2] - m[14];
+    const lp = [dx * m[0] + dy * m[1] + dz * m[2], dx * m[4] + dy * m[5] + dz * m[6], dx * m[8] + dy * m[9] + dz * m[10]];
+    W.push({ bi, lp, age: 0, len: 0.01, max: 0.18 + sev * 0.34 + Math.random() * 0.12, run: 0.05 + sev * 0.07, w: 0.016 + sev * 0.016, r: 0.028 + sev * 0.03, dripT: 0.3 + Math.random() * 0.5, sev });
+    if (W.length > 14) W.shift();
+  },
+  pmWoundPos(n, w, out) { _nv[0] = w.lp[0]; _nv[1] = w.lp[1]; _nv[2] = w.lp[2]; return n.xf(w.bi, _nv, out); },
+  pmBloodStep(dt) {
+    const P = this.pm, A = this.act; if (!A) return; const wp = V3();
+    for (const n of A.npcs) {
+      if (!n.wounds) continue;
+      for (const w of n.wounds) {
+        w.age += dt;
+        if (w.run > 0.002 && w.len < w.max) { w.len += w.run * dt; w.run *= Math.exp(-0.10 * dt); }
+        else w.run = 0;
+        const bleeding = w.run > 0.003 || (n.dead && w.age < 22);
+        w.dripT -= dt;
+        if (bleeding && w.dripT <= 0) {
+          w.dripT = 0.45 + Math.random() * 0.9; this.pmWoundPos(n, w, wp);
+          P.drops.push({ x: wp[0] + (Math.random() - 0.5) * 0.02, y: wp[1] - w.len * (n.down > 0.5 ? 0 : 1), z: wp[2] + (Math.random() - 0.5) * 0.02, vy: 0 });
+        }
+      }
+      if (n.dead && n.wounds.length) {         // Blutlache unter der Leiche
+        n.pool = (n.pool || 0) + dt; if (n.pool < 24 && ((n.poolT = (n.poolT || 0) - dt) <= 0)) { n.poolT = 0.6; const y = this.groundY(n.x, n.z, n.y + 0.6); this.blood.addVolume(n.x + (Math.random() - 0.5) * 0.3, n.z + (Math.random() - 0.5) * 0.3, y, 3.5 + n.wounds.length * 0.5); }
+      }
+    }
+    for (let i = P.drops.length - 1; i >= 0; i--) {
+      const d = P.drops[i]; d.vy -= 9.81 * dt; d.y += d.vy * dt; const f = this.groundY(d.x, d.z, d.y + 0.4);
+      if (d.y <= f + 0.01) { this.blood.stamp(d.x, d.z, 0.022 + Math.random() * 0.03, 0.85, f, Math.random() - 0.5, Math.random() - 0.5, 1); P.drops.splice(i, 1); }
+      else if (d.y < -5) P.drops.splice(i, 1);
+    }
+  },
+  pmDraw(bd) {
+    const A = this.act, P = this.pm; if (!A) return;
+    const gm = this._pmGM || (this._pmGM = [M4.id(), M4.id()]), id = [0, 0, 0, 1], wp = V3();
+    for (const n of A.npcs.concat(A.corpses || [])) {
+      if (!n.vis) continue;
+      if (n.hm && !n.boarded && !n.sit) {
+        const H = NPCK.rest.handR, mm = M4.id(), loc = M4.id(), it = n.hm;
+        const pos = it === 'grenade' ? [H[0], H[1] - 0.04, H[2] + 0.05] : it === 'ball' ? [H[0], H[1] - 0.08, H[2] + 0.07] : [H[0] - 0.01, H[1] + 0.03, H[2] + 0.015];
+        M4.trs(loc, pos, id, 1, 1, 1); M4.mul(mm, n.mats[HNAMES.indexOf('handR')], loc);
+        const mesh = it === 'pistol' ? this.sceneMeshes().pistol() : it === 'rifle' ? this.sceneMeshes().rifle() : it === 'spawn' ? this.sceneMeshes().pistol() : this.pmMesh(it);
+        bd.push({ mesh, model: mm, tint: it === 'spawn' ? [0.25, 1.6, 1.9] : [1, 1, 1] });
+      }
+      if (n.wounds && !(n.isPlayer && P && P.view === 'fp' && false)) {
+        for (const w of n.wounds) {
+          this.pmWoundPos(n, w, wp); const f = Math.max(0.42, 1 - w.age / 45 * 0.58), tint = [1.7 * f, 1.0, 1.0];
+          const m1 = M4.id(); M4.trs(m1, [wp[0], wp[1], wp[2]], id, w.r, w.r, w.r); bd.push({ mesh: this.pmMesh('blob'), model: m1, tint });
+          if (w.len > 0.03) { const m2 = M4.id(); M4.trs(m2, [wp[0], wp[1] - w.r * 0.2, wp[2]], id, w.w, w.len, w.w * 0.8); bd.push({ mesh: this.pmMesh('streak'), model: m2, tint }); }
+        }
+      }
+    }
+    if (P) for (const d of P.drops) { const m = M4.id(); M4.trs(m, [d.x, d.y, d.z], id, 0.011, 0.011, 0.011); bd.push({ mesh: this.pmMesh('drop'), model: m, tint: [1.6, 1, 1] }); }
+  },
+
+  /* ---------- Treffer ---------- */
+  pmNpcHit(n, bi, B, pt) {
+    if (n.shield && pt[1] - n.y < 1.62) {         // Schild haelt Schuesse von vorn ab
+      const fx = Math.sin(n.yaw), fz = Math.cos(n.yaw), dl = Math.hypot(B.v[0], B.v[2]) || 1;
+      if ((B.v[0] * fx + B.v[2] * fz) / dl < -0.3) { B.alive = false; const nn = V3(fx, 0.1, fz); this.fx.sparks(V3(pt[0], pt[1], pt[2]), nn, 8, 5.5); this.fx.flash(V3(pt[0], pt[1], pt[2]), 0.6, [1, 0.9, 0.6], 0.05); const sp = this.spatial(pt[0], pt[1], pt[2]); this.sfx.play('smack', { vol: 0.6 * sp.vol, pan: sp.pan, pitch: 1.9 }); n.alert = true; return; }
+    }
+    const nm = HNAMES[bi], v = Math.hypot(B.v[0], B.v[1], B.v[2]), E = 0.5 * B.am.m * v * v;
+    const head = /^head/.test(nm), neck = /^neck/.test(nm), torso = /^(pelvis|abdomen|chest)/.test(nm);
+    let dmg = (head ? 100 : neck ? 80 : torso ? 38 : 16) * Math.max(0.6, Math.min(2.4, E / 520)); if (B.pellet || (B.am.pellets > 1)) dmg *= 0.8;
+    B.alive = false; n.hp -= dmg; n.alert = true; n.flinch = 0.35; this.stats.hits++;
+    const dir = V3(-B.v[0] / (v || 1), -B.v[1] / (v || 1), -B.v[2] / (v || 1)), P = V3(pt[0], pt[1], pt[2]);
+    this.fx.puff(P, dir, 6, 2.4, [0.55, 0.02, 0.03]); this.fx.dust(P, 2, 0.5, [0.5, 0.05, 0.05]);
+    this.pmWound(n, bi, pt, Math.min(1, dmg / 70));
+    const sp = this.spatial(pt[0], pt[1], pt[2]); this.sfx.play('smack', { vol: 0.8 * sp.vol, pan: sp.pan, pitch: 0.85 });
+    if (n.hp <= 0 && !n.hurt) {
+      n.hurt = true; n.dead = true; n.tasks.length = 0; const fw = [Math.sin(n.yaw), Math.cos(n.yaw)], dl = Math.hypot(B.v[0], B.v[2]) || 1;
+      n.fallDir = ((B.v[0] * fw[0] + B.v[2] * fw[1]) / dl) < 0 ? -1 : 1; n.down = 0.001; n.hm = n.hm;
+      this.sfx.play('scream', { vol: 0.85 * sp.vol, pan: sp.pan, pitch: 0.9 + Math.random() * 0.2, dur: 1.2 });
+      this.popup('DOWN', P, '#ff6a5a', 1.0);
+    } else { this.popup('HIT', P, '#ffd24a', 0.8); if (Math.random() < 0.5) this.sfx.play('scream', { vol: 0.5 * sp.vol, pan: sp.pan, pitch: 1.1, dur: 0.6 }); }
+    this.fx.addShake(0.12 * sp.vol);
+    for (const m of this.pm.npcs) if (!m.dead && Math.hypot(m.x - n.x, m.z - n.z) < 25) m.alert = true;
+  },
+  pmHurt(dmg, from, why) {
+    const P = this.pm; if (!P || P.dead) return;
+    /* Spielfigur ist unverwundbar: Treffer erzeugen nur Rueckmeldung (Wackeln, Vignette, Ton), kein Ragdoll, kein Tod */
+    P.hurtT = 0.35; this.fx.addShake(0.18); this.sfx.play('whiz', { vol: 0.35, pitch: 1.0 }); return;
+    if (P.hp <= 0) { P.hp = 0; P.dead = true; P.deadT = 0; const p = P.p; p.hurt = true; p.dead = true; p.down = 0.001; p.fallDir = -1; p.tasks.length = 0; P.view = 'tp'; this.cineFade && 0; this.pmMsg('Du wurdest getötet …', 'You were killed …', 3); }
+  },
+  pmRespawn() {
+    const P = this.pm, p = P.p, sp = this.env.spawns[this.spawnKey] || { x: 0, z: 0, y: 0 };
+    p.hurt = false; p.dead = false; p.down = 0; p.wounds = []; P.hp = 100; p.hp = 100; P.dead = false;
+    const D = this.dummy.b.pelvis.p; let x = D[0] + 2.2, z = D[2] + 0.6; if (this.navBlocked(x, z, sp.y || 0, 0.3, true)) { x = sp.x + 2; z = sp.z + 2; }
+    p.x = x; p.z = z; p.y = this.groundY(x, z, (sp.y || 0) + 1); P.vy = 0; P.view = 'fp'; this.fx.flash(V3(x, p.y + 1, z), 2, [0.6, 1, 0.7], 0.2); this.pmMsg('Wieder da!', 'Back again!', 1.5);
+  },
+
+  /* ---------- KI der gespawnten NPCs ---------- */
+  pmAI(n, dt) {
+    const P = this.pm, p = P.p; if (n.hurt || n.dead) return;
+    n.flinch = Math.max(0, (n.flinch || 0) - dt); n.aiT = (n.aiT || 0) - dt; n.fireT -= dt;
+    const dx = p.x - n.x, dz = p.z - n.z, dist = Math.hypot(dx, dz), alive = !P.dead;
+    if (n.hostile && alive && dist < 60) {
+      const eye = V3(n.x, n.y + 1.5, n.z), tg = V3(p.x, p.y + 1.25, p.z), d = V3(tg[0] - eye[0], tg[1] - eye[1], tg[2] - eye[2]), L = Math.hypot(d[0], d[1], d[2]) || 1;
+      if (n.cvS > 0) { n.cvS -= dt; if (n.cvS <= 0) { n.cvS = 0; n.crouchT = 0; n.tasks = []; n.nextCover = P.t + 7 + Math.random() * 7; } return; }   // versteckt sich hinter einer Wand
+      let los = true; if (n.aiT <= 0 || n.losC === undefined) { d[0] /= L; d[1] /= L; d[2] /= L; const r = this.world.raycast(eye, d, L, this.rayOpt()); n.losC = !(r && r.kind !== 'body' && r.t < L - 0.7); n.aiT = 0.25; } los = n.losC;
+      if (los && dist < 32 && n.alert !== false && P.t > (n.nextCover === undefined ? (n.nextCover = P.t + 2 + Math.random() * 5) : n.nextCover) && n.flinch <= 0) {
+        const cv = this.pmFindCover(n); n.nextCover = P.t + 5 + Math.random() * 4;
+        if (cv) { n.cvS = 3 + Math.random() * 2.5; n.tasks = [{ k: 'walk', x: cv.x, z: cv.z, spd: 4.8, gunUp: true }, { k: 'do', fn: (m) => { m.crouchT = 1; } }, { k: 'wait', d: 30 }]; return; }
+      }
+      if (los && dist < 32 && n.alert !== false) {
+        if (n.tasks.length === 0 || n.tasks[0].k !== 'aimat') n.tasks = [{ k: 'aimat', d: 99, fn: (m) => [p.x, p.y + 1.25, p.z] }];
+        if (n.flinch <= 0 && n.fireT <= 0 && n.tasks[0] && n.tasks[0].t > 0.5) this.pmNpcFire(n, dist);
+        if (dist > 14 && !n.moveT) { n.moveT = 1; n.tasks.unshift({ k: 'walk', x: p.x - dx / dist * 10, z: p.z - dz / dist * 10, spd: 4.2, gunUp: true }); }
+        else if (n.tasks[0].k === 'aimat') n.moveT = 0;
+      } else {
+        if (!n.tasks.length || n.aiT <= 0.01 && n.tasks[0].k === 'aimat') n.tasks = [];
+        const T0 = n.tasks[0];
+        if (!T0 || (T0.k === 'walk' && Math.hypot(T0.x - p.x, T0.z - p.z) > 4 && (n.repT = (n.repT || 0) - dt) < 0)) { n.repT = 0.9; n.tasks = [{ k: 'walk', x: p.x - dx / dist * 7, z: p.z - dz / dist * 7, spd: 4.6, gunUp: true }]; }
+      }
+      return;
+    }
+    if (!n.hostile && n.alert) {                // Zivilisten fliehen
+      if (!n.tasks.length || ((n.repT = (n.repT || 0) - dt) < 0 && dist < 18)) { n.repT = 1.5; const a = Math.atan2(-dx, -dz) + (Math.random() - 0.5) * 1.2; n.tasks = [{ k: 'walk', x: n.x + Math.sin(a) * 9, z: n.z + Math.cos(a) * 9, spd: 4.4 }]; }
+      return;
+    }
+    if (!n.tasks.length && n.aiT <= 0) { n.aiT = 3 + Math.random() * 4; if (Math.random() < 0.6) { const a = Math.random() * 6.28; n.tasks = [{ k: 'walk', x: n.x + Math.sin(a) * 3, z: n.z + Math.cos(a) * 3, spd: 1.2 }]; } }
+  },
+  pmFindCover(n) {
+    const P = this.pm, p = P.p, B = this.env.boxes; let best = null, bd = 1e9;
+    for (const b of B) {
+      if (b.max[1] < 0.9 || b.max[1] > 3.4 || b.min[1] > 0.5) continue; const w = b.max[0] - b.min[0], dp = b.max[2] - b.min[2]; if (Math.max(w, dp) < 0.9) continue;
+      const cx = (b.min[0] + b.max[0]) / 2, cz = (b.min[2] + b.max[2]) / 2, dx = cx - p.x, dz = cz - p.z, dl = Math.hypot(dx, dz); if (dl < 3 || dl > 22) continue;
+      const dn = Math.hypot(cx - n.x, cz - n.z); if (dn > 15 || dn >= bd) continue; const half = Math.min(w, dp) / 2 + 0.75, px = cx + dx / dl * half, pz = cz + dz / dl * half;
+      if (this.navBlocked(px, pz, n.y, 0.4, true) || Math.abs(this.groundY(px, pz, n.y + 0.5) - n.y) > 0.6) continue; bd = dn; best = { x: px, z: pz };
+    }
+    return best;
+  },
+  pmNpcFire(n, dist) {
+    const P = this.pm, p = P.p, R = n.gun === 'rifle' ? { rate: 0.1, burst: 4, pause: 0.8, snd: 'rifle', dmg: 3.0, gm: [0, -0.86, 0.04] } : { rate: 0.3, burst: 3, pause: 1.0, snd: 'pistol', dmg: 6, gm: [0, -0.2, 0.02] };
+    n.shots++; n.fireT = (n.shots % R.burst === 0) ? R.pause * (0.8 + Math.random() * 0.5) : R.rate * (0.85 + Math.random() * 0.3);
+    const H = NPCK.rest.handR; _nv[0] = H[0] + R.gm[0]; _nv[1] = H[1] + R.gm[1]; _nv[2] = H[2] + R.gm[2]; const mz = n.xf(HNAMES.indexOf('handR'), _nv, V3());
+    const moving = P.keys.has('KeyW') || P.keys.has('KeyA') || P.keys.has('KeyS') || P.keys.has('KeyD');
+    const pHit = Math.max(0.1, Math.min(0.55, 0.62 - dist * 0.016 - (moving ? 0.14 : 0) - (P.p.crouch ? 0.1 : 0)));
+    const hit = Math.random() < pHit, off = hit ? 0 : 0.7 + Math.random() * 0.9, ang = Math.random() * 6.28;
+    const end = V3(p.x + Math.cos(ang) * off, p.y + 0.4 + Math.random() * 1.0, p.z + Math.sin(ang) * off);
+    this.fx.tracer(mz, end, 0.07, 0.012, [1, 0.85, 0.5]); this.fx.flash(mz, 0.9, [1, 0.85, 0.5], 0.05);
+    const sp = this.spatial(mz[0], mz[1], mz[2]); this.sfx.play(R.snd, { vol: Math.min(1, 0.55 + sp.vol * 0.5), pan: sp.pan }); this.sfx.play('casing', { pan: sp.pan, vol: 0.35 });
+    n.recoil = 1; n.pitch = Math.atan2(p.y + 1.25 - (n.y + 1.4), dist || 1) * 0.9;
+    if (hit) this.pmHurt(R.dmg * (0.7 + Math.random() * 0.7), n);
+    else { this.fx.dust(end, 3, 0.8); const sp2 = this.spatial(end[0], end[1], end[2]); this.sfx.play('whiz', { vol: 0.5 * sp2.vol, pan: sp2.pan }); }
+  },
+
+  /* ---------- Schritt pro Tick ---------- */
+  pmStep(dt) {
+    const P = this.pm; if (!P || !P.on) return;
+    if (this.menuOn || this.intro) { this.pmExit(true); return; }
+    P.t += dt; P.hurtT = Math.max(0, P.hurtT - dt);
+    for (const n of P.npcs) if (n.pmai) this.pmAI(n, dt);
+    // Weitere Waffen: gespawnte NPCs mit Treffer leben weiter -> Update laeuft ueber stepScenes
+    this.pmBloodStep(dt);
+    if (P.p.wounds) { /* Spielerblut laeuft in pmBloodStep mit */ }
+    if (P.dead) { P.deadT += dt; if (P.deadT > 4.2) this.pmRespawn(); return; }
+    if (P.fire && !P.dead) { const it = PM_INV[P.sel], W = WEAPONS[it.id]; if (P.fireEdge || (W && W.auto && it.gun)) { P.fireEdge = false; this.pmFire(); } }
+    // Hilfsfunktion: Spieler (nicht Teil von P.npcs) ist in A.npcs: Aufraeumen toter NPCs
+    if (P.npcs.length > 24) { const old = P.npcs.find(n => n.dead); if (old) this.pmRemove(old); }
+    if (this.pmHud) this.pmHud();
+  },
+  pmCamera(dt) {
+    const P = this.pm; if (!P || !P.on || this.cine) return;
+    const p = P.p, h = this.pmHead(V3()), f = this.pmFwd(P.yaw, P.pitch), c = this.cam;
+    const sy = Math.sin(P.yaw), cy = Math.cos(P.yaw), rx = -cy, rz = sy;
+    let view = P.view; if (P.dead) view = 'tp';
+    if (view === 'fp') {
+      this.camPos[0] = h[0] + sy * 0.07; this.camPos[1] = h[1] + 0.04; this.camPos[2] = h[2] + cy * 0.07;
+      this.camTarget[0] = this.camPos[0] + f[0] * 6; this.camTarget[1] = this.camPos[1] + f[1] * 6; this.camTarget[2] = this.camPos[2] + f[2] * 6;
+    } else {
+      let dist = P.dead ? 3.6 : 2.5, side = P.dead ? 0.0 : 0.55, up = 0.25;
+      const bx = h[0], by = h[1], bz = h[2]; let k = 1;
+      for (let it = 0; it < 12; it++) {
+        const ex = bx - f[0] * dist * k + rx * side * k, ey = Math.max(0.15, by - f[1] * dist * k + up), ez = bz - f[2] * dist * k + rz * side * k; let inside = false;
+        for (const b of this.env.boxes) if (ex > b.min[0] - 0.15 && ex < b.max[0] + 0.15 && ey > b.min[1] - 0.15 && ey < b.max[1] + 0.15 && ez > b.min[2] - 0.15 && ez < b.max[2] + 0.15) { inside = true; break; }
+        if (!inside) break; k *= 0.86;
+      }
+      this.camPos[0] = bx - f[0] * dist * k + rx * side * k; this.camPos[1] = Math.max(0.15, by - f[1] * dist * k + up); this.camPos[2] = bz - f[2] * dist * k + rz * side * k;
+      this.camTarget[0] = this.camPos[0] + f[0] * 10; this.camTarget[1] = this.camPos[1] + f[1] * 10; this.camTarget[2] = this.camPos[2] + f[2] * 10;
+    }
+    const wz = PM_INV[P.sel].id === 'sniper' && P.zoom ? 0.32 : (P.zoom ? 0.62 : 1.05);
+    P.fov = (P.fov || wz) + (wz - (P.fov || wz)) * Math.min(1, dt * 12); c.fov = P.fov;
+    c.tx = this.camTarget[0]; c.ty = this.camTarget[1]; c.tz = this.camTarget[2]; c.free = true;
+    // Kopf nur in der Ego-Ansicht nicht stoeren: Kamera sitzt im Kopf (Rueckseiten werden nicht gezeichnet)
+  },
+
+  /* ---------- HUD ---------- */
+  pmHud(force) {
+    const P = this.pm; if (!P) return; const el = document.getElementById('pmhud'); if (!el) return;
+    const key = P.sel + '|' + Math.round(P.hp) + '|' + P.view + '|' + P.spawnSel + '|' + (P.propSel || 0) + '|' + (P.zoom ? 1 : 0) + '|' + (P.dead ? 1 : 0) + '|' + (this.set.lang || '');
+    if (!force && P._hk === key) { const v = document.getElementById('pmvig'); if (v) v.style.opacity = Math.min(0.85, P.hurtT * 1.4 + (P.hp < 30 ? (30 - P.hp) / 60 : 0)).toFixed(2); return; } P._hk = key;
+    const w = PM_INV.map((it, i) => '<span class="' + (i === P.sel ? 'on' : '') + '"><b>' + (i + 1) + '</b>' + tx2(it.de, it.en) + '</span>').join('');
+    const sd = PM_SPAWN[P.spawnSel];
+    el.querySelector('#pmw').innerHTML = w;
+    el.querySelector('#pmhp i').style.width = Math.max(0, P.hp) + '%'; el.querySelector('#pmhp i').style.background = P.hp < 30 ? '#e5473b' : P.hp < 60 ? '#e8b13a' : '#5fcf7e';
+    el.querySelector('#pmsp').innerHTML = PM_INV[P.sel].id === 'prop' ? '<b>' + tx2('Objekt', 'Object') + ':</b> ' + tx2(PROPS[PROP_ORDER[(P.propSel || 0) % PROP_ORDER.length]].de, PROPS[PROP_ORDER[(P.propSel || 0) % PROP_ORDER.length]].en) + '<br><small>' + tx2('R / Rechtsklick: Objekt wechseln – Klick: setzen', 'R / right click: change object – click: place') + '</small>' : PM_INV[P.sel].id === 'lighter' ? '<small>' + tx2('Klick auf Objekt: anzünden · auf Boden: Feuer setzen', 'Click object: ignite · ground: place fire') + '</small>' : PM_INV[P.sel].id === 'spawn' ? '<b>' + tx2('Spawn-Typ', 'Spawn type') + ':</b> ' + tx2(sd.de, sd.en) + (sd.hostile ? ' <em>' + tx2('feindlich', 'hostile') + '</em>' : '') + '<br><small>' + tx2('R / Rechtsklick: Typ wechseln – Klick: platzieren', 'R / right click: change type – click: place') + '</small>' : '';
+    el.querySelector('#pmhint').textContent = tx2('V Verlassen · C ' + (P.view === 'fp' ? 'Außenansicht' : 'Egoansicht') + ' · Shift rennen · Leertaste springen · Rechtsklick zoomen', 'V leave · C ' + (P.view === 'fp' ? 'third person' : 'first person') + ' · Shift run · Space jump · right click zoom');
+  }
+});
+
+/* Spieler-Update (Instanz-Methode ersetzt Npc.update fuer die Spielfigur) */
+function pmPlayerUpdate(g, dt) {
+  const P = g.pm, p = this; if (!P || !P.on) return;
+  p.t += dt;
+  if (p.hurt) { Npc.prototype.update.call(p, g, dt); return; }
+  const K = P.keys;
+  if (K.has('ArrowLeft')) P.yaw += 1.9 * dt; if (K.has('ArrowRight')) P.yaw -= 1.9 * dt; if (K.has('ArrowUp')) P.pitch += 1.3 * dt; if (K.has('ArrowDown')) P.pitch -= 1.3 * dt;
+  P.pitch = Math.max(-1.35, Math.min(1.35, P.pitch));
+  const J = P.joy || { x: 0, y: 0 }, jm = Math.min(1, Math.hypot(J.x, J.y));
+  let fw = (K.has('KeyW') ? 1 : 0) - (K.has('KeyS') ? 1 : 0) - J.y, rt = (K.has('KeyD') ? 1 : 0) - (K.has('KeyA') ? 1 : 0) + J.x;
+  const run = K.has('ShiftLeft') || K.has('ShiftRight') || !!P.runT || jm > 0.92 && P.joyRun;
+  const sy = Math.sin(P.yaw), cy = Math.cos(P.yaw);
+  let vx = sy * fw + (-cy) * rt, vz = cy * fw + sy * rt; const vl = Math.hypot(vx, vz), moving = vl > 0.01, an = Math.min(1, vl), spd = moving ? (run ? 5.4 : 2.9) * (fw < -0.3 ? 0.7 : 1) * (jm > 0 && !K.has('KeyW') ? Math.max(0.45, an) : 1) : 0;
+  if (moving) { vx /= vl; vz /= vl; }
+  let nx = p.x + vx * spd * dt, nz = p.z + vz * spd * dt;
+  if (!g.navBlocked(nx, p.z, p.y, 0.3)) p.x = nx; if (!g.navBlocked(p.x, nz, p.y, 0.3)) p.z = nz;
+  // Fahrzeuge schieben den Spieler aus dem Weg (Einsatzwagen fahren sonst durch ihn hindurch)
+  if (g.act) for (const v of g.act.veh) {
+    if (!v.vis) continue; const C = VEHCFG[v.kind] || { hw: 1.3, hl: 2.8 }, dx = p.x - v.x, dz = p.z - v.z, c = Math.cos(v.yaw), s = Math.sin(v.yaw), lx = dx * c - dz * s, lz = dx * s + dz * c, hw = C.hw + 0.3, hl = C.hl + 0.3;
+    if (Math.abs(lx) < hw && Math.abs(lz) < hl) { const ox = hw - Math.abs(lx), oz = hl - Math.abs(lz); let nx = lx, nz = lz; if (ox < oz) nx = (lx >= 0 ? 1 : -1) * (hw + 0.05); else nz = (lz >= 0 ? 1 : -1) * (hl + 0.05); p.x = v.x + nx * c + nz * s; p.z = v.z - nx * s + nz * c; }
+  }
+  // Hoehe: Boden folgen, springen, fallen
+  const fl = g.groundY(p.x, p.z, p.y + 0.3);
+  if (P.vy === 0 && p.y <= fl + 0.02 && (K.has('Space') || P.jumpT) && !P.jumpLock) { P.vy = 4.6; P.jumpLock = true; }
+  if (!K.has('Space') && !P.jumpT) P.jumpLock = false;
+  if (P.vy !== 0 || p.y > fl + 0.05) { P.vy -= 12.5 * dt; p.y += P.vy * dt; if (p.y <= fl) { p.y = fl; P.vy = 0; } p.free = false; }
+  else { p.y += (fl - p.y) * (1 - Math.exp(-16 * dt)); p.free = true; }
+  { // Koerper dreht dem Blick nach; Kopf schaut zuerst (ohne Waffe), mit Waffe zeigt der Koerper exakt in Blickrichtung
+    let dy = P.yaw - p.yaw; while (dy > Math.PI) dy -= 6.2832; while (dy < -Math.PI) dy += 6.2832;
+    const gunUpN = !!PM_INV[P.sel].gun || moving, lag = gunUpN ? 0 : (Math.abs(dy) > 0.9 ? 1 : 0);
+    if (gunUpN) p.yaw = P.yaw; else { const st = Math.abs(dy) > 0.9 ? 9 : 2.2; p.yaw += Math.sign(dy) * Math.min(Math.abs(dy), st * dt * (Math.abs(dy) > 0.5 ? 1 : 0.6)); }
+    let ry = P.yaw - p.yaw; while (ry > Math.PI) ry -= 6.2832; while (ry < -Math.PI) ry += 6.2832; p.lookYaw = Math.max(-1.2, Math.min(1.2, ry));
+    p.lookPitch = P.pitch * 0.9; p.pitch = P.pitch * 0.9;
+    // Umschauen im Stand: Fuesse treten mit, wenn sich der Koerper dreht
+    const yr = Math.abs(dy); p.tsp = (!moving && yr > 0.25 && !gunUpN) ? 1.5 : 0;
+  }
+  const it = PM_INV[P.sel], gunUp = !!it.gun, kk = 1 - Math.exp(-8 * dt);
+  const aimT = gunUp ? (run && moving ? 0.55 : 1) : 0; p.aim += (aimT - p.aim) * kk;
+  p.spd += (Math.max(spd, p.tsp || 0) - p.spd) * (1 - Math.exp(-9 * dt)); if (moving || p.tsp) p.ph += dt * (3.2 + p.spd * 2.3);
+  p.recoil *= Math.exp(-14 * dt); p.climb *= Math.exp(-8 * dt); p.kneel *= Math.exp(-6 * dt);
+  p.pose();
+}
+
+/* ---------- Haken ---------- */
+{
+  const ss0 = Game.prototype.stepScenes;
+  Game.prototype.stepScenes = function (dt) { ss0.call(this, dt); if (this.pm && this.pm.on) this.pmStep(dt); };
+  const as0 = Game.prototype.appendScenes;
+  Game.prototype.appendScenes = function (bd, sc) { as0.call(this, bd, sc); if (this.act) this.pmDraw(bd); };
+  const uc0 = Game.prototype.updateCamera;
+  Game.prototype.updateCamera = function (dt) { uc0.call(this, dt); if (this.pm && this.pm.on) this.pmCamera(dt); };
+  const cs0 = Game.prototype.clearScenes;
+  Game.prototype.clearScenes = function () { if (this.pm && this.pm.on) this.pmExit(true); return cs0.apply(this, arguments); };
+  /* NPC-Treffer: gespawnte NPCs haben Trefferpunkte; Szenen-Helfer fallen wie bisher, bluten aber jetzt auch */
+  const nh0 = Game.prototype.npcHit;
+  Game.prototype.npcHit = function (n, bi, B, pt) {
+    if (this.pm && this.pm.on && n.hp !== undefined) return this.pmNpcHit(n, bi, B, pt);
+    nh0.apply(this, arguments);
+    if (this.pm && this.pm.on) { this.pmWound(n, bi, pt, 0.8); }
+  };
+  /* Sandbox-Eintrag */
+  WEAPONS.person = { name: 'Person mode', key: 'V', rate: 1, act: true, info: 'Walk around as a person with the same skeleton as the NPCs. First and third person, weapons in hand, spawn gun. Key V.' };
+  SBX_ITEMS.tools.unshift('person');
+  Object.assign(ICON_P, { person: '<circle cx="32" cy="12" r="6.5"/><path d="M32 19v20M32 25l-12 8M32 25l11 6M32 39l-9 20M32 39l9 20"/><path d="M46 28l12-4M48 33h12" opacity=".7"/><path d="M52 18v-6M49 15h6" opacity=".6"/>' });
+  const ta1 = Game.prototype.triggerAction;
+  Game.prototype.triggerAction = function (id) { if (id === 'person') { this.sfx.unlock(); this.pmToggle(); if (this.sbx && this.sbx.toggle && document.body.classList.contains('sbx-open')) this.sbx.toggle(false); return; } return ta1.apply(this, arguments); };
+
+  /* HUD + Eingabe */
+  const st = document.createElement('style');
+  st.textContent = '#pmhud{position:fixed;inset:0;pointer-events:none;z-index:30;display:none;font:13px/1.3 system-ui,sans-serif;color:#fff}#pmhud.on{display:block}' +
+    '#pmcross{position:absolute;left:50%;top:50%;width:22px;height:22px;margin:-11px 0 0 -11px}#pmcross:before,#pmcross:after{content:"";position:absolute;background:#fff;box-shadow:0 0 3px #000}#pmcross:before{left:10px;top:0;width:2px;height:22px;clip-path:polygon(0 0,100% 0,100% 36%,0 36%,0 64%,100% 64%,100% 100%,0 100%)}#pmcross:after{top:10px;left:0;height:2px;width:22px;clip-path:polygon(0 0,36% 0,36% 100%,0 100%,64% 100%,64% 0,100% 0,100% 100%,0 100%)}' +
+    '#pmvig{position:absolute;inset:0;opacity:0;background:radial-gradient(ellipse at center,rgba(150,0,0,0) 45%,rgba(170,0,0,.75) 100%)}' +
+    '#pmhp{position:absolute;left:18px;bottom:18px;width:220px;height:14px;border-radius:8px;background:rgba(0,0,0,.5);overflow:hidden;box-shadow:0 0 0 1px rgba(255,255,255,.25)}#pmhp i{display:block;height:100%;width:100%;transition:width .15s}' +
+    '#pmw{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);display:flex;gap:4px;max-width:92vw;flex-wrap:wrap;justify-content:center}#pmw span{background:rgba(0,0,0,.5);padding:4px 8px;border-radius:7px;box-shadow:0 0 0 1px rgba(255,255,255,.18);white-space:nowrap}#pmw span.on{background:rgba(40,120,200,.85);box-shadow:0 0 0 1px #9fd1ff}#pmw b{opacity:.6;margin-right:5px}' +
+    '#pmsp{position:absolute;right:18px;bottom:70px;text-align:right;background:rgba(0,0,0,.5);padding:8px 12px;border-radius:9px}#pmsp:empty{display:none}#pmsp em{color:#ff8a7a;font-style:normal}#pmsp small{opacity:.7}' +
+    '#pmhint{position:absolute;left:50%;top:64px;transform:translateX(-50%);background:rgba(0,0,0,.45);padding:5px 12px;border-radius:8px;font-size:12px;white-space:nowrap;max-width:94vw;overflow:hidden;text-overflow:ellipsis}' +
+    '#pmmsg{position:absolute;left:50%;top:18%;transform:translateX(-50%);background:rgba(0,0,0,.6);padding:8px 16px;border-radius:10px;opacity:0;transition:opacity .3s;max-width:90vw;text-align:center}#pmmsg.on{opacity:1}' +
+    'body.pm #status,body.pm #brain,body.pm #stats,body.pm #bottom,body.pm #ballis,body.pm #sbox{display:none!important}';
+  document.head.appendChild(st);
+  const hud = document.createElement('div'); hud.id = 'pmhud';
+  hud.innerHTML = '<div id="pmvig"></div><div id="pmcross"></div><div id="pmhp"><i></i></div><div id="pmw"></div><div id="pmsp"></div><div id="pmhint"></div><div id="pmmsg"></div>';
+  document.body.appendChild(hud);
+  const gm = () => { const g = window.__game; return g && g.pm && g.pm.on ? g : null; };
+  const BLOCK = /^(Key[A-Z]|Digit\d|Space|Arrow(Left|Right|Up|Down)|ShiftLeft|ShiftRight|Tab|Minus|Equal|BracketLeft|BracketRight|Backquote)$/;
+  addEventListener('keydown', e => {
+    const g = window.__game; if (!g || e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.target && /^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName)) return;
+    if (e.code === 'KeyV' && !e.repeat && !g.menuOn && !g.intro && !g.cine) { e.preventDefault(); e.stopImmediatePropagation(); g.pmToggle(); return; }
+    const G = gm(); if (!G) return; const P = G.pm;
+    if (e.code === 'Escape') return;
+    if (!BLOCK.test(e.code)) return; e.preventDefault(); e.stopImmediatePropagation();
+    P.keys.add(e.code);
+    if (e.repeat) return;
+    if (e.code === 'KeyC') { P.view = P.view === 'fp' ? 'tp' : 'fp'; G.pmHud(true); }
+    else if (/^Digit[1-9]$/.test(e.code)) { const i = +e.code.slice(5) - 1; if (i < PM_INV.length) G.pmSelect(i); }
+    else if (e.code === 'KeyQ') G.pmSelect(P.sel - 1);
+    else if (e.code === 'KeyE') G.pmSelect(P.sel + 1);
+    else if (e.code === 'KeyR' && PM_INV[P.sel].id === 'spawn') { P.spawnSel = (P.spawnSel + 1) % PM_SPAWN.length; G.pmHud(true); }
+    else if (e.code === 'KeyR' && PM_INV[P.sel].id === 'prop') { P.propSel = ((P.propSel || 0) + 1) % PROP_ORDER.length; G.pmHud(true); }
+  }, true);
+  addEventListener('keyup', e => { const G = gm(); if (!G) return; G.pm.keys.delete(e.code); if (BLOCK.test(e.code)) { e.stopImmediatePropagation(); } }, true);
+  addEventListener('blur', () => { const G = gm(); if (G) { G.pm.keys.clear(); G.pm.fire = false; } });
+  const onCanvas = (e) => e.target && e.target.tagName === 'CANVAS';
+  addEventListener('pointerdown', e => {
+    const G = gm(); if (!G || !onCanvas(e)) return; e.stopImmediatePropagation(); e.preventDefault(); G.sfx.unlock(); const P = G.pm;
+    try { const cv = document.getElementById('gl'); if (document.pointerLockElement !== cv && cv.requestPointerLock && !P.noLock) { const r = cv.requestPointerLock(); if (r && r.catch) r.catch(() => { P.noLock = true; }); } } catch (er) { }
+    if (e.button === 2) { if (PM_INV[P.sel].id === 'spawn') { P.spawnSel = (P.spawnSel + 1) % PM_SPAWN.length; G.pmHud(true); } else if (PM_INV[P.sel].id === 'prop') { P.propSel = ((P.propSel || 0) + 1) % PROP_ORDER.length; G.pmHud(true); } else P.zoom = true; }
+    else if (e.button === 0) { P.fire = true; P.fireEdge = true; }
+  }, true);
+  addEventListener('pointerup', e => { const G = gm(); if (!G) return; if (e.button === 2) G.pm.zoom = false; if (e.button === 0) G.pm.fire = false; if (onCanvas(e)) e.stopImmediatePropagation(); }, true);
+  addEventListener('pointermove', e => {
+    const G = gm(); if (!G || !onCanvas(e)) return; const P = G.pm; e.stopImmediatePropagation();
+    let dx = 0, dy = 0; if (document.pointerLockElement) { dx = e.movementX || 0; dy = e.movementY || 0; } else if (e.buttons & 2) { dx = e.movementX || 0; dy = e.movementY || 0; }
+    if (!dx && !dy) return; const s = 0.0023 * (P.zoom ? 0.5 : 1); P.yaw -= dx * s; P.pitch = Math.max(-1.35, Math.min(1.35, P.pitch - dy * s));
+  }, true);
+  addEventListener('wheel', e => { const G = gm(); if (!G || !onCanvas(e)) return; e.stopImmediatePropagation(); e.preventDefault(); G.pmSelect(G.pm.sel + (e.deltaY > 0 ? 1 : -1)); }, { capture: true, passive: false });
+  addEventListener('contextmenu', e => { if (gm()) e.preventDefault(); }, true);
+
+  /* ---------- Touch-Steuerung (Joystick links, runde Tasten rechts, Pause-Ring + Kamera oben) ---------- */
+  const IC = {
+    fire: '<circle cx="32" cy="32" r="13"/><path d="M32 8v12M32 44v12M8 32h12M44 32h12"/><circle cx="32" cy="32" r="2.5" fill="currentColor"/>',
+    jump: '<path d="M32 50V16M18 28l14-14 14 14"/><path d="M20 56h24" opacity=".6"/>',
+    run: '<circle cx="38" cy="12" r="5.5" fill="currentColor"/><path d="M36 20l-8 10 8 6-3 14M28 30l-10 2M36 24l10 8M36 36l12 6" /><path d="M10 22h8M6 30h8M10 38h8" opacity=".6"/>',
+    next: '<path d="M14 32h32M34 20l12 12-12 12"/><path d="M50 14v36" opacity=".6"/>',
+    prev: '<path d="M50 32H18M30 20L18 32l12 12"/><path d="M14 14v36" opacity=".6"/>',
+    zoom: '<circle cx="28" cy="28" r="14"/><path d="M38 38l14 14M22 28h12M28 22v12"/>',
+    type: '<circle cx="32" cy="16" r="7"/><path d="M32 24v18M32 30l-12 8M32 30l12 8M32 42l-8 14M32 42l8 14"/><path d="M50 8v12M44 14h12" opacity=".7"/>',
+    pause: '<path d="M24 18v28M40 18v28" stroke-width="7"/>',
+    cam: '<rect x="8" y="22" width="36" height="28" rx="4"/><circle cx="18" cy="14" r="7"/><circle cx="36" cy="14" r="7"/><path d="M44 32l14-8v24l-14-8z"/>',
+  };
+  const svg = k => '<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round">' + IC[k] + '</svg>';
+  const tst = document.createElement('style');
+  tst.textContent = '#pmtouch{position:fixed;inset:0;z-index:31;pointer-events:none;display:none;-webkit-user-select:none;user-select:none;touch-action:none}body.pm.touchui #pmtouch{display:block}' +
+    '#pmtouch .tb{position:absolute;width:var(--s,74px);height:var(--s,74px);border-radius:50%;background:rgba(110,110,115,.55);border:2px solid rgba(255,255,255,.18);color:rgba(240,240,245,.85);pointer-events:auto;display:flex;align-items:center;justify-content:center;touch-action:none;-webkit-tap-highlight-color:transparent}' +
+    '#pmtouch .tb svg{width:58%;height:58%}#pmtouch .tb.on{background:rgba(70,150,230,.7);color:#fff}#pmtouch .tb:active{background:rgba(150,150,160,.75)}' +
+    '#pmtouch .big{--s:104px}#pmtouch .sm{--s:58px}' +
+    '#pmt-pause{left:calc(18px + env(safe-area-inset-left,0px));top:calc(14px + env(safe-area-inset-top,0px));background:rgba(0,10,30,.25);border:4px solid #19a7f0;color:#19a7f0;--s:64px}#pmt-pause.tb svg{width:52%;height:52%}' +
+    '#pmt-cam{right:calc(16px + env(safe-area-inset-right,0px));top:calc(14px + env(safe-area-inset-top,0px));background:none;border:0;color:#2a97e8;--s:76px}#pmt-cam svg{width:100%!important;height:100%!important;stroke-width:3.4}' +
+    '#pmt-joy{position:absolute;left:calc(26px + env(safe-area-inset-left,0px));bottom:calc(26px + env(safe-area-inset-bottom,0px));width:170px;height:170px;border-radius:50%;border:2px solid rgba(255,255,255,.28);background:rgba(255,255,255,.05);pointer-events:auto;touch-action:none}' +
+    '#pmt-knob{position:absolute;left:50%;top:50%;width:70px;height:70px;margin:-35px 0 0 -35px;border-radius:50%;background:rgba(190,190,200,.35);border:2px solid rgba(255,255,255,.3)}' +
+    '#pmt-fire{right:calc(26px + env(safe-area-inset-right,0px));bottom:calc(30px + env(safe-area-inset-bottom,0px))}#pmt-jump{right:calc(150px + env(safe-area-inset-right,0px));bottom:calc(26px + env(safe-area-inset-bottom,0px))}' +
+    '#pmt-run{right:calc(40px + env(safe-area-inset-right,0px));bottom:calc(160px + env(safe-area-inset-bottom,0px))}#pmt-zoom{right:calc(130px + env(safe-area-inset-right,0px));bottom:calc(112px + env(safe-area-inset-bottom,0px));--s:64px}' +
+    '#pmt-prev{right:calc(150px + env(safe-area-inset-right,0px));top:calc(14px + env(safe-area-inset-top,0px))}#pmt-next{right:calc(94px + env(safe-area-inset-right,0px));top:calc(14px + env(safe-area-inset-top,0px));display:none}' +
+    '#pmt-prev,#pmt-nx{--s:60px}#pmt-nx{right:calc(88px + env(safe-area-inset-right,0px));top:calc(14px + env(safe-area-inset-top,0px))}#pmt-ty{right:calc(224px + env(safe-area-inset-right,0px));top:calc(14px + env(safe-area-inset-top,0px));--s:60px}' +
+    'body.touchui #pmhint{display:none}body.touchui #pmw{top:12px;bottom:auto;left:50%;max-width:34vw;transform:translateX(-50%);justify-content:center;font-size:11px}body.touchui #pmw span:not(.on){display:none}body.touchui #pmhp{left:50%;bottom:14px;transform:translateX(-50%);width:160px}body.touchui #pmsp{right:auto;left:50%;bottom:44px;transform:translateX(-50%);text-align:center;max-width:46vw;font-size:11px}body.touchui #pmmsg{top:30%}body.pm.touchui #sbx-tab,body.pm.touchui #ptab{display:none!important}body.pm #acts,body.pm #hint,body.pm #chip{display:none!important}body.touchui #hint{display:none!important}';
+  document.head.appendChild(tst);
+  const tdom = document.createElement('div'); tdom.id = 'pmtouch';
+  const btn = (id, k, cls) => '<div class="tb ' + (cls || '') + '" id="pmt-' + id + '">' + svg(k) + '</div>';
+  tdom.innerHTML = '<div id="pmt-joy"><div id="pmt-knob"></div></div>' + btn('fire', 'fire', 'big') + btn('jump', 'jump') + btn('run', 'run') + btn('zoom', 'zoom', 'sm') + btn('prev', 'prev', 'sm') + btn('nx', 'next', 'sm') + btn('ty', 'type', 'sm') + btn('pause', 'pause') + btn('cam', 'cam');
+  document.body.appendChild(tdom);
+  const touchCap = (('ontouchstart' in window) || navigator.maxTouchPoints > 0 || (window.matchMedia && matchMedia('(pointer:coarse)').matches));
+  const setTouch = (on) => document.body.classList.toggle('touchui', on);
+  if (touchCap) setTouch(true);
+  addEventListener('touchstart', () => setTouch(true), { passive: true, once: true });
+  const $ = id => document.getElementById(id);
+  const hold = (el, down, up) => { el.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); try { el.setPointerCapture(e.pointerId); } catch (er) { } const G = gm(); if (G) down(G.pm, G); }, { passive: false }); const u = e => { const G = gm(); if (G && up) up(G.pm, G); }; el.addEventListener('pointerup', u); el.addEventListener('pointercancel', u); el.addEventListener('lostpointercapture', u); };
+  hold($('pmt-fire'), (P, G) => { G.sfx.unlock(); P.fire = true; P.fireEdge = true; }, (P) => { P.fire = false; });
+  hold($('pmt-jump'), (P) => { P.jumpT = true; }, (P) => { P.jumpT = false; });
+  hold($('pmt-run'), (P) => { P.runT = !P.runT; $('pmt-run').classList.toggle('on', P.runT); });
+  hold($('pmt-zoom'), (P) => { P.zoom = !P.zoom; $('pmt-zoom').classList.toggle('on', P.zoom); });
+  hold($('pmt-prev'), (P, G) => G.pmSelect(P.sel - 1)); hold($('pmt-nx'), (P, G) => G.pmSelect(P.sel + 1));
+  hold($('pmt-ty'), (P, G) => { const id = PM_INV[P.sel].id; if (id === 'spawn') P.spawnSel = (P.spawnSel + 1) % PM_SPAWN.length; else if (id === 'prop') P.propSel = ((P.propSel || 0) + 1) % PROP_ORDER.length; G.pmHud(true); });
+  hold($('pmt-pause'), (P, G) => G.pmExit());
+  hold($('pmt-cam'), (P, G) => { P.view = P.view === 'fp' ? 'tp' : 'fp'; G.pmHud(true); });
+  /* Joystick */
+  { const joy = $('pmt-joy'), knob = $('pmt-knob'); let pid = null, cx = 0, cy = 0, lastTap = 0; const R = 70;
+    const mv = e => { const G = gm(); if (!G) return; let dx = e.clientX - cx, dy = e.clientY - cy; const l = Math.hypot(dx, dy); if (l > R) { dx *= R / l; dy *= R / l; } knob.style.transform = 'translate(' + dx + 'px,' + dy + 'px)'; const m = Math.min(1, l / R), dz = m < 0.12 ? 0 : (m - 0.12) / 0.88, k = l > 0 ? dz / m : 0; G.pm.joy = { x: dx / R * k, y: dy / R * k }; G.pm.joyRun = l > R * 0.96; };
+    joy.addEventListener('pointerdown', e => { e.preventDefault(); pid = e.pointerId; try { joy.setPointerCapture(pid); } catch (er) { } const r = joy.getBoundingClientRect(); cx = r.left + r.width / 2; cy = r.top + r.height / 2; mv(e); });
+    joy.addEventListener('pointermove', e => { if (e.pointerId === pid) mv(e); });
+    const end = e => { if (e.pointerId !== pid) return; pid = null; knob.style.transform = ''; const G = gm(); if (G) { G.pm.joy = { x: 0, y: 0 }; G.pm.joyRun = false; } };
+    joy.addEventListener('pointerup', end); joy.addEventListener('pointercancel', end); }
+  /* Umschauen per Wischen auf dem Bild (Touch) */
+  { const looks = new Map();
+    addEventListener('pointerdown', e => { const G = gm(); if (!G || e.pointerType !== 'touch' || !onCanvas(e)) return; looks.set(e.pointerId, [e.clientX, e.clientY]); }, true);
+    addEventListener('pointermove', e => { const G = gm(); if (!G || !looks.has(e.pointerId)) return; const l = looks.get(e.pointerId), dx = e.clientX - l[0], dy = e.clientY - l[1]; l[0] = e.clientX; l[1] = e.clientY; const P = G.pm, s = 0.0042 * (P.zoom ? 0.5 : 1); P.yaw -= dx * s; P.pitch = Math.max(-1.35, Math.min(1.35, P.pitch - dy * s)); }, true);
+    const e2 = e => looks.delete(e.pointerId); addEventListener('pointerup', e2, true); addEventListener('pointercancel', e2, true); }
+  /* Person-Knopf im Labor (Handy): sichtbar neben dem LAB-Knopf */
+  { const pb = document.createElement('div'); pb.id = 'ptab'; pb.textContent = 'PERSON';
+    const ps = document.createElement('style'); ps.textContent = '#ptab{position:fixed;right:calc(14px + var(--sar,0px));top:calc(112px + env(safe-area-inset-top,0px));z-index:7;padding:9px 18px 9px 38px;border-radius:999px;font:900 13px system-ui,sans-serif;letter-spacing:.16em;background:#2fb4ff url("data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%23001a2c\' stroke-width=\'2\' stroke-linecap=\'round\'><circle cx=\'12\' cy=\'5\' r=\'3\'/><path d=\'M12 9v7M12 11l-5 3M12 11l5 3M12 16l-4 6M12 16l4 6\'/></svg>") no-repeat 11px center/20px;color:#001a2c;box-shadow:0 4px 18px rgba(47,180,255,.4),0 0 0 2px rgba(0,0,0,.35);cursor:pointer;display:none}body:not(.inmenu):not(.intro):not(.pm) #ptab{display:block}body.sbx-open #ptab{display:none!important}';
+    document.head.appendChild(ps); document.body.appendChild(pb);
+    pb.addEventListener('pointerdown', e => { e.preventDefault(); const g = window.__game; if (g) { g.sfx.unlock(); g.pmEnter(); } }); }
+}
+
+;
+/* =====================================================================
+   props.js  -  Objekte platzieren, Feuer, Loeschzug (6 Mann)
+   Sandbox-Reiter "Objekte": Baum, Tisch, Sofa, Fass ... werden per Klick (Ziel wird abgefragt) gesetzt und koennen
+   angezuendet werden. Brennt etwas laenger, rueckt die Feuerwehr an: Loeschzug mit Drehleiter, 6 Leute,
+   Lagebericht des Hauptmanns ("Ein Baum brennt!"), Strahlrohre + Wenderohr loeschen.
+   ===================================================================== */
+const K_BRASS = NC(0.78, 0.56, 0.2, 0.3, 0.8), K_HAY = NC(0.76, 0.62, 0.22, 0.9), K_SOFA = NC(0.32, 0.12, 0.14, 0.9), K_BARK = NC(0.24, 0.15, 0.08, 0.85),
+  K_LEAF = NC(0.13, 0.32, 0.10, 0.8), K_BINC = NC(0.25, 0.30, 0.28, 0.5, 0.3), K_PLANK = NC(0.45, 0.31, 0.18, 0.75), K_TABLE = NC(0.50, 0.34, 0.20, 0.55);
+
+function pbBox(mb, c, x, y, z, w, h, d, col) { mbBox(mb, x - w / 2, y, z - d / 2, x + w / 2, y + h, z + d / 2, col || c); }
+function pbCyl(mb, r, h, col, seg) { mbLathe(mb, [[0, 0, 0, 0, 0], [0.001, r, r, 0, 0], [h, r, r, 0, 0], [h + 0.001, 0, 0, 0, 0]], seg || 10, col); }
+const PROPS = {
+  tree: { de: 'Baum', en: 'Tree', art: ['Ein Baum', 'A tree'], h: 4.6, r: 1.5, fuel: 24, flam: 0.6, box: [[-0.22, 0, -0.22, 0.22, 2.6, 0.22]], dy: 0.05,
+    build(mb) { mbBox(mb, -0.17, 0, -0.17, 0.17, 2.9, 0.17, K_BARK); mbBox(mb, -0.3, 0, -0.3, 0.3, 0.3, 0.3, K_BARK); mbBox(mb, 0.15, 1.5, -0.06, 0.8, 1.64, 0.06, K_BARK);
+      sphereMesh(mb, 0, 3.6, 0, 1.5, 1.25, 1.5, K_LEAF, 10); sphereMesh(mb, 0.85, 2.95, 0.35, 1.0, 0.85, 1.0, K_LEAF, 9); sphereMesh(mb, -0.8, 3.05, -0.4, 1.05, 0.9, 1.05, K_LEAF, 9); sphereMesh(mb, 0.1, 4.45, 0.1, 0.8, 0.7, 0.8, K_LEAF, 8); } },
+  bush: { de: 'Busch', en: 'Bush', art: ['Ein Busch', 'A bush'], h: 1.2, r: 0.8, fuel: 11, flam: 0.9, box: null,
+    build(mb) { sphereMesh(mb, 0, 0.5, 0, 0.8, 0.55, 0.8, K_LEAF, 9); sphereMesh(mb, 0.5, 0.4, 0.2, 0.55, 0.4, 0.55, K_LEAF, 8); sphereMesh(mb, -0.45, 0.4, -0.15, 0.55, 0.42, 0.55, K_LEAF, 8); } },
+  table: { de: 'Tisch', en: 'Table', art: ['Ein Tisch', 'A table'], h: 0.9, r: 0.95, fuel: 14, flam: 0.5, box: [[-0.8, 0, -0.45, 0.8, 0.78, 0.45]],
+    build(mb) { pbBox(mb, 0, 0, 0.72, 0, 1.6, 0.06, 0.9, K_TABLE); for (const sx of [-0.72, 0.72]) for (const sz of [-0.37, 0.37]) pbBox(mb, 0, sx, 0, sz, 0.07, 0.72, 0.07, K_PLANK); } },
+  chair: { de: 'Stuhl', en: 'Chair', art: ['Ein Stuhl', 'A chair'], h: 0.95, r: 0.5, fuel: 9, flam: 0.5, box: [[-0.22, 0, -0.22, 0.22, 0.9, 0.22]],
+    build(mb) { pbBox(mb, 0, 0, 0.44, 0, 0.44, 0.05, 0.44, K_TABLE); pbBox(mb, 0, 0, 0.5, -0.2, 0.44, 0.45, 0.04, K_TABLE); for (const sx of [-0.19, 0.19]) for (const sz of [-0.19, 0.19]) pbBox(mb, 0, sx, 0, sz, 0.04, 0.44, 0.04, K_PLANK); } },
+  sofa: { de: 'Sofa', en: 'Sofa', art: ['Ein Sofa', 'A sofa'], h: 0.9, r: 1.2, fuel: 20, flam: 0.5, box: [[-0.95, 0, -0.45, 0.95, 0.5, 0.45]],
+    build(mb) { pbBox(mb, 0, 0, 0.12, 0, 1.9, 0.34, 0.85, K_SOFA); pbBox(mb, 0, 0, 0.46, -0.36, 1.9, 0.44, 0.2, K_SOFA); for (const sx of [-0.88, 0.88]) pbBox(mb, 0, sx, 0.12, 0, 0.16, 0.5, 0.85, K_SOFA); for (const sx of [-0.45, 0.45]) pbBox(mb, 0, sx, 0.46, 0.06, 0.8, 0.12, 0.62, K_SOFA); for (const sx of [-0.85, 0.85]) for (const sz of [-0.38, 0.38]) pbBox(mb, 0, sx, 0, sz, 0.06, 0.12, 0.06, K_BLK); } },
+  shelf: { de: 'Regal', en: 'Shelf', art: ['Ein Regal', 'A bookshelf'], h: 1.9, r: 0.8, fuel: 17, flam: 0.55, box: [[-0.5, 0, -0.2, 0.5, 1.9, 0.2]],
+    build(mb) { pbBox(mb, 0, -0.48, 0, 0, 0.04, 1.9, 0.34, K_PLANK); pbBox(mb, 0, 0.48, 0, 0, 0.04, 1.9, 0.34, K_PLANK); pbBox(mb, 0, 0, 0, -0.15, 1.0, 1.9, 0.03, K_PLANK); for (let i = 0; i <= 5; i++) pbBox(mb, 0, 0, i * 0.37, 0, 1.0, 0.035, 0.34, K_PLANK);
+      const C = [K_RED, K_BLU, K_WHITE, K_ORANGE, K_GRNC]; for (let i = 0; i < 5; i++) for (let j = 0; j < 5; j++) pbBox(mb, 0, -0.4 + j * 0.17 + (i % 2) * 0.03, i * 0.37 + 0.04, 0, 0.1, 0.25 + (j % 3) * 0.04, 0.22, C[(i + j) % 5]); } },
+  barrel: { de: 'Fass (explosiv)', en: 'Barrel (explosive)', art: ['Ein Fass', 'A barrel'], h: 0.95, r: 0.6, fuel: 8, flam: 0.35, boom: 6, box: [[-0.29, 0, -0.29, 0.29, 0.92, 0.29]],
+    build(mb) { mbLathe(mb, [[0, 0, 0, 0, 0], [0.001, 0.25, 0.25, 0, 0], [0.08, 0.29, 0.29, 0, 0], [0.46, 0.3, 0.3, 0, 0], [0.84, 0.29, 0.29, 0, 0], [0.92, 0.25, 0.25, 0, 0], [0.921, 0, 0, 0, 0]], 12, K_RED); for (const y of [0.18, 0.46, 0.74]) mbLathe(mb, [[y, 0.302, 0.302, 0, 0], [y + 0.025, 0.302, 0.302, 0, 0]], 12, K_DGREY); pbBox(mb, 0, 0.0, 0.92, 0, 0.1, 0.03, 0.1, K_YEL); } },
+  crate: { de: 'Holzkiste', en: 'Wooden crate', art: ['Eine Kiste', 'A crate'], h: 0.9, r: 0.8, fuel: 12, flam: 0.7, box: [[-0.45, 0, -0.45, 0.45, 0.9, 0.45]],
+    build(mb) { pbBox(mb, 0, 0, 0, 0, 0.9, 0.9, 0.9, K_PLANK); for (const s of [-0.45, 0.45]) { pbBox(mb, 0, s, 0, s, 0.1, 0.9, 0.1, K_TABLE); } pbBox(mb, 0, 0, 0.4, 0, 0.92, 0.1, 0.92, K_TABLE); } },
+  hay: { de: 'Strohballen', en: 'Hay bale', art: ['Ein Strohballen', 'A hay bale'], h: 0.85, r: 1.0, fuel: 26, flam: 1.0, box: [[-0.6, 0, -0.38, 0.6, 0.8, 0.38]],
+    build(mb) { pbBox(mb, 0, 0, 0, 0, 1.2, 0.8, 0.76, K_HAY); for (const x of [-0.3, 0.3]) pbBox(mb, 0, x, -0.01, 0, 0.04, 0.82, 0.78, K_BARK); } },
+  bin: { de: 'Mülltonne', en: 'Trash bin', art: ['Eine Mülltonne', 'A trash bin'], h: 1.1, r: 0.6, fuel: 8, flam: 0.25, box: [[-0.28, 0, -0.28, 0.28, 1.0, 0.28]],
+    build(mb) { mbLathe(mb, [[0, 0, 0, 0, 0], [0.001, 0.24, 0.24, 0, 0], [0.95, 0.29, 0.29, 0, 0], [0.951, 0, 0, 0, 0]], 12, K_BINC); mbLathe(mb, [[0.95, 0.31, 0.31, 0, 0], [1.02, 0.3, 0.3, 0, 0], [1.08, 0.2, 0.2, 0, 0], [1.081, 0, 0, 0, 0]], 12, K_DGREY); } },
+  shed: { de: 'Hütte', en: 'Shed', art: ['Eine Hütte', 'A shed'], h: 2.5, r: 2.2, fuel: 34, flam: 0.45, box: [[-1.2, 0, -1.0, 1.2, 2.2, 1.0]],
+    build(mb) { pbBox(mb, 0, 0, 0, 0, 2.4, 2.1, 2.0, K_PLANK); for (let i = -5; i <= 5; i++) pbBox(mb, 0, i * 0.2, 0, 1.005, 0.02, 2.1, 0.015, K_BARK); pbBox(mb, 0, 0, 2.1, 0, 2.7, 0.14, 2.3, K_BARK); pbBox(mb, 0, 0, 2.24, 0, 2.2, 0.1, 2.0, K_BARK); pbBox(mb, 0, -0.2, 0, 1.012, 0.7, 1.55, 0.03, K_TABLE); pbBox(mb, 0, 0.6, 1.0, 1.012, 0.5, 0.5, 0.03, K_GLASS); } },
+  fence: { de: 'Zaun', en: 'Fence', art: ['Ein Zaun', 'A fence'], h: 1.2, r: 1.6, fuel: 13, flam: 0.65, box: [[-1.5, 0, -0.05, 1.5, 1.1, 0.05]],
+    build(mb) { for (let i = 0; i < 7; i++) pbBox(mb, 0, -1.5 + i * 0.5, 0, 0, 0.09, 1.15, 0.05, K_PLANK); pbBox(mb, 0, 0, 0.3, 0.04, 3.0, 0.08, 0.04, K_TABLE); pbBox(mb, 0, 0, 0.8, 0.04, 3.0, 0.08, 0.04, K_TABLE); } },
+  flame: { de: 'Feuer', en: 'Fire', art: ['Ein Feuer', 'A fire'], h: 1.2, r: 0.55, fuel: 140, flam: 0.0, box: null, nomesh: true, build() { } }
+};
+const PROP_ORDER = ['tree', 'bush', 'table', 'chair', 'sofa', 'shelf', 'barrel', 'crate', 'hay', 'bin', 'shed', 'fence'];
+const PROP_ICON = {
+  tree: '<path d="M32 58V36"/><circle cx="32" cy="22" r="14" fill="currentColor" fill-opacity=".12"/><circle cx="20" cy="30" r="8"/><circle cx="44" cy="30" r="8"/><path d="M26 58h12" opacity=".6"/>',
+  bush: '<circle cx="32" cy="38" r="14" fill="currentColor" fill-opacity=".12"/><circle cx="18" cy="42" r="9"/><circle cx="46" cy="42" r="9"/><path d="M8 56h48" opacity=".6"/>',
+  table: '<path d="M8 24h48v6H8z" fill="currentColor" fill-opacity=".12"/><path d="M14 30v26M50 30v26M20 30v18M44 30v18" opacity=".8"/>',
+  chair: '<path d="M18 8v26M18 34h26v6H18z" fill="currentColor" fill-opacity=".12"/><path d="M18 14h18v10H18z"/><path d="M20 40v16M42 40v16"/>',
+  sofa: '<path d="M6 30h52v16H6z" fill="currentColor" fill-opacity=".12"/><path d="M12 30V20h40v10M6 46v8M58 46v8"/><path d="M6 30q0-6 6-6M58 30q0-6-6-6" opacity=".7"/>',
+  shelf: '<path d="M14 6h36v52H14z"/><path d="M14 19h36M14 32h36M14 45h36"/><path d="M20 19v-8M26 19v-6M32 32v-8M40 32v-6M22 45v-9" opacity=".7"/>',
+  barrel: '<path d="M18 8h28q5 24 0 48H18q-5-24 0-48z" fill="currentColor" fill-opacity=".12"/><path d="M17 20h30M16 32h32M17 44h30" opacity=".8"/><path d="M28 3l4 6 4-6" opacity=".7"/>',
+  crate: '<path d="M10 10h44v44H10z" fill="currentColor" fill-opacity=".12"/><path d="M10 10l44 44M54 10L10 54" opacity=".6"/>',
+  hay: '<path d="M6 22h52v30H6z" fill="currentColor" fill-opacity=".12"/><path d="M20 22v30M44 22v30" opacity=".8"/><path d="M12 28l6 4M26 30l6 4M48 28l6 4" opacity=".6"/>',
+  bin: '<path d="M18 20h28l-3 38H21z" fill="currentColor" fill-opacity=".12"/><path d="M14 20h36M26 14h12l1 6H25z"/><path d="M27 28v24M32 28v24M37 28v24" opacity=".6"/>',
+  shed: '<path d="M8 30L32 10l24 20z" fill="currentColor" fill-opacity=".14"/><path d="M12 30v26h40V30"/><path d="M26 56V40h12v16" opacity=".8"/>',
+  fence: '<path d="M8 22h48M8 38h48" opacity=".8"/><path d="M14 12v44M26 12v44M38 12v44M50 12v44" /><path d="M14 12l0-3M26 12l0-3M38 12l0-3M50 12l0-3" opacity=".6"/>',
+  fireplace: '<path d="M32 6c8 10 14 16 14 28a14 14 0 0 1-28 0c0-8 5-12 8-18 2 5 4 6 6 8 1-6 0-12 0-18z" fill="currentColor" fill-opacity=".14"/><path d="M32 30c4 5 6 8 6 12a6 6 0 0 1-12 0c0-3 2-5 6-12z"/><path d="M14 58h36" opacity=".6"/>',
+  ignite: '<path d="M26 54V30h12v24z" fill="currentColor" fill-opacity=".12"/><path d="M26 30h12M28 24h8"/><path d="M32 6c5 6 8 9 8 15a8 8 0 0 1-16 0c0-4 3-6 4-10 2 3 3 3 4 5z"/>',
+  c_objects: '<path d="M8 30L32 10l24 20z"/><path d="M12 30v26h40V30"/><path d="M26 56V40h12v16"/>'
+};
+for (const k of PROP_ORDER) WEAPONS['prop_' + k] = { name: 'Place: ' + PROPS[k].en, key: '', rate: 1, act: true, info: 'Choose where to place it. Q/E or R turns it. It can be set on fire.' };
+WEAPONS.fireplace = { name: 'Place fire', key: '', rate: 1, act: true, info: 'Choose where the fire is placed. The fire department comes when it burns.' };
+WEAPONS.ignite = { name: 'Ignite', key: '', rate: 1, act: true, info: 'Click an object to set it on fire.' };
+SBX_CATS.push(['objects', 'Objects', 'c_objects']);
+SBX_ITEMS.objects = PROP_ORDER.map(k => 'prop_' + k).concat(['fireplace', 'ignite']);
+for (const k of PROP_ORDER) ICON_P['prop_' + k] = PROP_ICON[k];
+ICON_P.fireplace = PROP_ICON.fireplace; ICON_P.ignite = PROP_ICON.ignite; ICON_P.c_objects = PROP_ICON.c_objects;
+{ const D = { 'Objects': 'Objekte', 'Place fire': 'Feuer platzieren', 'Ignite': 'Anzünden', 'Choose where to place it. Q/E or R turns it. It can be set on fire.': 'Du wählst, wo es hin soll. Q/E oder R dreht es. Man kann es anzünden.', 'Choose where the fire is placed. The fire department comes when it burns.': 'Du wählst, wo das Feuer hin soll. Brennt es, rückt die Feuerwehr an.', 'Click an object to set it on fire.': 'Klicke ein Objekt an, um es anzuzünden.' };
+  for (const k of PROP_ORDER) D['Place: ' + PROPS[k].en] = 'Setzen: ' + PROPS[k].de; Object.assign(DE, D); }
+
+Object.assign(Game.prototype, {
+  propMesh(k) { const M = this._prM || (this._prM = {}); if (!M[k]) { const mb = new MB(); PROPS[k].build(mb); M[k] = this.gfx.upload(mb.finish()); } return M[k]; },
+  worldOnly() { return this._wo || (this._wo = { skip: () => true }); },
+  propInit() { if (!this.props) this.props = []; },
+  propValid(k, x, y, z, yaw) {
+    const P = PROPS[k]; if (!P.box) return !(this.env.boxes.some(b => b.max[1] > y + 0.6 && b.min[1] < y + 1.5 && x > b.min[0] - 0.3 && x < b.max[0] + 0.3 && z > b.min[2] - 0.3 && z < b.max[2] + 0.3));
+    const c = Math.cos(yaw), s = Math.sin(yaw);
+    for (const q of (this.props || [])) if (Math.hypot(q.x - x, q.z - z) < 0.5) return false;
+    for (const bx of P.box) for (const [px, pz] of [[bx[0], bx[2]], [bx[3], bx[2]], [bx[0], bx[5]], [bx[3], bx[5]], [0, 0]]) {
+      const wx = x + px * c + pz * s, wz = z - px * s + pz * c; if (this.env.boxes.some(b => b.max[1] > y + 0.35 && b.min[1] < y + 1.2 && wx > b.min[0] - 0.05 && wx < b.max[0] + 0.05 && wz > b.min[2] - 0.05 && wz < b.max[2] + 0.05)) return false;
+    }
+    return true;
+  },
+  propAdd(k, x, y, z, yaw, burning) {
+    this.propInit(); const P = PROPS[k], p = { k, x, y, z, yaw: yaw || 0, burn: 0, burning: false, fuel: P.fuel * 2.6, fuelMax: P.fuel * 2.6, char: 0, heat: 0, wet: 0, t: 0, acc: 0, accS: 0, lt: 0, sndT: 0 };
+    if (P.box) {       // Kollision: um die Hochachse gedrehte Boxen werden als AABB der Drehung genaehert
+      const c = Math.abs(Math.cos(p.yaw)), s = Math.abs(Math.sin(p.yaw)); p.boxes = [];
+      for (const b of P.box) {
+        const hx = (b[3] - b[0]) / 2, hz = (b[5] - b[2]) / 2, ex = hx * c + hz * s, ez = hx * s + hz * c, mx = (b[0] + b[3]) / 2, mz = (b[2] + b[5]) / 2, cx = x + mx * Math.cos(p.yaw) + mz * Math.sin(p.yaw), cz = z - mx * Math.sin(p.yaw) + mz * Math.cos(p.yaw);
+        const mn = [cx - ex, y + b[1], cz - ez], mxx = [cx + ex, y + b[4], cz + ez]; const wb = this.world.addBox(mn, mxx, 0.8); wb.mat = 7;
+        const eb = { min: mn.slice(), max: mxx.slice(), mat: 7, v: 0, prop: p }; this.env.boxes.push(eb); p.boxes.push(eb);
+      }
+    }
+    this.props.push(p); if (burning) this.propIgnite(p, true); return p;
+  },
+  propIgnite(p, quiet) {
+    if (p.burning || p.burn > 0.01 || p.wet > 0.5 || p.fuel <= 0) return; p.burning = true; p.burn = 0.06; p.ign = this.realTime || 0; this.propInit();
+    if (!quiet) { this.sfx.play('whoosh', { vol: 0.5, pitch: 0.7 }); this.popup('FIRE!', V3(p.x, p.y + PROPS[p.k].h + 0.4, p.z), '#ff7a3a', 1.2); }
+  },
+  propExtinguish(p, amt) {
+    if (!p.burning) { p.wet = Math.min(1, p.wet + amt * 0.5); return; }
+    p.burn -= amt; p.wet = Math.min(1, p.wet + amt * 0.6);
+    if (p.burn <= 0.02) { p.burn = 0; p.burning = false; this.fx.puff(V3(p.x, p.y + PROPS[p.k].h * 0.5, p.z), V3(0, 1, 0), 10, 2.5, [0.85, 0.88, 0.9]); this.sfx.play('splash', { vol: 0.35, pitch: 0.7 }); }
+  },
+  propBoom(p) {
+    const P = PROPS[p.k], c = V3(p.x, p.y + 0.5, p.z); p.burning = false; p.burn = 0; p.fuel = 0; p.char = 1; p.boomed = true;
+    this.fx.blast && this.fx.blast(c); this.fx.flash(c, 5, [1, 0.7, 0.3], 0.3); this.fx.addShake(0.8); this.sfx.play('boom', { vol: 1 }); this.popup('BOOM', c, '#ffb040', 1.2);
+    for (const b of this.world.bodies) { if (!b.tag || !b.tag.dummy) continue; const dx = b.p[0] - c[0], dy = b.p[1] - c[1], dz = b.p[2] - c[2], d = Math.hypot(dx, dy, dz); if (d < 6) { const f = 1 - d / 6; this.applyImpulse(b, b.p, V3(dx / (d || 1), Math.abs(dy / (d || 1)) * 0.5 + 0.6, dz / (d || 1)), 260 * f * f + 30); } }
+    for (const q of this.props) if (q !== p && Math.hypot(q.x - p.x, q.z - p.z) < 4.5) this.propIgnite(q, true);
+    if (this.pm && this.pm.on) { const d = Math.hypot(this.pm.p.x - p.x, this.pm.p.z - p.z); if (d < 5) this.pmHurt(60 * (1 - d / 5) + 10, null); }
+  },
+  propStep(dt) {
+    const L = this.props; if (!L || !L.length) return;
+    let big = 0, origin = null;
+    for (const p of L) {
+      const P = PROPS[p.k]; p.t += dt;
+      if (p.wet > 0) p.wet = Math.max(0, p.wet - dt * 0.02);
+      if (p.burning) {
+        p.burn = Math.min(1, p.burn + 0.22 * dt); p.fuel -= p.burn * dt; p.char = 1 - Math.max(0, p.fuel) / p.fuelMax;
+        if (p.fuel <= 0) { p.burn -= 0.18 * dt; if (p.burn <= 0.02) { p.burn = 0; p.burning = false; this.fx.puff(V3(p.x, p.y + P.h * 0.5, p.z), V3(0, 1, 0), 6, 1.5, [0.2, 0.2, 0.2]); continue; } }
+        if (P.boom && p.t > 0 && (p.ign !== undefined) && ((this.realTime || 0) - p.ign) > P.boom && !p.boomed) { this.propBoom(p); continue; }
+        // Flammen
+        const R = Math.max(0.25, P.r * 0.7), H = P.h; p.acc += dt * 125 * p.burn * (0.5 + P.r * 0.8); p.accS += dt * 9 * p.burn;
+        while (p.acc >= 1) { p.acc -= 1; const a = Math.random() * 6.283, rr = Math.sqrt(Math.random()) * R, y = p.y + H * (0.12 + Math.random() * 0.6 * (0.4 + 0.6 * p.burn));
+          this.fx.emit(p.x + Math.cos(a) * rr, y, p.z + Math.sin(a) * rr, (Math.random() - 0.5) * 0.4, 1.4 + Math.random() * 1.6, (Math.random() - 0.5) * 0.4, 0.5 + Math.random() * 0.55, 0.5 + P.r * 0.4, 0.12, 1.0, 0.5 + Math.random() * 0.35, 0.1, 1.0, 0.5, -2.4, true, 0); }
+        while (p.accS >= 1) { p.accS -= 1; this.fx.emit(p.x + (Math.random() - 0.5) * R, p.y + H * (0.7 + Math.random() * 0.4), p.z + (Math.random() - 0.5) * R, (Math.random() - 0.5) * 0.5, 1.2 + Math.random(), (Math.random() - 0.5) * 0.5, 2.2 + Math.random() * 1.6, 0.5, 1.8 + P.r * 0.6, 0.14, 0.14, 0.15, 0.5, 0.8, -0.5, false, 0); }
+        p.lt -= dt; if (p.lt <= 0) { p.lt = 0.14; this.fx.flash(V3(p.x, p.y + H * 0.55, p.z), 1.5 + P.r * 1.2 * p.burn, [1, 0.55, 0.2], 0.17); }
+        p.sndT -= dt; if (p.sndT <= 0) { p.sndT = 0.25 + Math.random() * 0.5; const sp = this.spatial(p.x, p.y + 1, p.z); this.sfx.play('crack', { vol: 0.16 * sp.vol * p.burn, pan: sp.pan, pitch: 0.5 + Math.random() * 0.5 }); }
+        if (Math.random() < dt * 5) this.fx.sparks(V3(p.x, p.y + H * 0.8, p.z), V3(0, 1, 0), 2, 2.2, [1, 0.6, 0.2]);
+        // Ausbreitung
+        if (p.burn > 0.4) for (const q of L) { if (q === p || q.burning || q.wet > 0.4 || q.fuel <= 0) continue; const Q = PROPS[q.k]; if (!Q.flam) continue; const d = Math.hypot(q.x - p.x, q.z - p.z); if (d < P.r + Q.r + 0.4) { q.heat += dt * p.burn * Q.flam * 0.45; if (q.heat > 1) this.propIgnite(q); } }
+        // Spieler im Feuer
+        if (this.pm && this.pm.on && !this.pm.dead) { const pp = this.pm.p, d = Math.hypot(pp.x - p.x, pp.z - p.z); if (d < R + 0.35 && pp.y < p.y + H) { this.pm.fireT = (this.pm.fireT || 0) - dt; if (this.pm.fireT <= 0) { this.pm.fireT = 0.35; this.pmHurt(5 * p.burn + 1, null); } } }
+        if (P.nomesh && p.fuel > 0) { /* Standfeuer brennt Zeit ab */ }
+        big += p.burn * (P.nomesh ? 0.8 : 1); if (!origin || p.burn > origin.burn) origin = p;
+      }
+    }
+    // Feuerwehr rufen, wenn es einige Sekunden gebrannt hat
+    this._fdT = (this._fdT || 0);
+    if (big > 0.55 && !this.menuOn) { this._fdBurn = (this._fdBurn || 0) + dt; if (this._fdBurn > 3.5 && !(this._fdCool > 0) && this.act && !this.act.busy && !this.exec) { this._fdBurn = 0; this.callBrigade(origin); } }
+    else this._fdBurn = Math.max(0, (this._fdBurn || 0) - dt);
+    if (this._fdCool > 0) this._fdCool -= dt;
+  },
+  propDraw(bd) {
+    const L = this.props, id = [0, 0, 0, 1];
+    if (L) for (const p of L) {
+      const P = PROPS[p.k]; if (P.nomesh) continue; const c = Math.min(1, p.char), f = 1 - 0.9 * Math.min(1, c * 1.5), q = Q4(), m = M4.id(); qfromAxisAngle(q, 0, 1, 0, p.yaw);
+      M4.trs(m, [p.x, p.y + (P.dy || 0) * 0, p.z], q, 1, 1 - 0.22 * c * (P.h > 1.5 ? 1 : 0.5), 1); bd.push({ mesh: this.propMesh(p.k), model: m, tint: [f * (p.burning ? 1.25 : 1), f * (p.burning ? 1.05 : 1), f] });
+    }
+    const pl = this.place; if (pl && pl.ghost) {
+      const g = pl.ghost; if (pl.k && PROPS[pl.k] && !PROPS[pl.k].nomesh) { const q = Q4(), m = M4.id(); qfromAxisAngle(q, 0, 1, 0, pl.yaw); M4.trs(m, [g.x, g.y, g.z], q, 1, 1, 1); bd.push({ mesh: this.propMesh(pl.k), model: m, tint: g.ok ? [0.45, 1.6, 0.6] : [2.0, 0.4, 0.4] }); }
+      else if (pl.k === 'flame' || pl.k === 'ignite') { if (Math.random() < 0.5) this.fx.emit(g.x + (Math.random() - 0.5) * 0.3, g.y + 0.05, g.z + (Math.random() - 0.5) * 0.3, 0, 1.4, 0, 0.5, 0.2, 0.04, 0.4, 1, 0.5, 0.7, 0.6, -2, true, 0); }
+    }
+  },
+
+  /* ---------- Platzieren: Ziel abfragen ---------- */
+  placeStart(k) {
+    if (this.menuOn || this.cine) return; this.propInit(); this.place = { k, yaw: 0, ghost: null, sx: innerWidth / 2, sy: innerHeight / 2, t: 0 };
+    if (this.sbx && this.sbx.toggle && document.body.classList.contains('sbx-open')) this.sbx.toggle(false);
+    const what = k === 'flame' ? ['Wohin soll das Feuer?', 'Where should the fire go?'] : k === 'ignite' ? ['Welches Objekt anzünden? Klicke darauf.', 'Which object should be set on fire? Click it.'] : ['Wohin soll ' + PROPS[k].de + ' gesetzt werden?', 'Where should the ' + PROPS[k].en.toLowerCase() + ' go?'];
+    this.placeMsg(what[0] + ' – ' + tx2('Klick = setzen · Q/E drehen · Esc = abbrechen', 'click = place · Q/E rotate · Esc = cancel'), what[1] + ' – click = place · Q/E rotate · Esc = cancel');
+  },
+  placeMsg(de, en) { let el = document.getElementById('plmsg'); if (!el) { el = document.createElement('div'); el.id = 'plmsg'; document.body.appendChild(el); } el.textContent = tx2(de, en); el.style.display = 'block'; },
+  placeEnd(ok) { this.place = null; const el = document.getElementById('plmsg'); if (el) el.style.display = 'none'; },
+  placeRay(sx, sy) {
+    const o = V3(this.camPos[0], this.camPos[1], this.camPos[2]), d = this.rayFromScreen(sx, sy, V3()), r = this.world.raycast(o, d, 160, this.worldOnly());
+    if (r && r.kind !== 'body') return { x: r.x, y: r.y, z: r.z, ny: r.ny === undefined ? 1 : r.ny }; return null;
+  },
+  placeUpdate() {
+    const pl = this.place; if (!pl) return; const h = this.placeRay(pl.sx, pl.sy);
+    if (!h) { pl.ghost = null; return; } const k = pl.k; let ok = h.ny > 0.6;
+    if (k !== 'ignite' && k !== 'flame') ok = ok && this.propValid(k, h.x, h.y, h.z, pl.yaw);
+    pl.ghost = { x: h.x, y: h.y, z: h.z, ok };
+  },
+  placeClick() {
+    const pl = this.place; if (!pl) return; this.placeUpdate(); const g = pl.ghost; if (!g) return;
+    if (pl.k === 'ignite') {
+      let best = null, bd = 2.2; for (const p of this.props) { const d = Math.hypot(p.x - g.x, p.z - g.z) - PROPS[p.k].r * 0.5; if (d < bd) { bd = d; best = p; } }
+      if (best) { this.propIgnite(best); this.placeEnd(); } else this.placeMsg('Hier ist kein Objekt – setze zuerst eines oder wähle „Feuer platzieren“.', 'No object here – place one first or choose "Place fire".'); return;
+    }
+    if (!g.ok) { this.popup('NO ROOM', V3(g.x, g.y + 0.5, g.z), '#ff8a7a', 0.9); return; }
+    if (pl.k === 'flame') { const p = this.propAdd('flame', g.x, g.y, g.z, 0, true); this.sfx.play('whoosh', { vol: 0.5, pitch: 0.8 }); this.popup('FIRE!', V3(g.x, g.y + 1.2, g.z), '#ff7a3a', 1.2); }
+    else { this.propAdd(pl.k, g.x, g.y, g.z, pl.yaw); this.sfx.play('thunk', { vol: 0.6 }); this.fx.dust(V3(g.x, g.y + 0.1, g.z), 6, 1.0, [0.7, 0.65, 0.55]); }
+    this.placeEnd();
+  },
+  clearProps() { this.props = []; this.place = null; const el = document.getElementById('plmsg'); if (el) el.style.display = 'none'; },
+
+  /* ---------- Feuerwehr: Loeschzug ---------- */
+  callBrigade(p) {
+    if (!p || !this.act || this.act.busy) return; this._brigReq = { x: p.x, y: p.y, z: p.z, p };
+    const pmOn = this.pm && this.pm.on;
+    try { this.startScene('fire'); } finally { this._brigReq = null; }
+    const sc = this.act.sc; if (!sc || sc.kind !== 'fire') return; sc.brig = { p, pos: [p.x, p.y, p.z], stage: 'drive', t: 0, jets: [], extras: [] };
+    this._fdCool = 60;
+    if (pmOn) { this.cine = false; document.body.classList.remove('cine'); if (this.cineUI) this.cineUI(false); }
+  },
+  brigFires() { return (this.props || []).filter(q => q.burning); },
+  brigUsed(sc, n) { return sc.npcs.indexOf(n); },
+  spawnBrigade(sc) {
+    const A = this.act, v = sc.veh, g = this, F = this.fireFxInit(v), B = sc.brig, tp = B.pos, P = B.p;
+    sc.from = (() => { const p = vloc(v, 2.6, 2); return { x: p[0], z: p[1] }; })(); sc.F = F; sc.fp = 0; sc.land = null; sc.arrived = 0; B.n = 6; B.here = 0;
+    const mk = (i) => { const p = vloc(v, i % 2 ? -1.6 : 1.6, 3.0), n = this.mkNpc(sc, p[0], 0, p[1], v.yaw, i); this.arm(sc, n, i); return n; };
+    const crew = [mk(0), mk(1), mk(2), mk(3)];
+    for (const r of [4, 5]) { const p = vloc(v, r === 4 ? 1.0 : -1.0, -4.9), n = this.mkNpc(sc, p[0], 0, p[1], v.yaw + Math.PI, r); this.arm(sc, n, r); n.kind = 'fire'; n.vis = false; n.free = true; B.extras.push(n); crew.push(n); }
+    B.crew = crew; B.chief = crew[2]; B.mach = crew[0];
+    const ux = tp[0] - v.x, uz = tp[2] - v.z, ul = Math.hypot(ux, uz) || 1, u = [ux / ul, uz / ul], pr = [-u[1], u[0]];
+    B.asm = [v.x + u[0] * 4.4, v.z + u[1] * 4.4]; B.u = u; B.pr = pr;
+    const W = (n, x, z, s) => n.push({ k: 'walk', x, z, spd: s || 2.6 });
+    const slot = [[0, 0], [1.4, 1.1], [-1.4, 1.1], [1.5, -0.2], [-1.5, -0.2], [0.0, 1.8]];
+    crew.forEach((n, i) => {
+      if (n.vis === false && n.boarded === undefined) n.push({ k: 'wait', d: 0.8 + i * 0.1 });
+      if (i >= 4) n.push({ k: 'do', fn: (m) => { m.vis = true; g.sfx.play('rattle', { vol: 0.4 }); } });
+      const s = slot[i === 2 ? 0 : i === 0 ? 5 : i === 1 ? 1 : i === 3 ? 2 : i === 4 ? 3 : 4];
+      W(n, B.asm[0] + pr[0] * s[0] - u[0] * s[1] * 0.0 + u[0] * s[1], B.asm[1] + pr[1] * s[0] + u[1] * s[1], 2.6);
+      n.push({ k: 'face', x: i === 2 ? v.x : B.asm[0] + u[0] * 0 + pr[0] * 0, z: i === 2 ? v.z : B.asm[1], d: 0.1 }); n.push({ k: 'do', fn: () => { B.here++; } });
+      n.push({ k: 'wait', d: 600, until: () => B.stage === 'fight' || B.stage === 'done' });
+    });
+    sc.camFn = (s, dt) => this.brigCam(s, dt);
+  },
+  /* Zuteilung der Strahlrohre: jeder Trupp sucht sich den naechsten Brandherd */
+  brigNozzle(sc, n, on) {
+    if (on) { n.gun = 'rifle'; n.hm = 'nozzle'; n.nozzle = true; } else { n.gun = null; n.hm = null; n.nozzle = false; if (n.tasks) n.tasks = n.tasks.filter(t => t.k !== 'aimat'); }
+  },
+  brigStand(sc, n, tgt, k) {
+    const B = sc.brig, v = sc.veh, a = Math.atan2(v.x - tgt[0], v.z - tgt[2]) + (k - 1.5) * 0.7, d = 4.6 + (k % 2) * 0.7;
+    let x = tgt[0] + Math.sin(a) * d, z = tgt[2] + Math.cos(a) * d; for (let i = 0; i < 8 && this.navBlocked(x, z, tgt[1], 0.35, true); i++) { x = tgt[0] + Math.sin(a + (i % 2 ? 1 : -1) * (0.3 + i * 0.12)) * (d + 0.2 * i); z = tgt[2] + Math.cos(a + (i % 2 ? 1 : -1) * (0.3 + i * 0.12)) * (d + 0.2 * i); }
+    return [x, z];
+  },
+  brigLogic(sc, dt) {
+    const B = sc.brig, v = sc.veh, g = this, A = this.act, F = this.fireFxInit(v); B.t += dt; if (sc.st === 'crew') { sc.st = 'act'; sc.t = 0; sc.shot = 'act'; }
+    const P = B.p, tp = B.pos, ci = sc.npcs.indexOf(B.chief);
+    if (B.stage === 'drive') { B.stage = 'gather'; B.t = 0; }
+    if (B.stage === 'gather') {
+      if (B.here >= 6 || B.t > 22) { B.stage = 'report'; B.t = 0; B.rep = 0; }
+    } else if (B.stage === 'report') {
+      const burning = this.brigFires(), pr = PROPS[P.k], many = burning.length > 1;
+      if (B.rep === 0) { B.rep = 1; const de = pr.art[0] + ' brennt!' + (many ? ' Und es greift um sich!' : '') + ' Zwei Trupps mit Strahlrohr vor, Maschinist: Wenderohr in Stellung!', en = pr.art[1] + ' is on fire!' + (many ? ' And it is spreading!' : '') + ' Two teams with hoses forward, operator: get the monitor into position!';
+        this.bubble(ci, tx2(de, en), 4.6); this.sfx.play('radio', { vol: 0.3 }); }
+      if (B.rep === 1 && B.t > 4.4) { B.rep = 2; this.bubble(sc.npcs.indexOf(B.crew[1]), tx2('Verstanden! Trupp eins und zwei, los!', 'Understood! Teams one and two, go!'), 2.4); }
+      if (B.rep === 2 && B.t > 6.4) { B.stage = 'fight'; B.t = 0; this.brigStart(sc); }
+    } else if (B.stage === 'fight') {
+      this.brigFight(sc, dt);
+    } else if (B.stage === 'wrap') {
+      if (!B.wrapped) { B.wrapped = true; this.bubble(ci, tx2('Feuer aus! Einsatzende, alles abbauen!', 'Fire out! End of operation, pack up!'), 3.2);
+        for (const n of B.crew) { this.brigNozzle(sc, n, false); n.tasks.length = 0; n.hm = null; }
+        const E = new Set(B.extras); for (const n of B.crew) { if (E.has(n)) { const p = vloc(v, n.role === 4 ? 1.0 : -1.0, -4.9); n.push({ k: 'walk', x: p[0], z: p[1], spd: 2.6 }); n.push({ k: 'do', fn: (m) => { m.vis = false; sc.boarded = (sc.boarded || 0) + 1; this.sfx.play('rattle', { vol: 0.4 }); } }); } else this.boardAt(sc, n, v); }
+        this.fireRest(v); }
+      const E = B.extras.length, need = B.crew.length; if ((sc.boarded || 0) >= need && !B.fin) { B.fin = true; sc.st = 'leave'; sc.t = 0; sc.shot = 'leave'; v.open(this.occDoors ? this.occDoors(sc) : [], 0); }
+      if (B.t > 60 && !B.fin) { B.fin = true; for (const n of B.crew) n.vis = false; sc.boarded = need; sc.st = 'leave'; sc.t = 0; sc.shot = 'leave'; }
+    }
+    if (B.stage !== 'wrap' && B.stage !== 'done' && B.stage !== 'drive' && B.stage !== 'gather' && B.stage !== 'report') { /* in fight */ }
+  },
+  brigStart(sc) {
+    const B = sc.brig, v = sc.veh, g = this, F = this.fireFxInit(v), tp = B.pos, [mach, h1, chief, h2, h3, h4] = B.crew;
+    // Maschinist: Stuetzen aus, Leiter auf den Brandherd
+    mach.tasks.length = 0; const door = (lx, lz) => vloc(v, lx, lz);
+    { const p = door(2.15, -2.4); mach.push({ k: 'walk', x: p[0], z: p[1], spd: 2.6 }); } mach.push({ k: 'face', x: v.x + Math.sin(v.yaw + Math.PI / 2) * 5, z: v.z + Math.cos(v.yaw + Math.PI / 2) * 5, d: 0.3 });
+    mach.push({ k: 'do', fn: () => { F.outT = 1; g.sfx.play('rattle', { vol: 0.7, pitch: 0.7 }); } }); mach.push({ k: 'wait', d: 14, until: () => F.out > 0.97 });
+    mach.push({ k: 'do', fn: () => { F.raise = true; g.brigAimLadder(sc); } }); mach.push({ k: 'wait', d: 600, until: () => B.stage === 'wrap' });
+    // Trupps: gehen an den Brandherd und halten drauf
+    [h1, h2, h3, chief].forEach((n, k) => { n.tasks.length = 0; n.push({ k: 'do', fn: (m) => { g.brigNozzle(sc, m, true); } }); n.push({ k: 'wait', d: 600, until: () => B.stage === 'wrap' }); });
+    B.teams = [h1, h2, h3]; B.chief.nozzle = false; B.hold = 0;
+    B.lad = true;
+  },
+  brigAimLadder(sc) {
+    const B = sc.brig, v = sc.veh, tp = B.pos, dx = v.x - tp[0], dz = v.z - tp[2], dl = Math.hypot(dx, dz) || 1, hgt = PROPS[B.p.k].h;
+    this.fireAim(v, tp[0] + dx / dl * 3.4, tp[1] + hgt + 2.6, tp[2] + dz / dl * 3.4); B.aimAt = B.t;
+  },
+  brigFight(sc, dt) {
+    const B = sc.brig, v = sc.veh, F = this.fireFxInit(v), fires = this.brigFires(), g = this;
+    // Zeitlimit: Sicherheitsnetz
+    if (B.t > 100) { for (const q of fires) this.propExtinguish(q, 5); }
+    const near = fires.filter(q => Math.hypot(q.x - B.pos[0], q.z - B.pos[2]) < 22);
+    const cand = near.length ? near : fires;
+    B.re = (B.re || 0) - dt;
+    // Ziele zuweisen
+    if (B.re <= 0) { B.re = 0.7; B.teams.forEach((n, k) => { const q = cand[(k + (B.hold | 0)) % Math.max(1, cand.length)]; if (!q) { n.tgt = null; return; }
+      if (n.tgt !== q) { n.tgt = q; const sp = this.brigStand(sc, n, [q.x, q.y, q.z], k); n.tasks.length = 0; n.push({ k: 'walk', x: sp[0], z: sp[1], spd: 2.8, gunUp: true }); n.push({ k: 'aimat', d: 999, fn: () => { const t = n.tgt; return t ? [t.x, t.y + PROPS[t.k].h * 0.4, t.z] : [q.x, q.y + 1, q.z]; } }); } }); }
+    // Wasserstrahlen
+    const nz = V3(), tg = V3(); let jets = 0;
+    for (const n of B.teams) {
+      const q = n.tgt; if (!q || !q.burning || n.hurt) continue; const T = n.tasks[0]; if (!T || T.k !== 'aimat') continue;
+      const H = NPCK.rest.handR; _nv[0] = H[0]; _nv[1] = H[1] - 0.56; _nv[2] = H[2] + 0.02; n.xf(HNAMES.indexOf('handR'), _nv, nz);
+      tg[0] = q.x + (Math.random() - 0.5) * 0.5; tg[1] = q.y + PROPS[q.k].h * (0.25 + Math.random() * 0.3); tg[2] = q.z + (Math.random() - 0.5) * 0.5;
+      if (Math.hypot(tg[0] - nz[0], tg[2] - nz[2]) < 14) { this.brigJet(nz, tg, 0.9, 2); this.propExtinguish(q, 0.055 * dt * (1 + (T.t > 0.6 ? 0.4 : 0))); jets++; }
+    }
+    // Wenderohr auf der Leiter
+    if (F.raise && !F.rest && F.ready && B.lad && cand.length) { const c = this.cagePos(v), q = cand.reduce((a, b) => (Math.hypot(a.x - c[0], a.z - c[2]) < Math.hypot(b.x - c[0], b.z - c[2]) ? a : b)); tg[0] = q.x; tg[1] = q.y + PROPS[q.k].h * 0.4; tg[2] = q.z; nz[0] = c[0]; nz[1] = c[1] - 0.2; nz[2] = c[2]; this.brigJet(nz, tg, 1.3, 3); this.propExtinguish(q, 0.08 * dt); jets++; }
+    if (jets && ((B.sndT = (B.sndT || 0) - dt) <= 0)) { B.sndT = 0.35; const sp = this.spatial(B.pos[0], 1, B.pos[2]); this.sfx.play('splash', { vol: 0.25 * sp.vol, pan: sp.pan, pitch: 0.8 + Math.random() * 0.3 }); }
+    // Fertig?
+    const stand = (this.props || []).some(q => q.burning);
+    if (!stand) { B.done = (B.done || 0) + dt; if (B.done > 1.5) { B.stage = 'wrap'; B.t = 0; } } else B.done = 0;
+  },
+  brigJet(a, b, w, rate) {
+    const dx = b[0] - a[0], dy = b[1] - a[1], dz = b[2] - a[2], d = Math.hypot(dx, dz) || 1, T = Math.max(0.35, Math.min(0.95, d / 15)), gv = 9.81;
+    const vx = dx / T, vz = dz / T, vy = (dy + 0.5 * gv * T * T) / T;
+    for (let i = 0; i < rate; i++) { const j = (Math.random() - 0.5) * 0.25; this.fx.emit(a[0], a[1], a[2], vx + j, vy + (Math.random() - 0.5) * 0.3, vz + j, T + 0.15, 0.09 * w, 0.2 * w, 0.8, 0.92, 1.0, 0.7, 0.0, gv, false, 0); }
+    if (Math.random() < 0.5) this.fx.puff(V3(b[0], b[1], b[2]), V3(0, 1, 0), 2, 1.4, [0.9, 0.95, 1]);
+  },
+  brigCam(sc, dt) {
+    const B = sc.brig, v = sc.veh, c0 = sc.cam0 || { x: v.x + 9, y: 1.6, z: v.z }; if (!B) return [[c0.x, c0.y, c0.z], [v.x, 2, v.z]];
+    const tp = B.pos, u = B.u || [0, 1], pr = B.pr || [1, 0];
+    if (B.stage === 'gather' || B.stage === 'report' || B.stage === 'drive') { const a = B.asm || [v.x, v.z]; return [[a[0] + pr[0] * 5.2 + u[0] * 2.5, 1.65, a[1] + pr[1] * 5.2 + u[1] * 2.5], [a[0], 1.5, a[1]]]; }
+    if (B.stage === 'fight') { const mx = (tp[0] + v.x) / 2, mz = (tp[2] + v.z) / 2; return [[mx + pr[0] * 11, 3.4, mz + pr[1] * 11], [tp[0] * 0.6 + v.x * 0.4, tp[1] + 1.6, tp[2] * 0.6 + v.z * 0.4]]; }
+    return [[c0.x, c0.y + 0.4, c0.z], [v.x, 2, v.z]];
+  }
+});
+
+/* ---------- Haken ---------- */
+{
+  const ss0 = Game.prototype.stepScenes;
+  Game.prototype.stepScenes = function (dt) { ss0.call(this, dt); if (this.props && this.props.length) this.propStep(dt); if (this.place) { this.place.t += dt; this.placeUpdate(); } };
+  const as0 = Game.prototype.appendScenes;
+  Game.prototype.appendScenes = function (bd, sc) { as0.call(this, bd, sc); this.propDraw(bd); };
+  const bw0 = Game.prototype.buildWorld;
+  Game.prototype.buildWorld = function () { this.clearProps(); this._fdBurn = 0; return bw0.apply(this, arguments); };
+  const sc0 = Game.prototype.spawnCrew;
+  Game.prototype.spawnCrew = function (sc) { if (sc.brig) return this.spawnBrigade(sc); return sc0.apply(this, arguments); };
+  const sl1 = Game.prototype.sceneLogic;
+  Game.prototype.sceneLogic = function (sc, dt) { { const v = sc.veh, F = v && v.fx; if (F && !F.rest && (sc.st === 'leave' || sc.st === 'drive' || Math.abs(v.v || 0) > 1.2)) { this.fireRest(v); F.out = 0; F.ext = 0; F.elev = 0.03; F.yaw = v.yaw; F.raise = false; } }   /* Leiter nie ausgefahren waehrend der Fahrt */
+  if (sc.brig && (sc.st === 'crew' || sc.st === 'act')) { this.fireFx(sc, dt); return this.brigLogic(sc, dt); } return sl1.apply(this, arguments); };
+  const si0 = Game.prototype.supportInfo;
+  Game.prototype.supportInfo = function () { const R = this._brigReq; if (R) return { x: R.x, z: R.z, y: R.y, plat: null }; return si0.apply(this, arguments); };
+  /* Leiter-Sicherheitsnetz: erreicht sie ihr Ziel nicht, wird sie nach 25 s ans Ziel gesetzt (kein Haengenbleiben) */
+  const ff0 = Game.prototype.fireFx;
+  Game.prototype.fireFx = function (sc, dt) {
+    ff0.call(this, sc, dt); const v = sc.veh; if (!v || !v.fx) return; const F = v.fx;
+    if (!F.rest && !F.ready) { F.stuck = (F.stuck || 0) + dt; if (F.stuck > 25) { F.out = F.outT; F.yaw = F.yawT; F.elev = F.elevT; F.ext = F.extT; F.stuck = 0; } } else F.stuck = 0;
+  };
+  /* Tuer-Auswahl: nur dort oeffnen, wo jemand sitzt */
+  Game.prototype.occDoors = function (sc) { const v = sc.veh, s = new Set(); for (const n of (sc.pre || [])) s.add(this.seatDoorOf(v.kind, n.seatIdx)); return Array.from(s); };
+  const ta2 = Game.prototype.triggerAction;
+  Game.prototype.triggerAction = function (id) {
+    if (id.startsWith('prop_')) { this.sfx.unlock(); this.placeStart(id.slice(5)); return; }
+    if (id === 'fireplace') { this.sfx.unlock(); this.placeStart('flame'); return; }
+    if (id === 'ignite') { this.sfx.unlock(); this.placeStart('ignite'); return; }
+    return ta2.apply(this, arguments);
+  };
+  const cn = (e) => e.target && e.target.tagName === 'CANVAS';
+  addEventListener('pointermove', e => { const g = window.__game; if (!g || !g.place || !cn(e)) return; g.place.sx = e.clientX; g.place.sy = e.clientY; e.stopImmediatePropagation(); }, true);
+  addEventListener('pointerdown', e => { const g = window.__game; if (!g || !g.place || !cn(e)) return; e.stopImmediatePropagation(); e.preventDefault(); if (e.button === 0) { g.place.sx = e.clientX; g.place.sy = e.clientY; g.placeClick(); } else if (e.button === 2) g.placeEnd(); }, true);
+  addEventListener('pointerup', e => { const g = window.__game; if (g && g.place && cn(e)) e.stopImmediatePropagation(); }, true);
+  addEventListener('keydown', e => {
+    const g = window.__game; if (!g || !g.place) return; const c = e.code;
+    if (c === 'Escape') { g.placeEnd(); e.stopImmediatePropagation(); e.preventDefault(); }
+    else if (c === 'KeyQ' || c === 'KeyR') { g.place.yaw -= Math.PI / 4; e.stopImmediatePropagation(); e.preventDefault(); }
+    else if (c === 'KeyE') { g.place.yaw += Math.PI / 4; e.stopImmediatePropagation(); e.preventDefault(); }
+  }, true);
+  const st = document.createElement('style');
+  st.textContent = '#plmsg{position:fixed;left:50%;top:70px;transform:translateX(-50%);background:rgba(20,28,40,.88);color:#fff;padding:9px 16px;border-radius:10px;font:14px system-ui,sans-serif;z-index:40;display:none;pointer-events:none;box-shadow:0 0 0 1px rgba(255,255,255,.2);max-width:92vw;text-align:center}';
+  document.head.appendChild(st);
+}
+
+/* ---------- Krankenhaus: schwer Verletzte werden vom Krankenwagen eingeliefert ---------- */
+Object.assign(Game.prototype, {
+  hospLogic(sc, dt) {
+    if (!sc.hospChk) { sc.hospChk = true; const br = this.brain; if ((br.alive === false || br.health < 0.4) && !this.menuOn && this.cine) { sc.hosp = { ph: 0, pos: this.dummy.b.pelvis.p.slice() }; sc.healed = true; } }
+    const H = sc.hosp; if (!H || H.done) return; const at = sc.urgent ? 1.5 : 3.2, T = (sc.healT === undefined ? -1 : sc.healT) - at;
+    if (T < 0) return;
+    const step = (n, fn) => { if (H.ph === n) { H.ph = n + 1; fn(); } };
+    if (T >= 0) step(0, () => { this.hideDummy = true; this.bubble(0, tx2('Schwere Verletzungen! Ab ins Krankenhaus, Blaulicht an!', 'Severe injuries! To the hospital, lights on!'), 3); this.sfx.play('cdoor', { vol: 0.7 }); });
+    if (T >= 1.0) step(1, () => this.cineFade(true, tx2('KRANKENHAUS · NOTAUFNAHME', 'HOSPITAL · EMERGENCY ROOM')));
+    if (T >= 2.9) step(2, () => { this.cineFade(true, tx2('OPERATION …', 'SURGERY …')); this.sfx.play('ding', { vol: 0.4, pitch: 1.6 }); });
+    if (T >= 4.7) step(3, () => { this.cineFade(true, tx2('AUFWACHEN …', 'WAKING UP …')); this.sfx.play('ding', { vol: 0.4, pitch: 1.2 }); });
+    if (T >= 6.3) step(4, () => this.hospEnd(sc));
+  },
+  hospEnd(sc) {
+    const H = sc.hosp; if (!H || H.done) return; H.done = true; this.hideDummy = false;
+    try { this.healDummy(); } catch (e) { console.error(e); }
+    this.cineFade(false); this.popup('DISCHARGED – HEALED', this.dummy.b.head.p, '#7dff9a', 2.2);
+  }
+});
+{
+  const sl3 = Game.prototype.sceneLogic;
+  Game.prototype.sceneLogic = function (sc, dt) {
+    if (sc.kind === 'medic' && !sc.brig) {
+      if (sc.st === 'act' && (sc.res === 'treat' || sc.res === 'urgent')) this.hospLogic(sc, dt);
+      if (sc.hosp && !sc.hosp.done && sc.st === 'leave' && sc.t > 1.2) this.hospEnd(sc);
+    }
+    return sl3.apply(this, arguments);
+  };
+  Object.assign(DE, { 'DISCHARGED – HEALED': 'ENTLASSEN – GEHEILT' });
 }
 
 ;
@@ -12600,12 +13706,35 @@ Object.assign(Game.prototype, {
 { const a0 = Game.prototype.appendScenes; Game.prototype.appendScenes = function (bd) { const r = a0.apply(this, arguments); this.appendMapObjs(bd); return r; }; }
 
 /* ---------- Studio-Intro, Ladebildschirme, Tab ---------- */
+Object.assign(DE, {
+  'developed by': 'entwickelt bei', 'Click to skip': 'Klicken zum Überspringen', 'Your health and safety': 'Hinweise zu deiner Gesundheit',
+  'Flashing lights': 'Blitzende Lichter', 'Muzzle flashes, explosions and emergency lights can flicker. If you have epilepsy or are light-sensitive, talk to a doctor first.': 'Mündungsfeuer, Explosionen und Blaulicht können flackern. Bei Epilepsie oder Lichtempfindlichkeit vorher mit einer Ärztin oder einem Arzt sprechen.',
+  'Violence and blood': 'Gewalt und Blut', 'Everything happens to a fictional test dummy. Not suitable for children under 16.': 'Alles passiert an einer fiktiven Testpuppe. Nicht für Kinder unter 16 geeignet.',
+  'Take regular breaks': 'Regelmäßig Pausen machen', 'Pause 5–10 minutes every 30 minutes. Look into the distance and drink some water.': 'Alle 30 Minuten 5–10 Minuten Pause. In die Ferne schauen und etwas trinken.',
+  'Volume and posture': 'Lautstärke und Haltung', 'Keep the volume moderate, sit upright and relax your eyes.': 'Lautstärke mäßig halten, aufrecht sitzen und die Augen entspannen.',
+  'Dizzy or sick?': 'Schwindelig oder übel?', 'Stop playing at once if you feel dizzy, queasy or get a headache, especially in first-person mode.': 'Sofort aufhören, wenn dir schwindelig oder übel wird oder du Kopfschmerzen bekommst – vor allem im Ego-Modus.'
+});
 (function () {
   const t0 = performance.now(), $ = id => document.getElementById(id);
   const bar = $('mlbar'); let done = false; if (bar) setTimeout(() => { if (!done) bar.style.width = '38%'; }, 600);
+  const HEALTH = [
+    ['M13 2L4 14h7l-1 8 9-12h-7z', 'Flashing lights', 'Muzzle flashes, explosions and emergency lights can flicker. If you have epilepsy or are light-sensitive, talk to a doctor first.'],
+    ['M12 3c3 4.5 6 7.5 6 11a6 6 0 0 1-12 0c0-3.5 3-6.5 6-11z', 'Violence and blood', 'Everything happens to a fictional test dummy. Not suitable for children under 16.'],
+    ['M12 6v6l4 2M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z', 'Take regular breaks', 'Pause 5–10 minutes every 30 minutes. Look into the distance and drink some water.'],
+    ['M4 9v6h4l5 4V5L8 9zM16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12', 'Volume and posture', 'Keep the volume moderate, sit upright and relax your eyes.'],
+    ['M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12zM12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z', 'Dizzy or sick?', 'Stop playing at once if you feel dizzy, queasy or get a headache, especially in first-person mode.']
+  ];
+  const hs = $('mhs'); if (hs) {
+    let h = '<h2>' + T('Your health and safety') + '<i></i></h2>';
+    HEALTH.forEach((e, k) => { h += '<div class="hi" style="--k:' + k + '"><svg viewBox="0 0 24 24"><path d="' + e[0] + '"/></svg><div><b>' + T(e[1]) + '</b><span>' + T(e[2]) + '</span></div></div>'; });
+    hs.innerHTML = h; const dv = $('mdev'); if (dv) dv.textContent = T('developed by'); const sk = $('mskip'); if (sk) sk.textContent = T('Click to skip');
+  }
   window.__studioDone = function () {
     const el = $('mload'); if (!el) return; done = true; if (bar) bar.style.width = '100%'; const tx = $('mltxt'); if (tx) tx.textContent = T('Ready…');
-    setTimeout(() => el.classList.add('hide'), Math.max(1300, 4300 - (performance.now() - t0)));
+    const hide = () => { if (!el.classList.contains('hide')) el.classList.add('hide'); };
+    setTimeout(hide, Math.max(1300, 11200 - (performance.now() - t0)));
+    el.addEventListener('pointerdown', () => { if (performance.now() - t0 > 6500) hide(); });
+    addEventListener('keydown', () => { if (performance.now() - t0 > 6500 && done) hide(); }, { once: true });
   };
   window.__loadWorld = function (name, fn, ms, after) {
     const el = $('wload'); if (!el) { fn(); if (after) after(); return; }
