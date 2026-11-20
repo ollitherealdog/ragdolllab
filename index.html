@@ -314,8 +314,8 @@ body.intro #mapsel{display:none}
 #mfeat span{display:inline-flex;align-items:center;gap:7px;padding:7px 12px 7px 9px;border-radius:99px;font-size:12px;font-weight:700;letter-spacing:.03em;color:#e4eaf5;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);backdrop-filter:blur(8px);opacity:0;transform:translateY(8px);animation:mfin .6s ease forwards}
 #mfeat .ico{width:18px;height:18px;color:var(--acc)}
 @keyframes mfin{to{opacity:1;transform:none}}
-.logo .lg1{background:linear-gradient(100deg,#e9eefb 0%,#e9eefb 38%,#fff 48%,#ffe08a 52%,#e9eefb 62%,#e9eefb 100%);background-size:260% 100%;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;animation:mshine 7s ease-in-out infinite}
-@keyframes mshine{0%,55%{background-position:120% 0}100%{background-position:-60% 0}}
+.logo .lg1{background:linear-gradient(100deg,#e9eefb 0%,#e9eefb 38%,#fff 48%,#ffe08a 52%,#e9eefb 62%,#e9eefb 100%);background-size:260% 100%;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;animation:lgshine 7s ease-in-out infinite}
+@keyframes lgshine{0%,55%{background-position:120% 0}100%{background-position:-60% 0}}
 #menu::before{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 70% 45%,transparent 45%,rgba(0,0,0,.38) 100%);z-index:-1}
 @media (max-width:760px),(max-height:700px){#mfeat{display:none}#mlive{bottom:calc(30px + var(--sab));font-size:10.5px}}
 @media (orientation:landscape) and (max-height:540px){#mlive{display:none}}
@@ -8411,7 +8411,7 @@ Object.assign(Game.prototype, {
     this.menuBlend = (this.menuBlend || 0) + ((this.menuOn ? 1 : 0) - (this.menuBlend || 0)) * (1 - Math.exp(-4 * dt));
     if (this.menuOn) {
       this.menuT = (this.menuT || 0) + dt; c.free = false; const th = this.thumbMode;
-      c.yaw = sp.yaw + 0.5 + 0.36 * Math.sin(this.menuT * 0.16); c.pitch = clamp(sp.pitch * 0.95 + 0.05 * Math.sin(this.menuT * 0.4) + (th ? 0.04 : 0), 0.13, 0.62); c.dist = Math.min(40, sp.dist * (th ? 1.26 : 1.1));
+      c.yaw = sp.yaw + 0.5; c.pitch = clamp(sp.pitch * 0.95 + (th ? 0.04 : 0), 0.13, 0.62);   /* Kamera steht fest: Figur wandert im Startscreen nicht mehr zur Seite */ c.dist = Math.min(40, sp.dist * (th ? 1.26 : 1.1));
       if (!th) this.demoStep(dt);
       return;
     }
