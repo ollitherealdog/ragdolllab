@@ -412,7 +412,7 @@ body.inmenu #mapgo,body.intro #mapgo,body.bcam #mapgo,body.cine #mapgo{display:n
 #mload .hs .hi div{text-align:left}
 
 </style>
-<style>body.inmenu #einsatz,body.intro #einsatz{display:none!important}body.cining #sbx-tab,body.cining #ptab{display:none!important}</style></head>
+<style>#einsatz,#hint,#tabhint,#ptab{display:none!important}body.cining #sbx-tab,body.cining #ptab{display:none!important}</style></head>
 <body>
 <canvas id="gl" tabindex="0" aria-label="3D ragdoll test chamber"></canvas>
 <canvas id="ov"></canvas>
@@ -3881,7 +3881,7 @@ function pitchYawQ(out, yaw, pitch, roll) {
    5 Strasse, 6 Hochhaus-Beton/Fassade, 7 Stahl, 8 Container (v = Farbvariante), 9 Freibad (Terrassenplatten / Beckenfliesen)
    =================================================================== */
 const STAGE_H = 1.3;
-const MAP_ORDER = ['ground', 'stairs', 'ledge', 'wall', 'roof', 'catwalk', 'scaffold', 'ziggurat', 'containers', 'bridge', 'parking', 'stairwell', 'pool', 'grid', 'spikes', 'prison'];
+const MAP_ORDER = ['ground', 'stairs', 'ledge', 'wall', 'roof', 'catwalk', 'scaffold', 'ziggurat', 'containers', 'bridge', 'parking', 'stairwell', 'pool', 'grid', 'spikes', 'prison', 'hospital'];
 const CHAMBER_KEYS = ['ground', 'stairs', 'ledge', 'wall'];
 /* Infos fuer den Startscreen (Text wird ueber die Uebersetzungstabelle eingedeutscht) */
 const MAP_INFO = {
@@ -3900,6 +3900,7 @@ const MAP_INFO = {
   grid:       { name: 'Bar grid',         desc: 'Five layers of thin steel bars. He falls through the gaps and gets caught on every one.', icon: 'grid' },
   spikes:     { name: 'Spike arena',      desc: 'Spike pits and a wrecking ball. Press START and see what happens.', icon: 'spikes' },
   prison:     { name: 'Prison',            desc: 'Yard, gate and cell block. Arrested suspects end up here. Dying or a death sentence sends you back where you came from.', icon: 'prison' },
+  hospital:   { name: 'Hospital',          desc: 'Operating room, corridor and patient wards. Badly injured people wake up here after surgery. Dying or leaving brings you back where you came from.', icon: 'hospital' },
   stairwell:  { name: 'Stairwell',         desc: 'A 12 metre stairwell with an open well. Every flight is a bounce.', icon: 'well' }
 };
 
@@ -4092,6 +4093,33 @@ function buildEnv(world, key) {
     for (const [x, z] of [[-12, 0], [12, 12], [-12, 14], [10, -10]]) { add([x - 0.08, 0, z - 0.08], [x + 0.08, 5.2, z + 0.08], 7); deco([x - 0.4, 5.2, z - 0.25], [x + 0.4, 5.35, z + 0.25], 7); }   // Flutlichtmasten
     env.prison = { gate: { x: 0, z: 20.25, w: 6.4, h: 4.5 }, cell: { x: 0, z: -13, w: 1.24, h: 3.6 }, cellSpot: { x: 0, z: -15.0 }, chair: { x: 13.5, z: -2.5 } };
     sp.prison = { x: 0, z: -15.0, yaw: 0, y: 0, cam: { yaw: 0.35, pitch: 0.16, dist: 3.4, tx: 0, ty: 1.2, tz: -15.0 } };
+  } else if (key === 'hospital') {
+    /* ---------- Krankenhaus (32 x 28 m): Operationssaal im Norden, Flur, drei Patientenzimmer im Sueden ---------- */
+    env.groundMat = 10; env.fogK = 0.5; env.bmap = { x0: -17, z0: -16, size: 34 };
+    const H = 3.4, W = (x0, z0, x1, z1) => add([x0, 0, z0], [x1, H, z1], 10, 0.9, 0);
+    W(-16.3, -14.3, 16.3, -14); W(-16.3, 14, 16.3, 14.3); W(-16.3, -14, -16, 14); W(16, -14, 16.3, 14);                     // Aussenwaende
+    W(-6, -4.15, -1.3, -3.85); W(1.3, -4.15, 6, -3.85); add([-1.3, 2.5, -4.15], [1.3, H, -3.85], 10, 0.9, 0);                 // OP-Wand zum Flur mit Tuer
+    W(-6.15, -14, -5.85, -4); W(5.85, -14, 6.15, -4);                                                                            // OP-Seitenwaende
+    W(-16, 1.85, -11.6, 2.15); W(-9.6, 1.85, -1, 2.15); W(1, 1.85, 9.6, 2.15); W(11.6, 1.85, 16, 2.15);                           // Wand Flur / Zimmer mit 3 Tueren
+    for (const dx of [-10.6, 0, 10.6]) add([dx - 1, 2.5, 1.85], [dx + 1, H, 2.15], 10, 0.9, 0);
+    W(-5.45, 2.15, -5.15, 14); W(5.15, 2.15, 5.45, 14);                                                                          // Zimmertrennwaende
+    // Operationstisch (Kopfende Nord), Lampen, Geraete
+    add([-0.12, 0, -9.0], [0.12, 0.78, -7.6], 10, 0.9, 2); add([-0.5, 0.78, -9.7], [0.5, 0.92, -6.8], 10, 0.9, 2); add([-0.32, 0.92, -9.65], [0.32, 0.97, -9.05], 10, 0.9, 1);
+    deco([-0.6, 2.6, -8.9], [0.6, 2.72, -7.7], 2); deco([-0.05, 2.72, -8.35], [0.05, H, -8.25], 2); deco([-0.45, 2.52, -8.8], [0.45, 2.6, -7.8], 1);
+    add([2.1, 0, -8.8], [3.0, 0.92, -7.9], 10, 0.9, 2); add([2.2, 0.92, -8.7], [2.9, 0.96, -8.0], 10, 0.9, 1);                          // Instrumententisch
+    add([-3.0, 0, -11.0], [-2.1, 1.25, -10.0], 10, 0.9, 4); add([-2.9, 1.25, -10.9], [-2.2, 1.7, -10.7], 10, 0.9, 2);                // Narkosegeraet + Monitor
+    add([4.6, 0, -13.7], [5.7, 1.2, -12.6], 10, 0.9, 2); add([-5.7, 0, -13.7], [-4.6, 1.2, -12.6], 10, 0.9, 2);                      // Schraenke
+    // Rotes Kreuz ueber der OP-Tuer (Flurseite)
+    deco([-0.12, 3.0, -3.9], [0.12, 3.3, -3.83], 10, 5); deco([-0.3, 3.08, -3.9], [0.3, 3.22, -3.83], 10, 5);
+    // Betten (Kopf an Suedwand), Nachttische, Vorhaenge
+    const bed = (bx, bz) => { add([bx - 0.5, 0.1, bz - 1.0], [bx + 0.5, 0.45, bz + 1.0], 10, 0.9, 4); add([bx - 0.46, 0.45, bz - 0.95], [bx + 0.46, 0.64, bz + 0.95], 10, 0.9, 1); add([bx - 0.5, 0.45, bz + 1.0], [bx + 0.5, 1.15, bz + 1.1], 10, 0.9, 4); add([bx - 0.5, 0.0, bz - 1.0], [bx - 0.42, 0.1, bz - 0.9], 10, 0.9, 2); add([bx + 0.42, 0.0, bz - 1.0], [bx + 0.5, 0.1, bz - 0.9], 10, 0.9, 2); add([bx - 0.5, 0.0, bz + 0.9], [bx - 0.42, 0.1, bz + 1.0], 10, 0.9, 2); add([bx + 0.42, 0.0, bz + 0.9], [bx + 0.5, 0.1, bz + 1.0], 10, 0.9, 2); deco([bx - 0.4, 0.64, bz + 0.6], [bx + 0.4, 0.72, bz + 0.92], 1); };
+    for (const bx of [-13.2, -8.1, -2.5, 2.5, 8.1, 13.2]) { bed(bx, 12.9); add([bx + 0.65, 0, 13.2], [bx + 1.05, 0.62, 13.8], 10, 0.9, 2); }
+    // Flur: Baenke, Trage, Rollwagen; Notaufnahme West + Ostzimmer
+    add([-14, 0, -1.2], [-10, 0.46, -0.6], 10, 0.9, 4); add([10, 0, -1.2], [14, 0.46, -0.6], 10, 0.9, 4); add([-14, 0, 0.4], [-13.6, 0.9, 0.8], 10, 0.9, 2);
+    bed(-11, -12.5); bed(-11, -8.6); bed(11, -12.5); bed(11, -8.6);
+    add([-4.5, 0, -1.4], [-3.6, 0.9, -0.5], 10, 0.9, 2);
+    env.hospital = { or: { x: 0, z: -8.2, top: 0.92 }, door: { x: 0, z: -4 }, bed: { x: 2.5, z: 12.9 } };
+    sp.hospital = { x: 1.0, z: 8.5, yaw: Math.PI, y: 0, cam: { yaw: 0.35, pitch: 0.2, dist: 4.4, tx: 1.0, ty: 1.2, tz: 8.5 } };
   } else if (key === 'stairwell') {
     /* ---------- Treppenhaus: 4 Laeufe a 3 m, offenes Auge in der Mitte ---------- */
     env.groundMat = 0; env.fogK = 0.6; env.bmap = { x0: -6, z0: -6, size: 12 };
@@ -5021,6 +5049,17 @@ void main(){
       if (a.y>0.5) { float dx = abs(abs(vW.x)-6.0), dz = abs(abs(vW.z)-9.0); bool nearPool = (abs(vW.z) < 9.4 && dx < 0.4) || (abs(vW.x) < 6.4 && dz < 0.4); if (nearPool) base = mix(base, vec3(0.90,0.92,0.93), 0.75); }
       rough = 0.62; metal = 0.0;
     }
+  } else if (em==10){   // Krankenhaus: Fliesenboden, weisse Waende mit gruenem Sockel, Betten, Edelstahl, OP-Gruen
+    int hv = int(vMat.y + 0.5);
+    if (hv==0){
+      if (a.y>0.5){ vec2 q = vW.xz/0.6; vec2 f = abs(fract(q)-0.5); float gr = smoothstep(0.47,0.5,max(f.x,f.y)); float ck = mod(floor(q.x)+floor(q.y),2.0);
+        base = mix(vec3(0.70,0.84,0.80), vec3(0.62,0.78,0.74), ck)*(0.94+0.1*fbm(uv*3.0)); base = mix(base, base*0.7, gr); rough = 0.25; }
+      else { base = vec3(0.92,0.94,0.93)*(0.95+0.07*fbm(uv*2.5)); base = mix(vec3(0.38,0.66,0.62), base, smoothstep(1.0,1.08,vW.y)); rough = 0.6; }
+    } else if (hv==1){ base = vec3(0.94,0.95,0.97)*(0.96+0.05*fbm(uv*9.0)); rough = 0.9; }
+    else if (hv==2){ base = vec3(0.74,0.77,0.80)*(0.9+0.15*fbm(uv*6.0)); rough = 0.22; metal = 0.85; }
+    else if (hv==3){ base = vec3(0.07,0.52,0.40)*(0.9+0.1*fbm(uv*10.0)); rough = 0.9; }
+    else if (hv==4){ base = vec3(0.16,0.36,0.60); rough = 0.45; }
+    else { base = vec3(0.80,0.08,0.08); rough = 0.5; }
   } else {               // wooden crate
     vec2 q = a.y>0.5 ? vW.xz : uv; float pl = floor(q.x*7.0); float gr = fbm(vec2(q.y*3.0, pl*3.7)*2.0+vec2(q.x*30.0,0.0));
     base = vec3(0.48,0.30,0.14)*(0.65+0.7*gr)*(0.9+0.1*h21(vec2(pl,2.0))); base *= 1.0-0.55*gridLine(vec2(q.x*7.0, q.y*1.2)+0.25,1.2); rough = 0.7;
@@ -8355,11 +8394,12 @@ const MAP_SVG = {
   pool: '<path d="M6 40H114M6 40V58H114V40" opacity=".55"/><path d="M12 48c6-5 10 5 16 0s10 5 16 0 10 5 16 0 10 5 16 0 10 5 16 0" /><path d="M20 40V8M20 8H36M20 20H32M20 30H30"/><circle cx="42" cy="3" r="3.2"/><path d="M62 28q8-14 18-4" opacity=".6"/>',
   grid: '<path d="M8 10H112M8 24H112M8 38H112M8 52H112"/><path d="M20 4V58M40 4V58M60 4V58M80 4V58M100 4V58" opacity=".55"/><circle cx="50" cy="31" r="3.4"/>',
   spikes: '<path d="M6 58H114"/><path d="M14 58L20 40L26 58M26 58L32 40L38 58M38 58L44 40L50 58M70 58L76 40L82 58M82 58L88 40L94 58"/><path d="M60 4V22"/><circle cx="60" cy="32" r="9"/>',
+  hospital: '<rect x="14" y="20" width="92" height="38"/><path d="M6 58H114"/><path d="M60 26V46M50 36H70" stroke-width="4"/><path d="M22 58V44H40V58M80 58V44H98V58" opacity=".6"/>',
   prison: '<path d="M6 58H114"/><rect x="14" y="22" width="60" height="36"/><path d="M26 22V58M38 22V58M50 22V58M62 22V58"/><path d="M80 58V14H92V58M80 14L86 6L92 14"/><path d="M96 58V30H114V58M105 30V58" opacity=".6"/>',
   containers: '<rect x="12" y="40" width="46" height="18"/><rect x="62" y="40" width="46" height="18"/><rect x="30" y="22" width="46" height="18"/><path d="M20 40v18M30 40v18M70 40v18M80 40v18M38 22v18M48 22v18"/>'
 };
 const TAB_ICON = { 'Gameplay': ico('t_gameplay'), 'Ballistics': ico('c_weapons'), 'Character': ico('t_person'), 'Graphics': ico('t_monitor'), 'Camera': ico('t_camera'), 'Atmosphere and look': ico('t_sun'), 'Motor brain': ico('t_brain'), 'Audio and physics': ico('t_speaker'), 'Debug overlays': ico('c_tools'), 'Session': ico('t_chart'), 'About': ico('t_info') };
-const MAP_TAGS = { prison: ['Cells', 'Gate', 'Return'], pool: ['Water', '10 m tower', 'Tricks'], grid: ['20 m', 'Bars', 'Caught'], spikes: ['Spikes', 'Wrecking ball', 'Start'], ground: ['Flat', 'Beginner'], stairs: ['Stairs', 'Tumbling'], ledge: ['Edge', '1.3 m drop'], wall: ['Wall', 'Impacts'], roof: ['60 m', 'Skyline', 'Fall damage'], catwalk: ['22 m', 'Narrow'], scaffold: ['15 m', 'Multi-level'], ziggurat: ['5 m', 'Tumbling'], containers: ['8 m', 'Stacked'], bridge: ['12 m', 'Traffic', 'Barrier'], parking: ['9 m', 'Multi-level', 'Open edge'], stairwell: ['12 m', 'Tumbling', 'Narrow'] };
+const MAP_TAGS = { hospital: ['Surgery', 'Ward', 'Return'], prison: ['Cells', 'Gate', 'Return'], pool: ['Water', '10 m tower', 'Tricks'], grid: ['20 m', 'Bars', 'Caught'], spikes: ['Spikes', 'Wrecking ball', 'Start'], ground: ['Flat', 'Beginner'], stairs: ['Stairs', 'Tumbling'], ledge: ['Edge', '1.3 m drop'], wall: ['Wall', 'Impacts'], roof: ['60 m', 'Skyline', 'Fall damage'], catwalk: ['22 m', 'Narrow'], scaffold: ['15 m', 'Multi-level'], ziggurat: ['5 m', 'Tumbling'], containers: ['8 m', 'Stacked'], bridge: ['12 m', 'Traffic', 'Barrier'], parking: ['9 m', 'Multi-level', 'Open edge'], stairwell: ['12 m', 'Tumbling', 'Narrow'] };
 const MENU_QUICK = ['blood', 'look', 'screams'];
 const DEMO_MAPS = ['ground', 'roof', 'bridge', 'catwalk', 'stairs', 'scaffold', 'containers', 'parking', 'stairwell', 'ziggurat', 'ledge', 'wall'];
 const DEMO_EV = { shots: 'Gunfire', mine: 'Mine', launch: 'Launcher', police: 'Police' };
@@ -9436,7 +9476,7 @@ class Npc {
     shL = L(shL, 1.05 + Math.sin(this.t * 3.1) * 0.08, kn); shR = L(shR, 1.1 + Math.sin(this.t * 3.1 + 1) * 0.08, kn); elL = L(elL, 0.55, kn); elR = L(elR, 0.5, kn);
     // zielen
     const el = this.pitch, ap = 1.625 + el, rc = this.recoil;   // +0.125: Ausgleich der Oberkoerper-Neigung -> Lauf zeigt exakt auf das Ziel
-    { const eR = 0.2 + 0.3 * rc, eL = 0.55 + 0.2 * rc; shR = L(shR, ap + 0.08 * rc - eR, am); shL = L(shL, ap + 0.08 * rc - eL, am); elR = L(elR, eR, am); elL = L(elL, eL, am); }   // Handrichtung = Schulter + Ellbogen = genau auf das Ziel
+    { const eR = 0.75 + 0.3 * rc, eL = 0.45 + 0.2 * rc; shR = L(shR, ap + 0.08 * rc - eR, am); shL = L(shL, ap + 0.08 * rc - eL - 0.16, am); elR = L(elR, eR, am); elL = L(elL, eL, am); }   // Handrichtung = Schulter + Ellbogen = genau auf das Ziel
     { const al = am * (1 - 0.96 * wk); hipL = L(hipL, 0.22, al); hipR = L(hipR, -0.18, al); kneeL = L(kneeL, 0.3, al); kneeR = L(kneeR, 0.18, al); } lean = L(lean, 0.06 + 0.08 * rc, am);
     // Deckung: beim Zielen in die Hocke gehen (nach Beschuss)
     const cv = Math.min(1, this.cover) * am; if (cv > 0.01) { hipL = L(hipL, 1.0, cv); hipR = L(hipR, 0.55, cv); kneeL = L(kneeL, 1.5, cv); kneeR = L(kneeR, 1.7, cv); lean = L(lean, 0.45, cv); }
@@ -9456,7 +9496,7 @@ class Npc {
     if (rd > 0.01) { shL = L(shL, 1.1, rd); elL = L(elL, 2.4, rd); abL = L(abL, 0.15, rd); }
     if (cr > 0.01) { hipL = L(hipL, 1.1, cr); hipR = L(hipR, 0.7, cr); kneeL = L(kneeL, 1.6, cr); kneeR = L(kneeR, 1.8, cr); lean = L(lean, 0.35, cr); }
     if (this.shield) { shL = L(shL, 0.85, 0.95); elL = L(elL, 0.35, 0.95); abL = 0.04; }   // linke Hand haelt den Schildgriff
-    const inR = L(0, 0.03, am), inL = L(0, this.shield ? -0.08 : (this.gun === 'rifle' ? -0.55 : -0.5), am);
+    const inR = L(0, 0.03, am), inL = L(0, this.shield ? -0.08 : (this.gun === 'rifle' ? -0.55 : -0.62), am);
     const S = q;
     const tw = Math.sin(this.ph) * (0.1 * wk + 0.12 * rn) * (1 - 0.8 * am), ly = this.lookYaw || 0, lp = (this.lookPitch !== undefined ? this.lookPitch : this.pitch * 0.9) * (1 - 0.3 * cl);
     S.lumbar = [lean * 0.55, tw * 0.6 - ly * 0.12, 0]; S.thoracic = [lean * 0.45, -tw - ly * 0.2, 0]; S.neck = [-lean * 0.4 - lp * 0.3, ly * 0.35, 0]; S.head = [-lean * 0.35 - lp * 0.4 + (cl ? -0.5 * cl : 0), ly * 0.45, 0];
@@ -9531,8 +9571,8 @@ Object.assign(Game.prototype, {
   sceneMeshes() {
     const M = this._sm || (this._sm = {}), up = (k, f) => M[k] || (M[k] = this.gfx.upload(f()));
     return {
-      car: (k) => { if (!M['car_' + k]) { const m = carMesh(k); M['car_' + k] = this.gfx.upload(m); M['lights_' + k] = m.lights.map(l => ({ mesh: this.gfx.upload(lightMesh(l.b[0], l.b[1])), ph: l.ph })); } return M['car_' + k]; },
-      lights: (k) => M['lights_' + k],
+      car: (k) => { if (!M['car_' + k]) { const m = carMesh(k); M['car_' + k] = this.gfx.upload(m); M['wheels_' + k] = (m.wheelParts || []).map(w => ({ yc: w.yc, zc: w.zc, R: w.R, mesh: this.gfx.upload(w.m) })); M['lights_' + k] = m.lights.map(l => ({ mesh: this.gfx.upload(lightMesh(l.b[0], l.b[1])), ph: l.ph })); } return M['car_' + k]; },
+      lights: (k) => M['lights_' + k], wheels: (k) => M['wheels_' + k] || [],
       elev: () => up('elev', elevatorMesh), door: () => up('door', elevDoorMesh), pistol: () => up('g_pistol', () => gunMesh('pistol')), rifle: () => up('g_rifle', () => gunMesh('rifle')),
       doorM: (kind, m) => up('dm_' + kind + m, () => doorMesh(kind, m)), carG: (k) => up('cg_' + k, () => vehGlassMB(k)), doorG: (k, m) => up('dg_' + k + m, () => vehDoorGlassMB(k, m)), stretcher: () => up('stretcher', stretcherMesh), bagM: () => up('bagm', bagMesh),
       cap: () => up('cap', capMesh), vest: () => up('vest', vestMesh), stripe: () => up('stripe', stripeMesh), bag: () => up('bag', bagMesh), helmet: () => up('helmet', helmetMesh),
@@ -9850,7 +9890,7 @@ Object.assign(Game.prototype, {
   npcShoot(n, W) {
     const g = this, br = this.brain, D = this.dummy.b;
     if (!this.dummy) return;
-    const hand = HNAMES.indexOf('handR'); const gm = n.gun === 'rifle' ? V3(0, -0.86, 0.04) : V3(0, -0.2, 0.02), H = NPCK.rest.handR;
+    const hand = HNAMES.indexOf('handR'); const gm = n.gun === 'rifle' ? V3(0, -0.86, 0.1) : V3(0, -0.2, 0.082), H = NPCK.rest.handR;
     _nv[0] = H[0] + gm[0]; _nv[1] = H[1] + gm[1]; _nv[2] = H[2] + gm[2]; n.xf(hand, _nv, n.muzzle);
     const mz = V3(n.muzzle[0], n.muzzle[1], n.muzzle[2]);
     const tg = D.chest.p, tx = tg[0] + (Math.random() - 0.5) * 0.12, ty = tg[1] + (Math.random() - 0.3) * 0.25, tz = tg[2] + (Math.random() - 0.5) * 0.12;
@@ -9889,6 +9929,7 @@ Object.assign(Game.prototype, {
       const q = Q4(), pq = Q4(); qfromAxisAngle(q, 0, 1, 0, v.yaw); qfromAxisAngle(pq, 1, 0, 0, v.pitch); qmul(q, q, pq);
       const mm = M4.id(); M4.trs(mm, [v.x, 0.0, v.z], q, 1, 1, 1);
       bd.push({ mesh: S.car(v.kind), model: mm, tint: [1, 1, 1] });
+      for (const w of S.wheels(v.kind)) { const wq = Q4(), t1 = M4.id(), t2 = M4.id(), wm = M4.id(), w2 = M4.id(); qfromAxisAngle(wq, 1, 0, 0, v.wheel * 0.4 / w.R); M4.trs(t1, [0, w.yc, w.zc], wq, 1, 1, 1); M4.trs(t2, [0, -w.yc, -w.zc], [0, 0, 0, 1], 1, 1, 1); M4.mul(w2, t1, t2); M4.mul(wm, mm, w2); bd.push({ mesh: w.mesh, model: wm, tint: [1, 1, 1] }); }
       const on = Math.floor(v.lightT * 4.2) % 2, lt = S.lights(v.kind);
       for (const l of lt) { const bright = (l.ph === on) ? 1 : 0, mn = M4.id(); M4.trs(mn, [v.x, 0.0, v.z], q, 1, 1, 1); bd.push({ mesh: l.mesh, model: mn, tint: bright ? [3.2, 3.2, 3.2] : [0.5, 0.5, 0.5] }); }
       const dd = VEHCFG[v.kind] ? vdoors(v.kind) : DOOR_DEF[isVan(v.kind) ? 'van' : (v.kind === 'fire' ? 'fire' : 'car')];
@@ -9914,10 +9955,11 @@ Object.assign(Game.prototype, {
     }
     for (const n of A.npcs.concat(A.corpses || [], A.pre || [])) {
       if (!n.vis && !(n.boarded && n.veh && n.veh.vis)) continue;
-      const swat = n.kind === 'cop' && (n.swat !== undefined ? n.swat : this.copSwat), NSK = { fire: { s: [0.74, 0.58, 0.30], p: [0.74, 0.58, 0.30] }, clean: { s: [0.36, 0.46, 0.58], p: [0.13, 0.20, 0.38] }, guard: { s: [0.05, 0.09, 0.22], p: [0.02, 0.03, 0.07] }, prisoner: { s: [0.84, 0.15, 0.007], p: [0.84, 0.15, 0.007] } },
+      const swat = n.kind === 'cop' && (n.swat !== undefined ? n.swat : this.copSwat), NSK = { fire: { s: [0.74, 0.58, 0.30], p: [0.74, 0.58, 0.30] }, clean: { s: [0.36, 0.46, 0.58], p: [0.13, 0.20, 0.38] }, guard: { s: [0.05, 0.09, 0.22], p: [0.02, 0.03, 0.07] }, doctor: { s: [0.1, 0.56, 0.45], p: [0.09, 0.5, 0.41] }, prisoner: { s: [0.84, 0.15, 0.007], p: [0.84, 0.15, 0.007] } },
         sk = n.civ ? { s: this.look.shirt, p: this.look.pants } : n.kind === 'medic' ? { s: [0.95, 0.95, 0.94], p: [0.1, 0.13, 0.22] } : swat ? { s: [0.03, 0.035, 0.04], p: [0.025, 0.028, 0.03] } : NSK[n.kind] || { s: [0.04, 0.06, 0.13], p: [0.02, 0.025, 0.04] };
       const dmy = n.civ && this.set.look === 0, YL = [0.93, 0.74, 0.05];
-      this.npcDraw.push({ layers: this.npcLayersFor(n, swat), bones: n.bones, skin: dmy ? YL : swat ? [0.04, 0.04, 0.045] : this.look.skin, shirt: dmy ? YL : sk.s, pants: dmy ? YL : sk.p, hair: dmy ? YL : n.kind === 'prisoner' ? this.look.hair : (n.kind === 'cop' || n.kind === 'guard') ? [0.03, 0.025, 0.02] : [0.2, 0.12, 0.06] });
+      const pl = !!n.isPlayer, plk = this.set.look, plc = plk === 2 ? this.polyCol : plk === 0 ? YL : null;
+      this.npcDraw.push({ layers: pl ? ((this.hLayers && this.hLayers.length) ? this.hLayers : this.npcLayerList()) : this.npcLayersFor(n, swat), bones: n.bones, skin: pl ? (plc || this.look.skin) : dmy ? YL : swat ? [0.04, 0.04, 0.045] : this.look.skin, shirt: pl ? (plc || this.look.shirt) : dmy ? YL : sk.s, pants: pl ? (plc || this.look.pants) : dmy ? YL : sk.p, hair: pl ? (plc || this.look.hair) : dmy ? YL : n.kind === 'prisoner' ? this.look.hair : (n.kind === 'cop' || n.kind === 'guard') ? [0.03, 0.025, 0.02] : [0.2, 0.12, 0.06] });
       const att = (mesh, bone, pos, rot, sc3, tint) => {
         const mm = M4.id(), loc = M4.id(), q = rot || [0, 0, 0, 1]; M4.trs(loc, pos, q, sc3[0], sc3[1], sc3[2]); M4.mul(mm, n.mats[HNAMES.indexOf(bone)], loc); bd.push({ mesh, model: mm, tint: tint || [1, 1, 1] });
       };
@@ -9937,10 +9979,10 @@ Object.assign(Game.prototype, {
         att(S.keys(), 'pelvis', [0.2, 0.96, 0.08], null, [1, 1, 1]);
       } else if (n.kind === 'prisoner') {
         if (!n.civ) att(S.numb(), 'chest', [0, 1.3, 0.155], null, [1, 1, 1]);
-        if (n.gun && !n.hm && !n.boarded && !n.sit) { const H = NPCK.rest.handR; att(S.wpn(n.wm || n.gun), 'handR', [H[0] - 0.01, H[1] + 0.03, H[2] + 0.015], null, [1, 1, 1]); }
+        if (n.gun && !n.hm && !n.boarded && !n.sit) { const H = NPCK.rest.handR; att(S.wpn(n.wm || n.gun), 'handR', [H[0], H[1] + 0.005, H[2] + 0.062], null, [1, 1, 1]); }
         if (n.cf > 0.5) { const HR = NPCK.rest.handR, HL = NPCK.rest.handL; att(S.cuff(), 'handR', [HR[0] + 0.07, HR[1] + 0.02, HR[2]], null, [1, 1, 1]); }
       } else {
-        if (n.gun && !n.hm && !n.boarded && !n.sit) { const H = NPCK.rest.handR; att(S.wpn(n.wm || n.gun), 'handR', [H[0] - 0.01, H[1] + 0.03, H[2] + 0.015], null, [1, 1, 1]); }
+        if (n.gun && !n.hm && !n.boarded && !n.sit) { const H = NPCK.rest.handR; att(S.wpn(n.wm || n.gun), 'handR', [H[0], H[1] + 0.005, H[2] + 0.062], null, [1, 1, 1]); }
       }
     }
   },
@@ -11000,17 +11042,23 @@ Object.assign(Game.prototype, {
         break;
       }
       case 'leave': {
+        if (sc.parent && !sc.left && !sc.sync) {     // Rettungswagen wartet: Polizei bleibt, steigt ein, danach fahren alle gleichzeitig ab
+          const P0 = sc.parent; sc.sync = 1; sc.sidekick = true; sc.parent = null; P0.side = sc; this.act.sc = P0; this.act.busy = true;
+          P0.st = 'act'; P0.t = 0; P0.res = 'leave'; P0.copGo = true; P0.shot = 'leave'; P0.orb0 = undefined; break;
+        }
+        if (sc.sync === 1) break;
         if (!sc.left) {
           sc.left = true; sc.minT = 0.2;
           if (sc.mode === 'elevator') { A.elev.doorT = 0; sc.minT = 2.6; }
           if (sc.mode === 'ladder' && A.ladder) { A.ladder.growT = 0; sc.minT = 3.4; }
           if (v) { v.tasks.length = 0; v.siren = true; v.push({ k: 'wait', d: 0.5 }).push({ k: 'turn', yaw: v.yaw + Math.PI }).push({ k: 'go', x: sc.stop.x - Math.sin(sc.stop.yaw) * 60, z: sc.stop.z - Math.cos(sc.stop.yaw) * 60, v: 16 }).push({ k: 'hide' }); if (sc.kind !== 'clean') this.sfx.sirenStart(medic ? 0 : 1); }
         }
-        if (sc.left && sc.t > sc.minT + 0.2 && (!v || !v.vis)) sc.st = 'done';
-        if (sc.t > 45) sc.st = 'done';
+        if (sc.left && sc.t > sc.minT + 0.2 && (!v || !v.vis) && (!sc.side || sc.side.st === 'gone')) sc.st = 'done';
+        if (sc.t > 45 && !sc.sidekick) sc.st = 'done';
         break;
       }
       case 'done': {
+        if (sc.sidekick) { sc.st = 'gone'; break; }
         this.sfx.sirenStop();
         if (sc.mode === 'elevator') this.sfx.play('ding', { vol: 0.6 });
         if (sc.parent) {          // Rettung im Auftrag der Polizei fertig: die Beamten machen weiter (erneute Festnahme zum Eigenschutz)
@@ -11430,6 +11478,7 @@ Game.prototype.buildWorld = function (key, keep) {
 
 Object.assign(Game.prototype, {
   setEinsatz(list) {
+    this.einsatz = list || []; return;   /* Einsatz-Anzeige entfaellt (nervt) */
     let el = document.getElementById('einsatz'); if (!el) { el = document.createElement('div'); el.id = 'einsatz'; document.body.appendChild(el); }
     this.einsatz = list || []; if (!list || !list.length) { el.classList.remove('on'); return; }
     const seen = {}; el.innerHTML = '<b>' + tx2('Einsatzstelle', 'Incident site') + '</b>' + list.filter(k => EINSATZ_NM[k] && !seen[EINSATZ_NM[k][0]] && (seen[EINSATZ_NM[k][0]] = 1)).map(k => '<i style="--c:' + EINSATZ_NM[k][2] + '">' + EINSATZ_NM[k][LANG === 0 ? 0 : 1] + '</i>').join('');
@@ -11570,7 +11619,7 @@ Game.prototype.tick = function () {
   const busy = this.act && this.act.busy;
   if (this.pr) {
     const p = this.pr, k = Math.min(1, DT * 1.6); p.gate += (p.gateT - p.gate) * k; p.door += (p.doorT - p.door) * Math.min(1, DT * 2.2);
-    if (this.spawnKey === 'prison' && this.prev && !busy && !this.cine && !this._ret && !this.brain.alive && this.deadT > 2.4) this.returnFromPrison();
+    if ((this.spawnKey === 'prison' || this.spawnKey === 'hospital') && this.prev && !busy && !this.cine && !this._ret && !this.brain.alive && this.deadT > 2.4) this.returnFromPrison();
   }
   if (busy || this.cine || this._ret || this.exec) { this.idleHigh = 0; return r; }
   // Auto-Feuerwehr: lange hoch oben festgesessen
@@ -11962,17 +12011,17 @@ Game.prototype.dlgStart = function (sc) {
    =================================================================== */
 const VK_INT = NC(0.12, 0.125, 0.14, 0.8), VK_SEAT = NC(0.10, 0.10, 0.115, 0.85), VK_FLOOR = NC(0.17, 0.17, 0.19, 0.85), VK_DASH = NC(0.07, 0.07, 0.08, 0.6), VK_GL = NC(0.30, 0.42, 0.52, 0.08, 0.6);
 const VEHCFG = {
-  police: { src: 'police', hw: 0.95, hl: 2.4, seats: [[0.42, 0.55, 0.62], [-0.42, 0.55, 0.62], [0.42, 0.55, -0.42], [-0.42, 0.55, -0.42], [0, 0.55, -0.42]], floor: [-0.8, -1.0, 0.8, 1.0, 0.04], dash: 1.0, rc: {},
+  police: { src: 'police', hw: 0.95, hl: 2.4, seats: [[0.4, 0.52, 0.18], [-0.4, 0.52, 0.18], [0.4, 0.52, -0.82], [-0.4, 0.52, -0.82], [0, 0.52, -0.82]], floor: [-0.78, -1.5, 0.78, 0.9, 0.3], dash: 0.72, seatMap: [0, 1, 3, 4, 2], wheels: [[0.39, 1.44, 0.4], [0.39, -1.44, 0.4]], rc: {},
     lights: [[[-0.4, 1.52, -0.66, -0.08, 1.66, -0.36], 'blue', 0], [[0.08, 1.52, -0.66, 0.4, 1.66, -0.36], 'red', 1]] },
-  clean: { src: 'police', hw: 0.95, hl: 2.4, seats: [[0.42, 0.55, 0.62], [-0.42, 0.55, 0.62], [0.42, 0.55, -0.42]], floor: [-0.8, -1.0, 0.8, 1.0, 0.04], dash: 1.0,
+  clean: { src: 'police', hw: 0.95, hl: 2.4, seats: [[0.4, 0.52, 0.18], [-0.4, 0.52, 0.18], [0.4, 0.52, -0.82]], floor: [-0.78, -1.5, 0.78, 0.9, 0.3], dash: 0.72, wheels: [[0.39, 1.44, 0.4], [0.39, -1.44, 0.4]],
     rc: { Black: [0.90, 0.91, 0.89], White: [0.15, 0.58, 0.22], Grey: [0.30, 0.31, 0.33] }, lights: [[[-0.1, 1.52, -0.5, 0.1, 1.66, -0.3], 'amb', 0], [[-0.1, 1.52, -0.5, 0.1, 1.66, -0.3], 'amb', 1]] },
-  ambulance: { src: 'ambulance', hw: 1.0, hl: 2.85, seats: [[0.46, 1.2, 0.62], [-0.46, 1.2, 0.62], [0.55, 1.2, -1.3], [-0.55, 1.2, -1.3]], floor: [-0.85, -2.5, 0.85, 1.0, 0.72], dash: 1.05, rear: 2,
+  ambulance: { src: 'ambulance', hw: 1.0, hl: 2.85, seats: [[0.46, 1.2, 0.62], [-0.46, 1.2, 0.62], [0.55, 1.2, -1.3], [-0.55, 1.2, -1.3]], floor: [-0.85, -2.5, 0.85, 1.0, 0.72], dash: 1.05, rear: 2, wheels: [[0.5, 2.025, 0.52], [0.5, -1.46, 0.52]],
     rc: { LightGreen_Ambulance: [0.95, 0.95, 0.93], Door_Ambulance: [0.92, 0.92, 0.9], DarkGreen_Ambulance: [0.82, 0.2, 0.1], White_Ambulance: [0.98, 0.98, 0.97], Yellow_Ambulance: [0.95, 0.9, 0.2], Gray_Ambulance: [0.35, 0.36, 0.38] },
     lights: [[[-0.66, 2.5, 0.28, -0.12, 2.64, 0.54], 'blue', 0], [[0.12, 2.5, 0.28, 0.66, 2.64, 0.54], 'blue', 1]] },
-  swat: { src: 'ambulance', hw: 1.0, hl: 2.85, seats: [[0.46, 1.2, 0.62], [-0.46, 1.2, 0.62], [0.55, 1.2, -1.3], [-0.55, 1.2, -1.3]], floor: [-0.85, -2.5, 0.85, 1.0, 0.72], dash: 1.05, rear: 2,
+  swat: { src: 'ambulance', hw: 1.0, hl: 2.85, seats: [[0.46, 1.2, 0.62], [-0.46, 1.2, 0.62], [0.55, 1.2, -1.3], [-0.55, 1.2, -1.3]], floor: [-0.85, -2.5, 0.85, 1.0, 0.72], dash: 1.05, rear: 2, wheels: [[0.5, 2.025, 0.52], [0.5, -1.46, 0.52]],
     rc: { LightGreen_Ambulance: [0.05, 0.055, 0.065], Door_Ambulance: [0.04, 0.045, 0.05], DarkGreen_Ambulance: [0.025, 0.028, 0.03], White_Ambulance: [0.07, 0.075, 0.085], Cross_Ambulance: [0.09, 0.095, 0.105], Yellow_Ambulance: [0.07, 0.07, 0.08], Red_Ambulance: [0.05, 0.05, 0.05], Gray_Ambulance: [0.2, 0.21, 0.23] },
     lights: [[[-0.66, 2.5, 0.28, -0.12, 2.64, 0.54], 'red', 0], [[0.12, 2.5, 0.28, 0.66, 2.64, 0.54], 'blue', 1]] },
-  fire: { src: 'fire', hw: 1.25, hl: 4.5, seats: [[0.5, 1.4, 2.75], [-0.5, 1.4, 2.75], [0.5, 1.4, 1.2], [-0.5, 1.4, 1.2]], floor: [-0.95, 0.6, 0.95, 3.7, 0.85], dash: 3.75, seatMap: [0, 2, 1, 3], rc: {},
+  fire: { src: 'fire', hw: 1.25, hl: 4.5, seats: [[0.5, 1.4, 2.75], [-0.5, 1.4, 2.75], [0.5, 1.4, 1.2], [-0.5, 1.4, 1.2]], floor: [-0.95, 0.6, 0.95, 3.7, 0.85], dash: 3.75, seatMap: [0, 2, 1, 3], wheels: [[0.47, 2.25, 0.5], [0.47, -2.64, 0.5]], rc: {},
     lights: [[[-0.82, 2.55, 3.3, -0.2, 2.7, 3.55], 'red', 0], [[0.2, 2.55, 3.3, 0.82, 2.7, 3.55], 'blue', 1]] }
 };
 const VK_LC = { blue: () => K_LBLU, red: () => K_LRED, amb: () => K_LAMB };
@@ -11992,8 +12041,23 @@ function vehCol(kind, n) {
 }
 function vehBody(kind) {
   const C = VEHCFG[kind], D = VEHDATA[C.src], mb = new MB();
-  for (const n in D.body) vehTris(mb, D.body[n], vehCol(kind, n), true);
+  const WH = (C.wheels || []).map(w => ({ yc: w[0], zc: w[1], R: w[2], mb: new MB(), n: 0 }));
+  for (const n in D.body) {
+    if (!WH.length) { vehTris(mb, D.body[n], vehCol(kind, n), true); continue; }
+    const a = vdec(D.body[n]), col = vehCol(kind, n), k = 0.001, bodyA = [];
+    for (let i = 0; i + 8 < a.length; i += 9) {
+      let hit = null;
+      for (const w of WH) { let ok = true; for (let j = 0; j < 3 && ok; j++) { const x = a[i + j * 3] * k, y = a[i + j * 3 + 1] * k, z = a[i + j * 3 + 2] * k; if (Math.abs(x) < 0.45 || Math.hypot(y - w.yc, z - w.zc) > w.R * 1.04) ok = false; } if (ok) { hit = w; break; } }
+      if (hit) { const A = hit.mb.v(a[i] * k, a[i + 1] * k, a[i + 2] * k, col), B = hit.mb.v(a[i + 3] * k, a[i + 4] * k, a[i + 5] * k, col), Cc = hit.mb.v(a[i + 6] * k, a[i + 7] * k, a[i + 8] * k, col); hit.mb.tri(A, B, Cc, false); const A2 = hit.mb.v(a[i] * k, a[i + 1] * k, a[i + 2] * k, VK_INT), B2 = hit.mb.v(a[i + 3] * k, a[i + 4] * k, a[i + 5] * k, VK_INT), C2 = hit.mb.v(a[i + 6] * k, a[i + 7] * k, a[i + 8] * k, VK_INT); hit.mb.tri(A2, B2, C2, true); hit.n++; }
+      else for (let j = 0; j < 9; j++) bodyA.push(a[i + j]);
+    }
+    for (let i = 0; i + 8 < bodyA.length; i += 9) {
+      const A = mb.v(bodyA[i] * k, bodyA[i + 1] * k, bodyA[i + 2] * k, col), B = mb.v(bodyA[i + 3] * k, bodyA[i + 4] * k, bodyA[i + 5] * k, col), Cc = mb.v(bodyA[i + 6] * k, bodyA[i + 7] * k, bodyA[i + 8] * k, col); mb.tri(A, B, Cc, false);
+      const A2 = mb.v(bodyA[i] * k, bodyA[i + 1] * k, bodyA[i + 2] * k, VK_INT), B2 = mb.v(bodyA[i + 3] * k, bodyA[i + 4] * k, bodyA[i + 5] * k, VK_INT), C2 = mb.v(bodyA[i + 6] * k, bodyA[i + 7] * k, bodyA[i + 8] * k, VK_INT); mb.tri(A2, B2, C2, true);
+    }
+  }
   const f = C.floor;
+  if (C.src === 'police') { mbBox(mb, 0.7, 0.1, -1.05, 0.84, 0.31, 1.05, K_BLK); mbBox(mb, -0.84, 0.1, -1.05, -0.7, 0.31, 1.05, K_BLK); }   // Schweller: verdeckt Fuesse/Boden unter den Tueren
   mbBox(mb, f[0], f[4] - 0.06, f[1], f[2], f[4], f[3], VK_FLOOR);
   C.seats.forEach((s, i) => {
     mbBox(mb, s[0] - 0.22, s[1] - 0.2, s[2] - 0.26, s[0] + 0.22, s[1] - 0.06, s[2] + 0.2, VK_SEAT);
@@ -12004,7 +12068,7 @@ function vehBody(kind) {
   mbBox(mb, -0.8 * C.hw, s0[1] - 0.15, dz, 0.8 * C.hw, s0[1] + 0.3, dz + 0.22, VK_DASH);
   { const wz = Math.min(dz - 0.12, s0[2] + 0.62), wy = s0[1] + 0.3; mbLathe(mb, [[-0.015, 0.17, 0.17, 0, 0], [0.015, 0.17, 0.17, 0, 0]], 12, K_BLK, (x, y, z) => [s0[0] + x, wy + y * 0.5 + z * 0.866, wz - y * 0.866 + z * 0.5]); }
   const L = []; for (const l of C.lights) L.push({ b: [l[0], VK_LC[l[1]]()], ph: l[2] });
-  const m = mb.finish(); m.lights = L; return m;
+  const m = mb.finish(); m.lights = L; m.wheelParts = WH.filter(w => w.n > 0).map(w => ({ yc: w.yc, zc: w.zc, R: w.R, m: w.mb.finish(), n: w.n })); return m;
 }
 function vehGlassMB(kind) { const C = VEHCFG[kind], mb = new MB(); vehTris(mb, VEHDATA[C.src].glass, VK_GL, true); return mb.finish(); }
 function vehDoorMB(kind, id) {
@@ -12219,6 +12283,7 @@ function gText(mb, str, cx, cy, z, p, col, back) {     // Pixelschrift; back = v
   };
 }
 
+const G_SCRUB = NC(0.08, 0.5, 0.4, 0.8), G_MASK = NC(0.62, 0.8, 0.9, 0.7);
 const GEAR = {
   /* ---------- Polizei ---------- */
   polChest() {
@@ -12260,6 +12325,7 @@ const GEAR = {
     return mb.finish();
   },
   /* ---------- Rettungsdienst ---------- */
+  dHead() { const mb = new MB(); sphereMesh(mb, 0, 1.792, -0.004, 0.112, 0.062, 0.125, G_SCRUB, 14); sphereMesh(mb, 0, 1.712, 0.082, 0.068, 0.05, 0.034, G_MASK, 12); return mb.finish(); },
   mHead() { const mb = new MB(); sphereMesh(mb, 0, 1.79, 0.01, 0.108, 0.05, 0.12, G_FRED, 14); sphereMesh(mb, 0, 1.775, 0.11, 0.075, 0.012, 0.06, G_FRED, 10); return mb.finish(); }
 };
 {
@@ -12277,6 +12343,7 @@ function gearDress(S, att, n, swat) {
   if (n.kind === 'cop' && swat) { B(S.gear('swChest'), 'chest'); B(S.gear('swHead'), 'head'); B(S.gear('polBelt'), 'pelvis', [0.35, 0.35, 0.38]); if (n.shield && !n.boarded && !n.sit) B(S.shield(), 'chest'); return true; }
   if (n.kind === 'fire') { B(S.gear('fHead'), 'head'); return true; }
   if (n.kind === 'medic') { B(S.gear('mHead'), 'head'); return true; }
+  if (n.kind === 'doctor') { B(S.gear('dHead'), 'head'); return true; }
   return false;
 }
 /* gemalte Zusatzschichten je Rolle (zusaetzlich zu Haut/Haar/Schuhe/Shirt/Hose) */
@@ -12671,7 +12738,7 @@ Object.assign(Game.prototype, {
     const W = WEAPONS[it.id] || (it.id === 'grenade' ? WEAPONS.grenade : it.id === 'ball' ? WEAPONS.ball : null); if (!W || this.cool > 0) return;
     this.cool = W.rate; this.sfx.unlock();
     const cam = this.camPos, o = V3(cam[0], cam[1], cam[2]), d = this.pmFwd(P.yaw, P.pitch), mz = V3();
-    if (it.gun) { const H = NPCK.rest.handR; _nv[0] = H[0] + it.gm[0]; _nv[1] = H[1] + it.gm[1]; _nv[2] = H[2] + it.gm[2]; p.xf(HNAMES.indexOf('handR'), _nv, mz); }
+    if (it.gun) { const H = NPCK.rest.handR; _nv[0] = H[0] + it.gm[0]; _nv[1] = H[1] + it.gm[1] + 0.005; _nv[2] = H[2] + it.gm[2] + 0.05; p.xf(HNAMES.indexOf('handR'), _nv, mz); }
     else { const h = this.pmHead(); mz[0] = h[0] + d[0] * 0.5; mz[1] = h[1] - 0.15 + d[1] * 0.5; mz[2] = h[2] + d[2] * 0.5; }
     switch (it.id) {
       case 'pistol': case 'rifle': case 'smg': case 'shotgun': case 'sniper': {
@@ -12729,7 +12796,7 @@ Object.assign(Game.prototype, {
       if (!n.vis) continue;
       if (n.hm && !n.boarded && !n.sit) {
         const H = NPCK.rest.handR, mm = M4.id(), loc = M4.id(), it = n.hm;
-        const pos = it === 'grenade' ? [H[0], H[1] - 0.04, H[2] + 0.05] : it === 'ball' ? [H[0], H[1] - 0.08, H[2] + 0.07] : [H[0] - 0.01, H[1] + 0.03, H[2] + 0.015];
+        const pos = it === 'grenade' ? [H[0], H[1] - 0.04, H[2] + 0.05] : it === 'ball' ? [H[0], H[1] - 0.08, H[2] + 0.07] : ('pistol,rifle,smg,shotgun,sniper,spawn'.indexOf(it) >= 0) ? [H[0], H[1] + 0.005, H[2] + 0.062] : [H[0] - 0.01, H[1] + 0.03, H[2] + 0.015];
         M4.trs(loc, pos, id, 1, 1, 1); M4.mul(mm, n.mats[HNAMES.indexOf('handR')], loc);
         const mesh = it === 'pistol' ? this.sceneMeshes().pistol() : it === 'rifle' ? this.sceneMeshes().rifle() : it === 'spawn' ? this.sceneMeshes().pistol() : this.pmMesh(it);
         bd.push({ mesh, model: mm, tint: it === 'spawn' ? [0.25, 1.6, 1.9] : [1, 1, 1] });
@@ -12825,7 +12892,7 @@ Object.assign(Game.prototype, {
   pmNpcFire(n, dist) {
     const P = this.pm, p = P.p, R = n.gun === 'rifle' ? { rate: 0.1, burst: 4, pause: 0.8, snd: 'rifle', dmg: 3.0, gm: [0, -0.86, 0.04] } : { rate: 0.3, burst: 3, pause: 1.0, snd: 'pistol', dmg: 6, gm: [0, -0.2, 0.02] };
     n.shots++; n.fireT = (n.shots % R.burst === 0) ? R.pause * (0.8 + Math.random() * 0.5) : R.rate * (0.85 + Math.random() * 0.3);
-    const H = NPCK.rest.handR; _nv[0] = H[0] + R.gm[0]; _nv[1] = H[1] + R.gm[1]; _nv[2] = H[2] + R.gm[2]; const mz = n.xf(HNAMES.indexOf('handR'), _nv, V3());
+    const H = NPCK.rest.handR; _nv[0] = H[0] + R.gm[0]; _nv[1] = H[1] + R.gm[1] + 0.005; _nv[2] = H[2] + R.gm[2] + 0.05; const mz = n.xf(HNAMES.indexOf('handR'), _nv, V3());
     const moving = P.keys.has('KeyW') || P.keys.has('KeyA') || P.keys.has('KeyS') || P.keys.has('KeyD');
     const pHit = Math.max(0.1, Math.min(0.55, 0.62 - dist * 0.016 - (moving ? 0.14 : 0) - (P.p.crouch ? 0.1 : 0)));
     const hit = Math.random() < pHit, off = hit ? 0 : 0.7 + Math.random() * 0.9, ang = Math.random() * 6.28;
@@ -12953,7 +13020,8 @@ function pmPlayerUpdate(g, dt) {
   };
   /* Sandbox-Eintrag */
   WEAPONS.person = { name: 'Person mode', key: 'V', rate: 1, act: true, info: 'Walk around as a person with the same skeleton as the NPCs. First and third person, weapons in hand, spawn gun. Key V.' };
-  SBX_ITEMS.tools.unshift('person');
+  SBX_CATS.push(['beta', 'Beta', 'c_tools']); SBX_ITEMS.beta = ['person'];
+  { const r0 = Sandbox.prototype.render; Sandbox.prototype.render = function () { r0.apply(this, arguments); if (this.cat !== 'beta') return; const l = this.box.querySelector('.list'); if (!l) return; const d = document.createElement('div'); d.style.cssText = 'margin:0 0 12px;padding:12px 14px;border-radius:12px;background:rgba(255,170,0,.12);border:1px solid rgba(255,170,0,.55);color:#ffd88a;font:600 13px/1.45 system-ui,sans-serif'; d.innerHTML = '<b style="letter-spacing:.12em">BETA</b><br>' + T('Beta notice'); l.insertBefore(d, l.firstChild); }; }
   Object.assign(ICON_P, { person: '<circle cx="32" cy="12" r="6.5"/><path d="M32 19v20M32 25l-12 8M32 25l11 6M32 39l-9 20M32 39l9 20"/><path d="M46 28l12-4M48 33h12" opacity=".7"/><path d="M52 18v-6M49 15h6" opacity=".6"/>' });
   const ta1 = Game.prototype.triggerAction;
   Game.prototype.triggerAction = function (id) { if (id === 'person') { this.sfx.unlock(); this.pmToggle(); if (this.sbx && this.sbx.toggle && document.body.classList.contains('sbx-open')) this.sbx.toggle(false); return; } return ta1.apply(this, arguments); };
@@ -12995,14 +13063,14 @@ function pmPlayerUpdate(g, dt) {
   addEventListener('blur', () => { const G = gm(); if (G) { G.pm.keys.clear(); G.pm.fire = false; } });
   const onCanvas = (e) => e.target && e.target.tagName === 'CANVAS';
   addEventListener('pointerdown', e => {
-    const G = gm(); if (!G || !onCanvas(e)) return; e.stopImmediatePropagation(); e.preventDefault(); G.sfx.unlock(); const P = G.pm;
+    const G = gm(); if (!G || !onCanvas(e)) return; if (e.pointerType === 'touch') { e.stopPropagation(); return; } e.stopImmediatePropagation(); e.preventDefault(); G.sfx.unlock(); const P = G.pm;
     try { const cv = document.getElementById('gl'); if (document.pointerLockElement !== cv && cv.requestPointerLock && !P.noLock) { const r = cv.requestPointerLock(); if (r && r.catch) r.catch(() => { P.noLock = true; }); } } catch (er) { }
     if (e.button === 2) { if (PM_INV[P.sel].id === 'spawn') { P.spawnSel = (P.spawnSel + 1) % PM_SPAWN.length; G.pmHud(true); } else if (PM_INV[P.sel].id === 'prop') { P.propSel = ((P.propSel || 0) + 1) % PROP_ORDER.length; G.pmHud(true); } else P.zoom = true; }
     else if (e.button === 0) { P.fire = true; P.fireEdge = true; }
   }, true);
-  addEventListener('pointerup', e => { const G = gm(); if (!G) return; if (e.button === 2) G.pm.zoom = false; if (e.button === 0) G.pm.fire = false; if (onCanvas(e)) e.stopImmediatePropagation(); }, true);
+  addEventListener('pointerup', e => { const G = gm(); if (!G) return; if (e.button === 2) G.pm.zoom = false; if (e.button === 0 && e.pointerType !== 'touch') G.pm.fire = false; if (onCanvas(e)) e.stopPropagation(); }, true);
   addEventListener('pointermove', e => {
-    const G = gm(); if (!G || !onCanvas(e)) return; const P = G.pm; e.stopImmediatePropagation();
+    const G = gm(); if (!G || !onCanvas(e)) return; const P = G.pm; if (e.pointerType === 'touch') { e.stopPropagation(); return; } e.stopImmediatePropagation();
     let dx = 0, dy = 0; if (document.pointerLockElement) { dx = e.movementX || 0; dy = e.movementY || 0; } else if (e.buttons & 2) { dx = e.movementX || 0; dy = e.movementY || 0; }
     if (!dx && !dy) return; const s = 0.0023 * (P.zoom ? 0.5 : 1); P.yaw -= dx * s; P.pitch = Math.max(-1.35, Math.min(1.35, P.pitch - dy * s));
   }, true);
@@ -13064,14 +13132,9 @@ function pmPlayerUpdate(g, dt) {
     joy.addEventListener('pointerup', end); joy.addEventListener('pointercancel', end); }
   /* Umschauen per Wischen auf dem Bild (Touch) */
   { const looks = new Map();
-    addEventListener('pointerdown', e => { const G = gm(); if (!G || e.pointerType !== 'touch' || !onCanvas(e)) return; looks.set(e.pointerId, [e.clientX, e.clientY]); }, true);
+    addEventListener('pointerdown', e => { const G = gm(); if (!G || e.pointerType !== 'touch' || (!onCanvas(e) && (!e.target.closest || e.target.closest('#pmtouch .tb,#pmt-joy,#sbox,#menu,#sheet,#dlg')))) return; e.stopPropagation(); looks.set(e.pointerId, [e.clientX, e.clientY]); }, true);
     addEventListener('pointermove', e => { const G = gm(); if (!G || !looks.has(e.pointerId)) return; const l = looks.get(e.pointerId), dx = e.clientX - l[0], dy = e.clientY - l[1]; l[0] = e.clientX; l[1] = e.clientY; const P = G.pm, s = 0.0042 * (P.zoom ? 0.5 : 1); P.yaw -= dx * s; P.pitch = Math.max(-1.35, Math.min(1.35, P.pitch - dy * s)); }, true);
     const e2 = e => looks.delete(e.pointerId); addEventListener('pointerup', e2, true); addEventListener('pointercancel', e2, true); }
-  /* Person-Knopf im Labor (Handy): sichtbar neben dem LAB-Knopf */
-  { const pb = document.createElement('div'); pb.id = 'ptab'; pb.textContent = 'PERSON';
-    const ps = document.createElement('style'); ps.textContent = '#ptab{position:fixed;right:calc(14px + var(--sar,0px));top:calc(112px + env(safe-area-inset-top,0px));z-index:7;padding:9px 18px 9px 38px;border-radius:999px;font:900 13px system-ui,sans-serif;letter-spacing:.16em;background:#2fb4ff url("data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%23001a2c\' stroke-width=\'2\' stroke-linecap=\'round\'><circle cx=\'12\' cy=\'5\' r=\'3\'/><path d=\'M12 9v7M12 11l-5 3M12 11l5 3M12 16l-4 6M12 16l4 6\'/></svg>") no-repeat 11px center/20px;color:#001a2c;box-shadow:0 4px 18px rgba(47,180,255,.4),0 0 0 2px rgba(0,0,0,.35);cursor:pointer;display:none}body:not(.inmenu):not(.intro):not(.pm) #ptab{display:block}body.sbx-open #ptab{display:none!important}';
-    document.head.appendChild(ps); document.body.appendChild(pb);
-    pb.addEventListener('pointerdown', e => { e.preventDefault(); const g = window.__game; if (g) { g.sfx.unlock(); g.pmEnter(); } }); }
 }
 
 ;
@@ -13448,6 +13511,7 @@ Object.assign(Game.prototype, {
 {
   const sl3 = Game.prototype.sceneLogic;
   Game.prototype.sceneLogic = function (sc, dt) {
+    { const sd = sc.side; if (sd && sd.st !== 'gone') { if (sd.sync === 1 && sc.st === 'leave') sd.sync = 2; if (sd.sync === 2) { sd.t += dt; this.sceneLogic(sd, dt); } } }
     if (sc.kind === 'medic' && !sc.brig) {
       if (sc.st === 'act' && (sc.res === 'treat' || sc.res === 'urgent')) this.hospLogic(sc, dt);
       if (sc.hosp && !sc.hosp.done && sc.st === 'leave' && sc.t > 1.2) this.hospEnd(sc);
@@ -13455,6 +13519,118 @@ Object.assign(Game.prototype, {
     return sl3.apply(this, arguments);
   };
   Object.assign(DE, { 'DISCHARGED – HEALED': 'ENTLASSEN – GEHEILT' });
+}
+
+;
+/* ---- hospital.js ---- */
+'use strict';
+/* ===================================================================
+   hospital.js — Krankenhaus als Map: Sanitaeter legen den Schwerverletzten auf die Trage, laden ihn in den Krankenwagen,
+   dann Operationssaal (Aerzte in gruenen Kitteln) und Aufwachen auf der Station (Karte 'hospital').
+   Rueckkehr wie beim Gefaengnis (this.prev / returnFromPrison).
+   =================================================================== */
+Object.assign(DE, { 'HOSPITAL · LOADING': 'KRANKENHAUS · EINLIEFERUNG', 'DISCHARGE': 'Entlassen', 'DISCHARGED': 'ENTLASSEN', 'SURGERY …': 'OPERATION …' });
+Object.assign(Game.prototype, {
+  /* ---- Krankenwagen-Teil: Patient auf die Trage, in den Wagen ---- */
+  hospLogic(sc, dt) {
+    if (!sc.hospChk) { sc.hospChk = true; const br = this.brain; if ((br.alive === false || br.health < 0.4) && !this.menuOn && this.cine) { sc.hosp = { ph: 0, t: 0, started: false }; sc.healed = true; } }
+    const H = sc.hosp; if (!H || H.started) return; const at = sc.urgent ? 1.5 : 3.2, T = (sc.healT === undefined ? -1 : sc.healT) - at;
+    if (T < 0) return;
+    H.started = true; sc.st = 'hosp'; sc.t = 0; H.t = 0; H.ph = 0; sc.shot = 'act';
+    const A = this.act, D = this.dummy.b.pelvis.p, y = this.groundY ? this.groundY(D[0], D[2], D[1] + 0.3) : 0;
+    this.hideDummy = true;
+    const P = new Npc('prisoner', D[0], y, D[2], Math.atan2(sc.veh.x - D[0], sc.veh.z - D[2]) + Math.PI); P.civ = true; P.hurt = true; P.down = 1; P.fallDir = -1; P.vis = true; P.cf = 0; A.npcs.push(P); H.P = P; sc.P = P;
+    for (const n of sc.npcs) { n.tasks.length = 0; n.bag = false; }
+    this.bubble && this.bubble(0, tx2('Schwere Verletzungen! Auf die Trage, ab ins Krankenhaus!', 'Severe injuries! On the stretcher, to the hospital!'), 3);
+    this.sfx.play('cdoor', { vol: 0.6, pitch: 1.3 });
+  },
+  hospRun(sc, dt) {
+    const A = this.act, H = sc.hosp, P = H.P, v = sc.veh, m0 = sc.npcs[0], m1 = sc.npcs[1]; H.t += dt; const t = H.t;
+    const st = A.stretcher, fw = (yaw) => [Math.sin(yaw), Math.cos(yaw)];
+    const put = () => { if (!st) return; const f = fw(st.yaw); P.x = st.x - f[0] * 0.9; P.z = st.z - f[1] * 0.9; P.y = (st.y || 0) + 0.68 + (H.lift || 0); P.yaw = st.yaw + Math.PI; P.hurt = true; P.down = 1; P.fallDir = -1; };
+    if (H.ph === 0) {                       // Trage neben den Patienten stellen, Sanitaeter treten an
+      const f = fw(P.yaw), cx = P.x - f[0] * 0.9, cz = P.z - f[1] * 0.9, side = [Math.cos(P.yaw), -Math.sin(P.yaw)];
+      A.stretcher = { x: cx + side[0] * 0.95, z: cz + side[1] * 0.95, yaw: P.yaw + Math.PI, y: 0, owner: null, vis: true }; this.sfx.play('rattle', { vol: 0.7 });
+      const sx = A.stretcher.x, sz = A.stretcher.z, hd = fw(A.stretcher.yaw);
+      if (m0) { m0.hold = 0; m0.tasks.length = 0; m0.push({ k: 'walk', x: sx - hd[0] * 1.3, z: sz - hd[1] * 1.3, spd: 2.2 }); m0.push({ k: 'face', x: sx, z: sz, d: 30 }); }
+      if (m1) { m1.hold = 0; m1.tasks.length = 0; m1.push({ k: 'walk', x: sx + hd[0] * 1.3, z: sz + hd[1] * 1.3, spd: 2.2 }); m1.push({ k: 'face', x: sx, z: sz, d: 30 }); }
+      H.ph = 1; H.t = 0;
+    } else if (H.ph === 1) {                // anheben
+      if (t > 2.4) { H.ph = 2; H.t = 0; H.from = [P.x, P.y, P.z, P.yaw]; this.sfx.play('rattle', { vol: 0.5 }); }
+    } else if (H.ph === 2) {                // Patient schwebt auf die Trage
+      const k = Math.min(1, t / 1.3), e = k * k * (3 - 2 * k), f = fw(st.yaw), tx = st.x - f[0] * 0.9, tz = st.z - f[1] * 0.9, ty = 0.68;
+      P.x = H.from[0] + (tx - H.from[0]) * e; P.z = H.from[2] + (tz - H.from[2]) * e; P.y = H.from[1] + (ty - H.from[1]) * e + Math.sin(k * Math.PI) * 0.45;
+      if (k >= 1) { H.ph = 3; H.t = 0; if (m0) { m0.tasks.length = 0; A.stretcher.owner = m0; } H.go = false; this.bubble && this.bubble(0, tx2('Vorsicht … und hoch! Ab in den Wagen!', 'Careful … and lift! Into the ambulance!'), 2.6); }
+    } else if (H.ph === 3) {                // Trage zum Heck rollen
+      if (t < 0.2 && m0) {
+        const a = vloc(v, 1.7, -6.6), b = vloc(v, 0, -5.6);
+        m0.push({ k: 'walk', x: a[0], z: a[1], spd: 2.0 }); m0.push({ k: 'walk', x: b[0], z: b[1], spd: 1.5 }); m0.push({ k: 'do', fn: () => { H.go = true; } });
+        if (m1) { const c = vloc(v, 1.9, -5.2); m1.push({ k: 'walk', x: c[0], z: c[1], spd: 2.0 }); m1.push({ k: 'face', x: v.x, z: v.z, d: 30 }); }
+        v.open(['rl', 'rr'], 1); this.sfx.play('cdoor', { vol: 0.8 });
+      }
+      put();
+      if (H.go || t > 20) { H.ph = 4; H.t = 0; if (m0) { m0.tasks.length = 0; } H.sp = [st.x, st.z]; A.stretcher.owner = null; this.sfx.play('rattle', { vol: 0.6 }); }
+    } else if (H.ph === 4) {                // in den Wagen schieben
+      const q = vloc(v, 0, -1.9), k = Math.min(1, t / 1.4), e = k * k * (3 - 2 * k);
+      st.x = H.sp[0] + (q[0] - H.sp[0]) * e; st.z = H.sp[1] + (q[1] - H.sp[1]) * e; st.yaw = v.yaw; put();
+      if (k >= 1) { st.vis = false; P.vis = false; H.ph = 5; H.t = 0; v.open(['rl', 'rr'], 0); this.sfx.play('cdoor', { vol: 0.9, pitch: 1.1 }); if (m1) { m1.tasks.length = 0; } for (const n of sc.npcs) { n.tasks.length = 0; } }
+    } else if (H.ph === 5) {
+      if (t > 1.2) { for (const n of sc.npcs) { n.vis = false; n.boarded = true; } this.cineFade(true, tx2('KRANKENHAUS · EINLIEFERUNG', 'HOSPITAL · LOADING')); this.sfx.play('ding', { vol: 0.4, pitch: 1.5 }); H.ph = 6; H.t = 0; }
+    } else if (H.ph === 6) {
+      if (t > 2.0) { H.ph = 7; try { this.beginHospital(); } catch (e) { console.error(e); try { this.cineEnd(true); this.reset(); this.cineFade(false); } catch (e2) { } } }
+    }
+    if (H.ph >= 3 && H.ph <= 4 && A.stretcher && A.stretcher.owner) put();
+  },
+  hospEnd(sc) { const H = sc && sc.hosp; if (!H || H.done) return; H.done = true; this.hideDummy = false; try { this.healDummy(); } catch (e) { console.error(e); } this.cineFade(false); },
+
+  /* ---- Karte 'hospital' ---- */
+  beginHospital() {
+    this.rememberPlace(); this.sfx.sirenStop && this.sfx.sirenStop();
+    this.cineEnd(true); this.reset('hospital'); this.hideDummy = true; this.startHospitalCine(); this.cineFade(false);
+  },
+  startHospitalCine() {
+    if (!this.act) this.clearScenes(); const A = this.act; const e = this.env.hospital || { or: { x: 0, z: -8.2, top: 0.92 } }, O = e.or;
+    const sc = { kind: 'hosp', info: { x: 0, z: 0, y: 0 }, t: 0, st: 'run', ph: 0, mode: 'ground', npcs: [], arrived: 0, eq: 0, fire: false, shot: 'p', res: null, F: {} };
+    A.busy = true; A.sc = sc; A.npcs.length = 0; A.veh.length = 0; A.stretcher = null;
+    const P = new Npc('prisoner', O.x, O.top, O.z + 1.25, 0); P.civ = true; P.hurt = true; P.down = 1; P.fallDir = -1; P.vis = true; A.npcs.push(P); sc.P = P;
+    const spots = [[-0.95, O.z - 0.1], [0.95, O.z - 0.1], [0, O.z - 1.85], [0.75, O.z + 1.7]];
+    spots.forEach((s, i) => { const n = new Npc('doctor', O.x + s[0], 0, s[1], 0); n.vis = true; n.wr = 1; n.wrT = 1; n.push({ k: 'face', x: O.x, z: O.z, d: 999 }); A.npcs.push(n); sc.npcs.push(n); });
+    sc.camFn = (s, dt) => this.hospCam(s, dt);
+    this.cineCp = null; this.cineOut = 0; this.cine = true; this.sceneSpeed = 1; this.cineBlend = 0; document.body.classList.add('cine'); this.cineUI(true);
+  },
+  hospCam(sc, dt) {
+    const e = this.env.hospital.or, t = sc.t;
+    if (t < 3.2) return [[0.4 + t * 0.1, 1.75, -3.1], [0, 1.15, e.z]];
+    const a = 0.6 + (t - 3.2) * 0.22; return [[e.x + Math.sin(a) * 3.3, 2.05, e.z + Math.cos(a) * 3.3 - 0.4], [e.x, 1.05, e.z]];
+  },
+  hospCineLogic(sc, dt) {
+    const A = this.act, F = sc.F, ev = (k, fn) => { if (!F[k]) { F[k] = 1; fn(); } };
+    if (sc.t > (F.beep || 0)) { F.beep = sc.t + 0.95; this.sfx.play('ding', { vol: 0.12, pitch: 1.9 }); }
+    if (sc.t > 6.4) ev('f1', () => this.cineFade(true, tx2('OPERATION …', 'SURGERY …')));
+    if (sc.t > 8.2) ev('f2', () => { this.cineFade(true, tx2('AUFWACHEN …', 'WAKING UP …')); this.sfx.play('ding', { vol: 0.4, pitch: 1.2 }); });
+    if (sc.t > 9.8) ev('end', () => {
+      A.npcs.length = 0; A.veh.length = 0; A.sc = null; A.busy = false; this.hideDummy = false;
+      this.cineEnd(true); this.reset('hospital'); this.cineFade(false); this.popup('DISCHARGED – HEALED', this.dummy.b.head.p, '#7dff9a', 2.2);
+    });
+  }
+});
+{
+  const sl = Game.prototype.sceneLogic;
+  Game.prototype.sceneLogic = function (sc, dt) {
+    if (sc.kind === 'hosp') return this.hospCineLogic(sc, dt);
+    if (sc.kind === 'medic' && sc.st === 'hosp' && sc.hosp) { this.hospRun(sc, dt); return; }
+    return sl.apply(this, arguments);
+  };
+  /* Rueckkehr: auch vom Krankenhaus aus (Tod oder Knopf "Entlassen") */
+  const rp = Game.prototype.rememberPlace;
+  Game.prototype.rememberPlace = function () { if (this.spawnKey === 'hospital' && this.prev) return; return rp.apply(this, arguments); };
+  const rs = Game.prototype.reset;
+  Game.prototype.reset = function (key) { if (key && key !== 'prison' && key !== 'hospital' && !this._ret && this.prev && key !== this.spawnKey) this.prev = null; return rs.apply(this, arguments); };
+  const bt = document.createElement('button'); bt.id = 'dischg'; bt.type = 'button'; bt.textContent = 'Entlassen ▸';
+  bt.style.cssText = 'position:fixed;left:50%;bottom:calc(22px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:30;display:none;padding:12px 22px;border-radius:999px;border:1px solid rgba(255,255,255,.35);background:rgba(20,120,100,.88);color:#fff;font:700 14px system-ui,sans-serif;letter-spacing:.06em;cursor:pointer;box-shadow:0 4px 18px rgba(0,0,0,.4)';
+  document.addEventListener('DOMContentLoaded', () => document.body.appendChild(bt)); if (document.body) document.body.appendChild(bt);
+  bt.addEventListener('click', () => { const g = window.__game; if (g && g.prev) g.returnFromPrison(); });
+  setInterval(() => { const g = window.__game; if (!g) return; const on = g.spawnKey === 'hospital' && !!g.prev && !g.cine && !g._ret && !g.menuOn; bt.style.display = on ? 'block' : 'none'; if (on) bt.textContent = (typeof L2 === 'function' ? tx2('Entlassen ▸', 'Discharge ▸') : 'Entlassen ▸'); }, 400);
 }
 
 ;
@@ -13496,7 +13672,7 @@ Object.assign(DE, {
   'Straight jump, feet first, no spin.': 'Gerader Sprung, Füße voran, ohne Drehung.', 'Jumps high and spins like a ball. Huge splash.': 'Springt hoch und rollt sich wie eine Kugel. Riesiger Spritzer.',
   'Wrecking ball': 'Abrissbirne', 'Starts or stops the wrecking ball. Only on the Spike arena map.': 'Startet oder stoppt die Abrissbirne. Nur auf der Karte Stachelarena.',
   'FRONT FLIP': 'SALTO VORWÄRTS', 'BACK FLIP': 'SALTO RÜCKWÄRTS', 'TWIST': 'SCHRAUBE', 'HEAD DIVE': 'KOPFSPRUNG', 'CANDLE': 'KERZE', 'CANNONBALL': 'ARSCHBOMBE', 'SPIKED': 'AUFGESPIESST', 'WRECKED': 'ABGERISSEN',
-  'START': 'START', 'Heal first': 'Erst heilen', 'STOP': 'STOPP', 'Loading…': 'Lädt …', 'Ready': 'Bereit', 'Only on the Spike arena map': 'Nur auf der Karte Stachelarena', 'Tab: switch world': 'Tab: Welt wechseln', 'Ready…': 'Bereit …'
+  'START': 'START', 'Heal first': 'Erst heilen', 'STOP': 'STOPP', 'Loading…': 'Lädt …', 'Ready': 'Bereit', 'Only on the Spike arena map': 'Nur auf der Karte Stachelarena', 'Tab: switch world': 'Tab: Welt wechseln', 'Ready…': 'Bereit …', 'Hospital': 'Krankenhaus', 'Operating room, corridor and patient wards. Badly injured people wake up here after surgery. Dying or leaving brings you back where you came from.': 'Operationssaal, Flur und Patientenzimmer. Schwer Verletzte wachen hier nach der Operation auf. Stirbst du oder gehst du, bist du wieder dort, wo du herkamst.', 'Surgery': 'Operation', 'Ward': 'Station', 'Beta notice': 'Beta-Version: Der 3D-Modus ist noch nicht fertig. Du kannst dich bewegen, aber vieles funktioniert noch nicht richtig und ist sehr verbuggt. Weitere Experimente landen auch hier.', 'Beta': 'Beta'
 });
 DE[MAP_ORDER.length + ' maps'] = MAP_ORDER.length + ' Karten';
 
