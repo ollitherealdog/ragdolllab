@@ -511,6 +511,17 @@ canvas#gl.wjoin{animation:wjoin 1.25s cubic-bezier(.2,.8,.2,1)}
 #upd p{margin:6px 0;font-size:12.5px;color:#8a97ad}
 #upd button{margin-top:8px;width:100%;padding:12px;border:0;border-radius:12px;font-size:16px;font-weight:800;background:linear-gradient(135deg,#ffd24a,#ff8a1f);color:#1a1205;cursor:pointer}
 
+/* ---- langer Karten-Lader ---- */
+#wload ul.two{display:grid;grid-template-columns:repeat(2,auto);gap:4px 26px;justify-content:center;width:auto}
+#wload .wtip{margin:16px auto 0;max-width:min(88vw,430px);padding:9px 14px;border-radius:10px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09);color:#aebbd0;font-size:12.5px;line-height:1.4}
+
+/* ---- Roentgen-Liste: nichts abschneiden ---- */
+#xrl{max-height:150px;overflow-y:auto;overflow-x:hidden;padding-right:2px}
+#xrl li{min-width:0}
+#xrl li b{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#xrl li span{white-space:nowrap;font-size:9.5px;letter-spacing:0;flex:none}
+#xr{overflow:hidden}
+
 </style>
 <style>#einsatz,#hint,#tabhint,#ptab{display:none!important}body.cining #sbx-tab,body.cining #ptab{display:none!important}</style><style>
 body #sbx{background:linear-gradient(180deg,rgba(20,26,40,.94),rgba(9,12,19,.97));backdrop-filter:blur(18px) saturate(1.3);-webkit-backdrop-filter:blur(18px) saturate(1.3);border-left:1px solid rgba(255,201,40,.22);box-shadow:-24px 0 70px rgba(0,0,0,.55),inset 1px 0 0 rgba(255,255,255,.05);width:min(640px,100vw)}
@@ -4092,6 +4103,8 @@ function buildEnv(world, key) {
     buildMeadow(world, env, sp, add, deco);
   } else if (key === 'farm' || key === 'skate' || key === 'arena' || key === 'warehouse') {
     buildMaps3(key, world, env, sp, add, deco, edge);
+  } else if (typeof MAPS4 !== 'undefined' && MAPS4.indexOf(key) >= 0) {
+    buildMaps4(key, world, env, sp, add, deco, edge);
   } else if (key === 'roof') {
     /* ---------- Hochhaus-Dach: 60 m ueber der Strasse ---------- */
     const H = 60, P = 0.9;
@@ -5172,7 +5185,7 @@ void main(){
   o = vec4(shade(base, N, ro, me, ao), 1.0); }`;
 
 const GLSL_ENV_FS = `#version 300 es` + GLSL_COMMON + `
-uniform vec4 uBoxA[16]; uniform float uBoxH[16]; uniform int uNBox; uniform sampler2D uBlood; uniform vec4 uBR, uBL;   /* blood map: x0, z0, 1/size, on */
+uniform vec4 uBoxA[16]; uniform float uBoxH[16]; uniform int uNBox; uniform sampler2D uBlood; uniform vec4 uBR, uBL; uniform vec2 uRainU;   /* blood map: x0, z0, 1/size, on */
 float gridLine(vec2 p, float w){ vec2 g = abs(fract(p-0.5)-0.5)/fwidth(p); return 1.0-min(min(g.x,g.y)/w,1.0); }
 void main(){
   int em = int(vMat.x + 0.5); vec3 N = normalize(vN), a = abs(N); vec2 uv = a.y>0.5 ? vW.xz : (a.x>0.5 ? vW.zy : vW.xy);
@@ -5290,6 +5303,22 @@ void main(){
   }
   if (a.y<0.5) ao *= mix(0.5,1.0,smoothstep(0.0,0.7,vW.y));
   ao *= capAO(vW, N, uCapMask);
+  if (uRainU.x > 0.01 && em != 12 && N.y > 0.6) {          // Regen: nasse Flaechen, Pfuetzen mit Spiegelung und Wellen
+    float R = uRainU.x, up = smoothstep(0.6, 0.95, N.y);
+    float pn = fbm(vW.xz*0.23 + 7.0)*0.62 + fbm(vW.xz*0.95 + 3.0)*0.38, thr = 0.66 - 0.2*R;
+    float pud = smoothstep(thr, thr + 0.06, pn) * up * uRainU.y * (em == 13 ? 0.0 : 1.0);
+    base *= mix(1.0, 0.72, R*up*(1.0 - pud)); rough = mix(rough, 0.34, R*0.6*up*(1.0 - pud));
+    if (pud > 0.001) {
+      vec2 p = vW.xz*4.5; vec2 ci = floor(p), g = vec2(0.0);
+      for (int j=-1;j<=1;j++) for (int i2=-1;i2<=1;i2++) {
+        vec2 cc = ci + vec2(float(i2), float(j)); float h1 = h21(cc), h2 = h21(cc + 17.3), t = fract(uTime*(0.7 + 0.5*h2) + h1*7.1);
+        vec2 d = p - (cc + vec2(h1, h2)); float dl = length(d) + 1e-4, w = dl - t*0.95, ring = sin(w*34.0)*exp(-w*w*70.0)*(1.0 - t)*(1.0 - t)*step(h1, 0.35 + 0.6*R);
+        g += d/dl*ring;
+      }
+      N = normalize(N + vec3(g.x, 0.0, g.y)*0.28*pud);
+      base = mix(base, base*0.42 + vec3(0.012, 0.018, 0.026), pud*0.9); rough = mix(rough, 0.035, pud); metal = 0.0; ao = mix(ao, 1.0, pud*0.5);
+    }
+  }
   if (uBR.w > 0.5 && N.y > 0.5 && (abs(vW.y-uBL.x) < 0.12 || abs(vW.y-uBL.y) < 0.12 || abs(vW.y-uBL.z) < 0.12 || abs(vW.y-uBL.w) < 0.12)) {               // blood on horizontal surfaces (only on the storey it was spilled on): thickness (r) and wetness (g) from the top-down map
     vec2 bu = (vW.xz - uBR.xy)*uBR.z;
     if (bu.x > 0.0 && bu.x < 1.0 && bu.y > 0.0 && bu.y < 1.0) {
@@ -5605,7 +5634,7 @@ class Renderer {
     gl.uniform4fv(this.U(p, 'uGrade'), this.grade); gl.uniform3fv(this.U(p, 'uGradeTint'), this.gradeTint); gl.uniform4fv(this.U(p, 'uQ'), this.q1); gl.uniform4fv(this.U(p, 'uQ2'), this.q2);
     gl.uniform2fv(this.U(p, 'uTap'), this.taps());
     gl.uniform4fv(this.U(p, 'uWd'), this.wd); gl.uniform4fv(this.U(p, 'uBL'), this.bLv || [-99, -99, -99, -99]); gl.uniform4f(this.U(p, 'uBQ'), this.nWd, this.bWet, this.bloodOn, 0);
-    gl.uniform4f(this.U(p, 'uBR'), BMAP.x0, BMAP.z0, 1 / BMAP.size, this.bloodReady && this.bloodOn ? 1 : 0); gl.uniform1i(this.U(p, 'uBlood'), 1);
+    gl.uniform4f(this.U(p, 'uBR'), BMAP.x0, BMAP.z0, 1 / BMAP.size, this.bloodReady && this.bloodOn ? 1 : 0); gl.uniform1i(this.U(p, 'uBlood'), 1); gl.uniform2f(this.U(p, 'uRainU'), this.rain || 0, this.rainPud === undefined ? 1 : this.rainPud);
   }
   /* Vogel-disk shadow-filter offsets for the current tap count / softness (rebuilt only when those change) */
   taps() {
@@ -6161,7 +6190,7 @@ class FX {
       if (d.body) { d.body.l2w(v, d.l); d.body.d2w(vn, d.n); } else { v[0] = d.p[0]; v[1] = d.p[1]; v[2] = d.p[2]; vn[0] = d.n[0]; vn[1] = d.n[1]; vn[2] = d.n[2]; }
       const o = na * 8, f = Math.min(1, (d.life - d.age) / 3), c = d.col;
       pa[o] = v[0] + vn[0] * 0.004; pa[o + 1] = v[1] + vn[1] * 0.004; pa[o + 2] = v[2] + vn[2] * 0.004; pa[o + 3] = d.size;
-      pa[o + 4] = c ? c[0] : 0.04; pa[o + 5] = c ? c[1] : 0.04; pa[o + 6] = c ? c[2] : 0.05; pa[o + 7] = 0.85 * f; na++;
+      pa[o + 4] = c ? c[0] : 0.04; pa[o + 5] = c ? c[1] : 0.04; pa[o + 6] = c ? c[2] : 0.05; pa[o + 7] = 0.85 * f * (d.a === undefined ? 1 : d.a); na++;
     }
     for (let i = 0; i < this.N; i++) {
       if (!this.alive[i]) continue;
@@ -6596,7 +6625,7 @@ const DEFAULT_SETTINGS = {
   shadows: true, sound: true, voice: 2, quality: 1,
   look: 0, polyTone: 0, outfit: 0, skinTone: 1, hairCol: 1, hairOn: true, shirtCol: 2, pantsCol: 0, eyeCol: 0,
   blood: 2, dropAssist: true, bulletTime: false, bulletScale: 0.06, ricochet: true, penetrate: true, holes: true, ballHud: true,
-  gfxPreset: 3, shadowQ: 3, ao: 1, reflect: 1, sss: 1, detail: 1, particles: 1, decals: 120, fpsCap: 0, autoQuality: true, showFps: false, gore: true, brainGore: true, orgPlus: false,
+  gfxPreset: 3, shadowQ: 3, ao: 1, reflect: 1, sss: 1, detail: 1, particles: 1, decals: 120, fpsCap: 0, autoQuality: true, showFps: false, gore: true, brainGore: true, orgPlus: false, rain: 0, puddles: true,
   fov: 57, shake: 1, tod: 16, sunAz: 8, clouds: 0.72, stars: true, fog: 1, grade: 0, exposure: 1, contrast: 1, saturation: 1, vignette: 1, grain: 0,
   dbgSkel: false, dbgCom: false, dbgHull: false, dbgCap: false
 };
@@ -14827,7 +14856,7 @@ Object.assign(DE, {
   const play0 = Menu.prototype.play;
   Menu.prototype.play = function () {
     const m = this, g = this.g, key = this.sel; g.sfx.unlock();
-    window.__loadWorld(MAP_INFO[key].name, () => { play0.call(m); }, 1300, () => { if (g.intro) g.intro.t0 = performance.now(); tabHint(); });
+    window.__loadWorld(MAP_INFO[key].name, () => { play0.call(m); }, 15000, () => { if (g.intro) g.intro.t0 = performance.now(); tabHint(); });
   };
   const nx0 = Game.prototype.nextScene;
   Game.prototype.nextScene = function () { const o = this.env.spawnOrder, k = o[(o.indexOf(this.spawnKey) + 1) % o.length], g = this; window.__loadWorld(MAP_INFO[k].name, () => g.reset(k), 1000); };
@@ -14851,7 +14880,7 @@ Object.assign(DE, {
 Object.assign(DE, {
   'Improved organs': 'Verbesserte Organe', 'Heart': 'Herz', 'Lungs': 'Lungen', 'Liver': 'Leber', 'Stomach': 'Magen', 'Spleen': 'Milz', 'Kidneys': 'Nieren', 'Intestines': 'Darm', 'Brain': 'Gehirn', 'Bladder': 'Blase',
   'Injured': 'Verletzt', 'Destroyed': 'Zerstört', 'Organs (improved)': 'Organe (verbessert)',
-  'Much more detailed organs with vessels, bronchi, gallbladder, adrenal glands and spleen. They show in the X-ray panel (healthy / injured / gone) and more of them fall out of the wound. Needs "Organs and entrails" for the wound effects.': 'Deutlich detailliertere Organe mit Gefäßen, Bronchien, Gallenblase, Nebennieren und Milz. Sie erscheinen im Röntgen-Panel (gesund / verletzt / weg) und mehr davon fallen aus der Wunde. Für die Wundeffekte muss „Organe und Innereien“ an sein.'
+  'Much more detailed organs with vessels, bronchi, gallbladder, adrenal glands and spleen. They show in the X-ray panel (healthy / injured / hanging / gone). Organs can fall out, hang from their vessels or stay inside; teeth, eyes, windpipe, pancreas and bladder are there too, and shots leave a visible path through the body. Needs "Organs and entrails" for the wound effects.': 'Deutlich detailliertere Organe mit Gefäßen, Bronchien, Gallenblase, Nebennieren und Milz. Sie erscheinen im Röntgen-Panel (gesund / verletzt / hängt / weg). Organe können herausfallen, an ihren Gefäßen hängen oder drinbleiben; Gebiss, Augen, Luftröhre, Bauchspeicheldrüse und Blase sind auch da, und Schüsse hinterlassen einen sichtbaren Kanal durch den Körper. Für die Wundeffekte muss „Organe und Innereien“ an sein.'
 });
 /* ---------- Mesh-Helfer ---------- */
 function orgTube(mb, pts, r0, r1, col, seg) {
@@ -14970,7 +14999,7 @@ Object.assign(ORG_R, { spleen: 0.04 });
 /* Einstellung (Altersbereich, direkt nach "Gehirnschaden") */
 {
   const bi = SET_UI.findIndex(x => x && x.k === 'brainGore');
-  SET_UI.splice(bi >= 0 ? bi + 1 : SET_UI.length, 0, { k: 'orgPlus', t: 'check', label: 'Improved organs', help: 'Much more detailed organs with vessels, bronchi, gallbladder, adrenal glands and spleen. They show in the X-ray panel (healthy / injured / gone) and more of them fall out of the wound. Needs "Organs and entrails" for the wound effects.' });
+  SET_UI.splice(bi >= 0 ? bi + 1 : SET_UI.length, 0, { k: 'orgPlus', t: 'check', label: 'Improved organs', help: 'Much more detailed organs with vessels, bronchi, gallbladder, adrenal glands and spleen. They show in the X-ray panel (healthy / injured / hanging / gone). Organs can fall out, hang from their vessels or stay inside; teeth, eyes, windpipe, pancreas and bladder are there too, and shots leave a visible path through the body. Needs "Organs and entrails" for the wound effects.' });
   if (typeof SET_EMO !== 'undefined') SET_EMO.orgPlus = '🫀';
 }
 /* ---------- Roentgen: Organansicht ---------- */
@@ -14989,13 +15018,20 @@ const XO = (() => {
   add('kidL', 'abdomen', 'Kidneys', 2, [220, 120, 90], (c) => { E(c, 113, 178, 4.8, 8.5, -0.1); });
   add('gut', 'abdomen', 'Intestines', 1, [255, 190, 150], (c) => { c.beginPath(); c.moveTo(80, 190); for (let i = 0; i < 6; i++) { c.bezierCurveTo(84 + i * 7, 184 + (i % 2) * 6, 88 + i * 7, 198, 92 + i * 7, 192 + (i % 2) * 8); } c.lineTo(120, 214); for (let i = 0; i < 5; i++) c.bezierCurveTo(116 - i * 7, 220, 112 - i * 7, 206, 108 - i * 7, 214); });
   add('bladder', 'pelvis', 'Bladder', 1, [255, 220, 120], (c) => { E(c, 100, 226, 7, 6); });
+  add('eyeL', 'head', 'Eyes', 1, [150, 220, 255], (c) => { E(c, 108, 35, 4.2, 4.2); });
+  add('eyeR', 'head', 'Eyes', 1, [150, 220, 255], (c) => { E(c, 92, 35, 4.2, 4.2); });
+  add('teeth', 'head', 'Teeth', 1, [240, 240, 220], (c) => { c.beginPath(); c.rect(90, 53.5, 20, 3.4); c.rect(91, 57.5, 18, 3.2); });
+  add('trachea', 'chest', 'Windpipe', 2, [200, 220, 255], (c) => { c.beginPath(); c.rect(97.6, 66, 4.8, 28); });
+  add('pancreas', 'abdomen', 'Pancreas', 2, [255, 210, 130], (c) => { E(c, 102, 162, 15, 3.4, 0.12); });
   return O;
 })();
 function orgStates(g) {
-  const G = g.gorel, H = g.orgHits || {}, out = [];
+  const G = g.gorel, H = g.orgHits || {}, S = g.orgS || {}, out = [];
   for (const o of XO) {
-    const gone = !!(G && ((o.id === 'heart' && G.heartGone) || G.out[o.part] || (G.guts && G.guts.some(q => q.free) && o.part === 'abdomen' && G.out.abdomen))), hits = H[o.part] || 0;
-    let st = gone ? 2 : (hits >= o.thr ? 1 : 0); if (o.id === 'gut' && G && G.guts && G.guts.length && !gone) st = Math.max(st, 1);
+    const e = S[o.id], hits = H[o.part] || 0; let st = 0;
+    if (e) { if (e.st === 2) st = 2; else if (e.st === 1) st = 3; else if (e.hp < 1 || e.lost > 0) st = 1; }
+    if (st === 0 && o.id !== 'teeth' && o.id.indexOf('eye') !== 0 && hits >= o.thr) st = 1;
+    if (o.id === 'gut' && G && G.guts && G.guts.length && st < 2) st = G.guts.some(q => q.free) ? 2 : Math.max(st, 1);
     out.push(st);
   }
   return out;
@@ -15007,7 +15043,7 @@ function orgStates(g) {
     if (!this.g.set.orgPlus) return;
     const st = orgStates(this.g), seen = {}, li = [];
     XO.forEach((o, i) => { const k = o.name; if (seen[k] === undefined) seen[k] = st[i]; else seen[k] = Math.max(seen[k], st[i]); });
-    for (const k in seen) if (seen[k] > 0) li.push('<li><b>' + esc_(T(k)) + '</b><span>' + T(seen[k] === 2 ? 'Destroyed' : 'Injured') + '</span></li>');
+    for (const k in seen) if (seen[k] > 0) li.push('<li><b>' + esc_(T(k)) + '</b><span>' + T(seen[k] === 3 ? 'Hanging out' : seen[k] === 2 ? 'Destroyed' : 'Injured') + '</span></li>');
     const el = this.$('xrl'); if (el) el.insertAdjacentHTML('beforeend', '<p style="margin-top:8px;opacity:.7;font-size:11px">' + T('Organs (improved)') + '</p>' + (li.length ? '<ul>' + li.join('') + '</ul>' : '<p>' + T('No hit') + '</p>'));
   };
   const xt = UI.prototype.xrayTick;
@@ -15021,11 +15057,569 @@ function orgStates(g) {
     XO.forEach((o, i) => {
       const s = st[i], [r, g, b] = o.col; c.beginPath(); o.draw(c);
       if (s === 2) { c.setLineDash([3, 3]); c.strokeStyle = 'rgba(255,255,255,.22)'; c.stroke(); c.setLineDash([]); return; }
+      if (s === 3) { c.fillStyle = `rgba(255,190,60,${0.18 + 0.12 * pulse})`; c.fill(); c.setLineDash([4, 2]); c.strokeStyle = `rgba(255,200,90,${0.7 + 0.3 * pulse})`; c.stroke(); c.setLineDash([]); return; }
       c.fillStyle = s === 1 ? `rgba(255,${120 + 40 * pulse | 0},40,${0.35 + 0.25 * pulse})` : `rgba(${r},${g},${b},.26)`; c.shadowColor = s === 1 ? 'rgba(255,120,30,.9)' : `rgba(${r},${g},${b},.7)`; c.shadowBlur = s === 1 ? 10 : 5;
       c.fill(); c.strokeStyle = s === 1 ? `rgba(255,190,90,${0.7 + 0.3 * pulse})` : `rgba(${r},${g},${b},.75)`; c.stroke();
     });
+    /* Schusskanaele: gestrichelte rote Linie von Einschuss zu Austritt (Frontansicht, Naeherung) */
+    const CH = this.g.orgChan; if (CH && CH.length) {
+      const d = this.g.dummy.b, SC = 240; let sx = 1; try { sx = d.chest.w2l(V3(), d.uarmL.p)[0] > 0 ? -1 : 1; } catch (e) { }
+      c.shadowBlur = 6; c.shadowColor = 'rgba(255,60,40,.9)'; c.lineWidth = 1.6;
+      for (const ch of CH) {
+        const X = XR.find(q => q.body === ch.bn); if (!X) continue; const P = v => [X.mid[0] + sx * SC * v[0], X.mid[1] - SC * v[1]], A = P(ch.a), E = P(ch.c);
+        c.setLineDash([3, 2]); c.strokeStyle = `rgba(255,${70 + 40 * pulse | 0},50,.95)`; c.beginPath(); c.moveTo(A[0], A[1]); c.lineTo(E[0], E[1]); c.stroke(); c.setLineDash([]);
+        c.fillStyle = '#ffe0a0'; c.beginPath(); c.arc(A[0], A[1], 2, 0, 6.2832); c.fill();
+        c.strokeStyle = ch.stopped ? '#ffffff' : '#ff9a7a'; c.beginPath(); if (ch.stopped) { c.arc(E[0], E[1], 2.2, 0, 6.2832); } else { c.moveTo(E[0] - 2.4, E[1] - 2.4); c.lineTo(E[0] + 2.4, E[1] + 2.4); c.moveTo(E[0] + 2.4, E[1] - 2.4); c.lineTo(E[0] - 2.4, E[1] + 2.4); } c.stroke();
+      }
+    }
     c.restore();
   };
+}
+
+;
+/* ---- organs2.js: Organe 2 — Durchschuss-Kanaele, haengende Organe, Gebiss, Augen, Luftroehre, Bauchspeicheldruese, Blase; echte Ein-/Austrittswunden ---- */
+'use strict';
+/* Alles bezieht sich auf die fiktive Testpuppe. Zustandsspeicher: Game.orgS (je Organ), Game.orgChan (Schusskanaele). */
+Object.assign(DE, {
+  'Eyes': 'Augen', 'Teeth': 'Gebiss', 'Windpipe': 'Luftröhre', 'Pancreas': 'Bauchspeicheldrüse', 'Hanging out': 'Hängt raus', 'Organ hit': 'Organ getroffen',
+  'TEETH OUT': 'ZÄHNE RAUS', 'EYE OUT': 'AUGE RAUS', 'Shot path': 'Schusskanal', 'Shot paths': 'Schusskanäle'
+});
+Object.assign(ORG_R, { eye: 0.014, teeth: 0.03, trachea: 0.03, pancreas: 0.04, bladder: 0.04, tooth: 0.008 });
+
+/* ---------- Organ-Register: Koerperteil, Lage (lokal), Radius ---------- */
+const OX = {
+  brain: { b: 'head', loc: [0, 0.03, -0.01], r: 0.07, name: 'Brain' },
+  eyeL: { b: 'head', loc: [0.032, 0.02, 0.07], r: 0.017, name: 'Eyes' },
+  eyeR: { b: 'head', loc: [-0.032, 0.02, 0.07], r: 0.017, name: 'Eyes' },
+  teeth: { b: 'head', loc: [0, -0.05, 0.056], r: 0.036, name: 'Teeth' },
+  trachea: { b: 'chest', loc: [0, 0.07, 0], r: 0.02, name: 'Windpipe' },
+  lungR: { b: 'chest', loc: [-0.06, 0.02, 0], r: 0.065, name: 'Lungs' },
+  lungL: { b: 'chest', loc: [0.06, 0.02, 0], r: 0.065, name: 'Lungs' },
+  heart: { b: 'chest', loc: [0.025, 0, 0.03], r: 0.045, name: 'Heart' },
+  liver: { b: 'abdomen', loc: [-0.04, 0.03, 0.02], r: 0.06, name: 'Liver' },
+  stomach: { b: 'abdomen', loc: [0.04, 0.03, 0.025], r: 0.05, name: 'Stomach' },
+  spleen: { b: 'abdomen', loc: [0.075, 0.02, -0.01], r: 0.035, name: 'Spleen' },
+  pancreas: { b: 'abdomen', loc: [0, 0.01, -0.005], r: 0.04, name: 'Pancreas' },
+  kidR: { b: 'abdomen', loc: [-0.05, -0.01, -0.045], r: 0.035, name: 'Kidneys' },
+  kidL: { b: 'abdomen', loc: [0.05, -0.01, -0.045], r: 0.035, name: 'Kidneys' },
+  gut: { b: 'abdomen', loc: [0, -0.04, 0.02], r: 0.065, name: 'Intestines' },
+  bladder: { b: 'pelvis', loc: [0, -0.02, 0.045], r: 0.04, name: 'Bladder' }
+};
+const OX_PLUS_ONLY = { eyeL: 1, eyeR: 1, teeth: 1, trachea: 1, pancreas: 1, bladder: 1 };
+const KIDS = { brain: ['brain'], heart: ['heart'], lung: ['lungR', 'lungL'], liver: ['liver'], stomach: ['stomach'], kidney: ['kidR', 'kidL'], spleen: ['spleen'], eye: ['eyeL', 'eyeR'], teeth: ['teeth'], trachea: ['trachea'], pancreas: ['pancreas'], bladder: ['bladder'] };
+const KPART = { brain: 'head', eye: 'head', teeth: 'head', heart: 'chest', lung: 'chest', trachea: 'chest', liver: 'abdomen', stomach: 'abdomen', kidney: 'abdomen', spleen: 'abdomen', pancreas: 'abdomen', bladder: 'abdomen' };
+/* Schicksal beim Oeffnen: [faellt heraus, haengt heraus]; der Rest bleibt im Koerper */
+const FATE = { brain: [0.5, 0.35], heart: [0.45, 0.4], lung: [0.4, 0.4], liver: [0.4, 0.4], stomach: [0.4, 0.4], kidney: [0.4, 0.35], spleen: [0.45, 0.35], eye: [0.25, 0.6], teeth: [0.6, 0], trachea: [0.2, 0.3], pancreas: [0.3, 0.3], bladder: [0.35, 0.35] };
+const TLEN = { brain: 0.38, heart: 0.3, lung: 0.3, liver: 0.32, stomach: 0.34, kidney: 0.26, spleen: 0.26, eye: 0.12, trachea: 0.3, pancreas: 0.3, bladder: 0.3 };
+
+/* ---------- Meshes ---------- */
+function _meshOrg2(kind) {
+  const mb = new MB(), R = _orng(kind.length * 977 + 3); _orgPlus = true;
+  try {
+    if (kind === 'teeth') {
+      const arch = (y0, sg, n) => {
+        const pts = []; for (let i = 0; i <= 18; i++) { const a = (-1 + 2 * i / 18) * 1.3; pts.push([Math.sin(a) * 0.037, y0, Math.cos(a) * 0.031 - 0.012]); }
+        orgTube(mb, pts, 0.0052, 0.0052, [0.8, 0.3, 0.34], 8);
+        for (let i = 0; i < n; i++) {
+          const a = (-1 + (i + 0.5) * 2 / n) * 1.28, s = Math.abs(a), inc = s < 0.3, can = s >= 0.3 && s < 0.5, w = inc ? 0.0044 : can ? 0.0042 : 0.0058, h = inc ? 0.0078 : can ? 0.0085 : 0.0058, d = inc ? 0.0030 : can ? 0.0036 : 0.0048;
+          const ca = Math.cos(a), sa = Math.sin(Math.abs(a)), rx = w * ca + d * sa, rz = d * ca + w * sa, yy = y0 - sg * (0.0035 + h), cx = Math.sin(a) * 0.037, cz = Math.cos(a) * 0.031 - 0.012 + 0.0016;
+          orgBlob(mb, [cx, yy, cz], [rx, h, rz], { seg: 12, rings: 8, col: (x, y, z) => { const sh = 0.93 - 0.06 * Math.abs(y) - 0.05 * R(); return [sh, sh * 0.97, sh * 0.86]; } });
+        }
+      };
+      arch(0.0155, 1, 14); arch(-0.0155, -1, 14);
+      return orgFin(mb, 0.18, 1);
+    }
+    if (kind === 'tooth') {
+      orgBlob(mb, [0, 0.004, 0], [0.0052, 0.0072, 0.0046], { seg: 12, rings: 8, col: () => [0.94, 0.92, 0.84] });
+      orgBlob(mb, [0.0006, -0.0065, 0], [0.0026, 0.0078, 0.0024], { seg: 8, rings: 6, col: () => [0.84, 0.74, 0.55] });
+      orgBlob(mb, [0, -0.0125, 0.0004], [0.0012, 0.0035, 0.0012], { seg: 6, rings: 4, col: () => [0.74, 0.4, 0.38] });
+      return orgFin(mb, 0.2, 1);
+    }
+    if (kind === 'eye') {
+      orgBlob(mb, [0, 0, 0], [0.0125, 0.0125, 0.0125], {
+        seg: 22, rings: 16, col: (x, y, z) => {
+          const rr = Math.hypot(x, y);
+          if (z > 0.82 && rr < 0.17) return [0.02, 0.02, 0.025];                                     // Pupille
+          if (z > 0.78 && rr < 0.5) { const t = rr / 0.5, f = 0.5 + 0.5 * Math.sin(Math.atan2(y, x) * 14); return [0.18 + 0.2 * t + 0.05 * f, 0.34 + 0.18 * t, 0.5 + 0.1 * f]; }   // Iris mit Streifen
+          const v = Math.max(0, Math.sin(Math.atan2(y, x) * 5 + z * 9)) * (z < 0.2 ? 0.3 : 0.12);      // Aederchen
+          return [0.95, 0.9 - v, 0.88 - v];
+        }
+      });
+      orgBlob(mb, [0, 0, 0.0075], [0.0062, 0.0062, 0.0058], { seg: 14, rings: 8, col: () => [0.82, 0.9, 0.95] });                                 // Hornhaut
+      orgTube(mb, [[0, 0, -0.011], [0.002, -0.002, -0.03], [0.003, -0.004, -0.055], [0.001, -0.007, -0.075]], 0.0027, 0.0022, [0.95, 0.86, 0.72], 8);  // Sehnerv
+      for (const a of [0.6, 2.4, 4.2]) orgTube(mb, [[Math.cos(a) * 0.008, Math.sin(a) * 0.008, -0.004], [Math.cos(a) * 0.01, Math.sin(a) * 0.01, -0.02], [Math.cos(a) * 0.006, Math.sin(a) * 0.006, -0.036]], 0.0016, 0.0012, [0.72, 0.22, 0.22], 6);   // Augenmuskeln
+      return orgFin(mb, 0.1, 1);
+    }
+    if (kind === 'trachea') {
+      const pts = []; for (let i = 0; i <= 12; i++) pts.push([0, 0.075 - i * 0.0095, 0]);
+      orgTube(mb, pts, 0.0082, 0.0082, [0.92, 0.82, 0.8], 10);
+      for (let i = 0; i < 11; i++) orgBlob(mb, [0, 0.07 - i * 0.0098, 0], [0.0102, 0.0017, 0.0102], { seg: 14, rings: 4, col: () => [0.96, 0.92, 0.88] });                       // Knorpelspangen
+      orgBlob(mb, [0, 0.083, 0], [0.012, 0.011, 0.011], { seg: 14, rings: 8, col: () => [0.94, 0.86, 0.82] });                                                                       // Kehlkopf
+      for (const s of [-1, 1]) orgTube(mb, [[0, -0.04, 0], [s * 0.012, -0.05, 0.001], [s * 0.026, -0.062, 0.002], [s * 0.04, -0.074, 0.002]], 0.0068, 0.0055, [0.9, 0.8, 0.78], 8);
+      for (const s of [-1, 1]) orgBlob(mb, [s * 0.012, 0.045, 0.002], [0.008, 0.016, 0.006], { seg: 10, rings: 6, col: () => [0.86, 0.5, 0.42] });
+      return orgFin(mb, 0.26, 1);
+    }
+    if (kind === 'pancreas') {
+      orgBlob(mb, [0, 0, 0], [0.058, 0.0125, 0.0155], { seg: 30, rings: 14, rz: 0.12, disp: (x, y, z) => 1 + 0.12 * Math.sin(22 * x + 3 * z) + 0.05 * Math.sin(37 * x), col: (x, y, z) => _omix([0.93, 0.74, 0.58], [0.86, 0.6, 0.48], 0.5 + 0.5 * Math.sin(30 * x + 5 * y)) });
+      orgBlob(mb, [0.052, 0.002, 0], [0.012, 0.011, 0.014], { seg: 14, rings: 8, col: () => [0.9, 0.68, 0.54] });
+      orgTube(mb, [[-0.05, 0, 0.002], [-0.01, 0.0, 0.003], [0.03, 0.001, 0.002], [0.055, 0.003, 0]], 0.0017, 0.0015, [0.96, 0.92, 0.7], 6);
+      orgTube(mb, [[-0.02, 0.014, 0.004], [0.0, 0.026, 0.002], [0.02, 0.03, 0]], 0.0032, 0.003, _vV, 8);
+      orgTube(mb, [[-0.03, 0.01, 0.005], [-0.034, 0.03, 0.004], [-0.03, 0.05, 0.002]], 0.0028, 0.0026, _vA, 8);
+      return orgFin(mb, 0.4, 1);
+    }
+    if (kind === 'bladder') {
+      orgBlob(mb, [0, 0, 0], [0.032, 0.036, 0.03], { seg: 24, rings: 16, disp: (x, y, z) => 1 + 0.03 * Math.sin(8 * y + 3 * x), col: (x, y, z) => _omix([0.92, 0.74, 0.66], [0.86, 0.56, 0.52], 0.5 + 0.5 * Math.sin(11 * x + 7 * z)) });
+      for (let k = 0; k < 9; k++) { let th = R() * 6.28, ph = 0.4 + R() * 1.6; const pts = []; for (let i = 0; i < 8; i++) { th += (R() - 0.5) * 0.5; ph += (R() - 0.4) * 0.2; const x = Math.sin(ph) * Math.cos(th), y = Math.cos(ph), z = Math.sin(ph) * Math.sin(th); pts.push([x * 0.0328, y * 0.0368, z * 0.0308]); } orgTube(mb, pts, 0.0011, 0.0007, k % 3 ? _vA : _vV, 5); }
+      for (const s of [-1, 1]) orgTube(mb, [[s * 0.02, 0.026, -0.012], [s * 0.034, 0.05, -0.02], [s * 0.04, 0.08, -0.024]], 0.0026, 0.0024, [0.9, 0.84, 0.6], 6);
+      orgTube(mb, [[0, -0.034, 0.002], [0, -0.052, 0.004], [0, -0.07, 0.006]], 0.0042, 0.004, [0.9, 0.8, 0.6], 8);
+      return orgFin(mb, 0.22, 1);
+    }
+  } finally { _orgPlus = false; }
+  return null;
+}
+{
+  const om = Game.prototype.organMesh;
+  Game.prototype.organMesh = function (k) {
+    if (k === 'teeth' || k === 'tooth' || k === 'eye' || k === 'trachea' || k === 'pancreas' || k === 'bladder') { const M = this._orgM2 || (this._orgM2 = {}); return M[k] || (M[k] = this.gfx.upload(_meshOrg2(k))); }
+    return om.apply(this, arguments);
+  };
+}
+
+/* ---------- Zustand ---------- */
+function _osOf(g, id) { const S = g.orgS || (g.orgS = {}); return S[id] || (S[id] = { hp: 1, st: 0, dec: false, lost: 0 }); }
+function _segDist(p, a, c) {
+  const dx = c[0] - a[0], dy = c[1] - a[1], dz = c[2] - a[2], L2 = dx * dx + dy * dy + dz * dz || 1e-9;
+  const t = Math.max(0, Math.min(1, ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy + (p[2] - a[2]) * dz) / L2));
+  return Math.hypot(p[0] - (a[0] + dx * t), p[1] - (a[1] + dy * t), p[2] - (a[2] + dz * t));
+}
+
+Object.assign(Game.prototype, {
+  /* Organ haengt mit einem Gefaessstrang am Koerper */
+  orgTether(o, id, kind, b, lp) {
+    const L = (TLEN[kind] || 0.3) * (0.8 + Math.random() * 0.45); o.id = id; o.tether = { b, lp: [lp[0], lp[1], lp[2]], len: L, kind };
+  },
+  /* Zaehne fliegen aus dem Mund */
+  teethOut(n, dirW) {
+    if (!this.set.orgPlus || !this.goreOk(false)) return; const hd = this.dummy.b.head, S = _osOf(this, 'teeth'); if (S.st === 2) return;
+    n = Math.max(1, Math.min(n | 0, 28 - S.lost)); if (n <= 0) return; S.lost += n; S.hp = Math.min(S.hp, 1 - S.lost / 28); if (S.lost >= 18) { S.st = 2; S.dec = true; } this.orgVer = (this.orgVer || 0) + 1;
+    const P = hd.l2w(V3(), V3(OX.teeth.loc[0], OX.teeth.loc[1], OX.teeth.loc[2])), fw = dirW || qrot(V3(), hd.q, V3(0, -0.1, 1)), G = this.goreInit();
+    for (let i = 0; i < n; i++) { const sp = 1.2 + Math.random() * 2.6; this.dropOrgan('tooth', [P[0] + (Math.random() - 0.5) * 0.04, P[1] + (Math.random() - 0.5) * 0.02, P[2] + (Math.random() - 0.5) * 0.04], [fw[0] * sp + (Math.random() - 0.5) * 1.6, fw[1] * sp + 0.8 + Math.random() * 1.2, fw[2] * sp + (Math.random() - 0.5) * 1.6], 14, 1.4, true); }
+    while (G.org.length > 60) G.org.shift();
+    if (this.blood) for (let k = 0; k < 2 + n; k++) this.blood.drop(P[0], P[1], P[2], (Math.random() - 0.5) * 1.4 + fw[0], 0.4 + Math.random(), (Math.random() - 0.5) * 1.4 + fw[2], 0.6 + Math.random());
+    if (this.realTime - (this._tPop || -9) > 0.8) { this._tPop = this.realTime; this.popup('TEETH OUT', [P[0], P[1] + 0.15, P[2]], '#fff0c8', 1.1); this.sfx.play('crack', { vol: 0.5, pitch: 1.6 }); }
+  },
+  /* Auge wird aus der Hoehle geschlagen: haengt am Sehnerv oder platzt */
+  eyeOut(id, fwW) {
+    if (!this.set.orgPlus || !this.goreOk(false)) return; const S = _osOf(this, id); if (S.dec) return; S.dec = true; this.orgVer = (this.orgVer || 0) + 1;
+    const hd = this.dummy.b.head, loc = OX[id].loc, P = hd.l2w(V3(), V3(loc[0], loc[1], loc[2])), fw = fwW || qrot(V3(), hd.q, V3(0, 0, 1));
+    if (Math.random() < 0.3) { S.st = 2; S.hp = 0; if (this.fx.puff) this.fx.puff(P, fw, 8, 2.2, [0.7, 0.55, 0.5]); return; }
+    S.st = 1; this.dropOrgan('eye', P, [fw[0] * 0.8 + (Math.random() - 0.5) * 0.6, fw[1] * 0.8 + 0.5, fw[2] * 0.8 + (Math.random() - 0.5) * 0.6], 6, 1.2, true);
+    const G = this.goreInit(), o = G.org[G.org.length - 1]; if (o && o.k === 'eye') this.orgTether(o, id, 'eye', hd, loc);
+    this.popup('EYE OUT', [P[0], P[1] + 0.12, P[2]], '#cfe6ff', 1.1);
+  },
+  /* Schusskanal: Organe auf der Linie werden verletzt */
+  orgChannel(B, b, dirIn, P0, P1, r) {
+    const nm = b.name; if (nm !== 'head' && nm !== 'chest' && nm !== 'abdomen' && nm !== 'pelvis') return; if (!(r.dmg >= 0.004)) return;
+    const a = b.w2l(V3(), P0), many = B.shot && B.shot.pellets > 1;
+    let e2; if (r.stopped) { const d = Math.max(0.05, Math.min(r.depth || 0.1, 0.4)); e2 = [P0[0] + dirIn[0] * d, P0[1] + dirIn[1] * d, P0[2] + dirIn[2] * d]; } else e2 = P1;
+    const c = b.w2l(V3(), e2), C = this.orgChan || (this.orgChan = []); C.push({ bn: nm, a: [a[0], a[1], a[2]], c: [c[0], c[1], c[2]], stopped: !!r.stopped }); while (C.length > 20) C.shift();
+    const plus = this.set.orgPlus, hits = [];
+    for (const id in OX) {
+      const o = OX[id]; if (o.b !== nm || (OX_PLUS_ONLY[id] && !plus)) continue;
+      if (_segDist(o.loc, a, [c[0], c[1], c[2]]) > o.r * 0.9) continue;
+      const S = _osOf(this, id); if (S.st === 2 && id !== 'teeth') continue;
+      S.hp = Math.max(0, S.hp - (0.4 + r.dmg * 2.6) * (many ? 0.4 : 1)); hits.push(id);
+      if (this.blood && this.goreOk(false)) for (let k = 0; k < 2; k++) this.blood.drop(P0[0], P0[1], P0[2], dirIn[0] * 0.8 + (Math.random() - 0.5), 0.3 + Math.random() * 0.6, dirIn[2] * 0.8 + (Math.random() - 0.5), 0.5 + Math.random());
+      if (id === 'teeth') this.teethOut(many ? 1 + ((Math.random() * 2) | 0) : 3 + ((Math.random() * 8) | 0), V3(-dirIn[0], -dirIn[1] * 0.3, -dirIn[2]));
+      else if (id === 'eyeL' || id === 'eyeR') { if (!many || Math.random() < 0.3) this.eyeOut(id, V3(-dirIn[0], -dirIn[1] * 0.3, -dirIn[2])); }
+    }
+    if (hits.length) {
+      this.orgVer = (this.orgVer || 0) + 1;
+      if (!many && this.realTime - (this._ohPop || -9) > 0.4) { this._ohPop = this.realTime; const o = OX[hits[0]]; this.popup(T('Organ hit') + ': ' + T(o.name), [P0[0], P0[1] + 0.12, P0[2]], '#ffb48a', 0.9); }
+    }
+  }
+});
+
+{
+  /* Schicksal beim Herausfallen: raus / haengt / bleibt drin */
+  const dop = Game.prototype.dropOrgan;
+  Game.prototype.dropOrgan = function (kind, P, vel, spin, scale, force) {
+    const F = FATE[kind], ids = KIDS[kind];
+    if (force || !F || !ids || !this.goreInit()) return dop.apply(this, arguments);
+    if (OX_PLUS_ONLY[ids[0]] && !this.set.orgPlus) return;
+    const id = ids.find(i => !_osOf(this, i).dec); if (!id) return;
+    const S = _osOf(this, id); S.dec = true; this.orgVer = (this.orgVer || 0) + 1;
+    const G = this.goreInit(), A = G.anch && G.anch[KPART[kind]], r = Math.random();
+    if (r < F[0] || (r < F[0] + F[1] && !A)) { S.st = 2; dop.call(this, kind, P, vel, spin, scale); const o = G.org[G.org.length - 1]; if (o && o.k === kind) o.id = id; return; }
+    if (r < F[0] + F[1] && A) {
+      S.st = 1; dop.call(this, kind, P, [vel[0] * 0.45, vel[1] * 0.5, vel[2] * 0.45], spin * 0.5, scale);
+      const o = G.org[G.org.length - 1]; if (o && o.k === kind) this.orgTether(o, id, kind, A.b, A.lp); return;
+    }
+    /* bleibt im Koerper */
+  };
+  /* Anker: Stelle, an der der Koerper aufgerissen wurde */
+  const ob = Game.prototype.openBody;
+  Game.prototype.openBody = function (part, b, sp) {
+    const G = this.goreInit(); G.anch = G.anch || {};
+    const sf = this.surfAt(b, sp.lp), lp = sf && sf.d < 0.12 ? sf.p : sp.lp; G.anch[part] = { b, lp: [lp[0], lp[1], lp[2]] }; if (part === 'pelvis') G.anch.abdomen = G.anch.pelvis;
+    const r = ob.apply(this, arguments);
+    if (this.set.orgPlus && this.goreOk(part === 'head')) {
+      const P = b.l2w(V3(), V3(sp.lp[0], sp.lp[1], sp.lp[2])), nw = qrot(V3(), b.q, V3(sp.nl[0], sp.nl[1], sp.nl[2]));
+      if (part === 'head') {
+        const hd = this.dummy.b.head, fw = qrot(V3(), hd.q, V3(0, 0, 1));
+        for (const [k, t] of [['eye', 0.35], ['eye', 0.5], ['teeth', 0.8]]) { const loc = k === 'eye' ? OX[t < 0.4 ? 'eyeL' : 'eyeR'].loc : OX.teeth.loc; G.q.push({ t, kind: k, P: hd.l2w(V3(), V3(loc[0], loc[1], loc[2])), fw }); }
+      } else if (part === 'chest') G.q.push({ t: 1.3, kind: 'trachea', P, fw: nw });
+      else { G.q.push({ t: 3.0, kind: 'pancreas', P, fw: nw }); G.q.push({ t: 3.5, kind: 'bladder', P, fw: nw }); }
+    }
+    return r;
+  };
+  const ev = Game.prototype.eviscerate;
+  Game.prototype.eviscerate = function (level, dir, amount, locIn, bIn) {
+    const G = this.goreInit(); G.anch = G.anch || {}; G.anch.abdomen = { b: bIn || this.dummy.b.abdomen, lp: [].concat(locIn || this.abdAnchor()) };
+    return ev.apply(this, arguments);
+  };
+  /* Schusskanal + Wundbilder */
+  const wb = Game.prototype.woundBody;
+  Game.prototype.woundBody = function (B, b, T0, dirIn, P0, P1, cap, r) {
+    const out = wb.apply(this, arguments);
+    try { this.orgChannel(B, b, dirIn, P0, P1, r); this.woundLook(B, b, dirIn, P0, P1, cap, r); } catch (e) { console.error(e); }
+    return out;
+  };
+  const gc = Game.prototype.goreClear;
+  Game.prototype.goreClear = function () { this.orgS = null; this.orgChan = null; return gc.apply(this, arguments); };
+  /* Kopf-Frakturen und harte Landungen schlagen Zaehne aus */
+  const mf = Game.prototype.markFracture;
+  Game.prototype.markFracture = function (name, sev) {
+    const was = this.fract && this.fract[name], r = mf.apply(this, arguments);
+    try { if (name === 'head' && !was && this.set.orgPlus && Math.random() < 0.55) this.teethOut(2 + ((Math.random() * 6) | 0)); } catch (e) { console.error(e); }
+    return r;
+  };
+  const ni = Game.prototype.noteImpact;
+  Game.prototype.noteImpact = function (b, speed) {
+    const r = ni.apply(this, arguments);
+    try { if (b && b.tag && b.tag.part === 'head' && speed > 6.5 && this.set.orgPlus && Math.random() < 0.18 * Math.min(2, speed / 8) && this.realTime - (this._tImp || -9) > 1) { this._tImp = this.realTime; this.teethOut(1 + ((Math.random() * 3) | 0)); } } catch (e) { console.error(e); }
+    return r;
+  };
+}
+
+/* ---------- Wundbilder: Einschuss mit Prellungsring, Austritt zerrissen ---------- */
+Object.assign(Game.prototype, {
+  woundLook(B, b, dirIn, P0, P1, cap, r) {
+    if (this.set.holes === false || !this.fx || !this.fx.decals || !b.tag) return; const human = this.set.look !== 0; if (!human) return;
+    const many = B.shot && B.shot.pellets > 1, dmg = r.dmg || 0, size = (many ? 0.011 : 0.014) + Math.min(0.01, dmg * 0.05), fx = this.fx;
+    const nIn = capNormalAt(cap, P0, _tn), nin = [nIn[0], nIn[1], nIn[2]];
+    const add = (p, n, sz, col, a, life) => { fx.addDecal(b, p, n, sz, col); const d = fx.decals[fx.decals.length - 1]; if (d) { d.a = a; d.life = life || 70; } };
+    const tang = (n) => { const u = Math.abs(n[1]) < 0.9 ? [0, 1, 0] : [1, 0, 0], t1 = [n[1] * u[2] - n[2] * u[1], n[2] * u[0] - n[0] * u[2], n[0] * u[1] - n[1] * u[0]], l = Math.hypot(t1[0], t1[1], t1[2]) || 1; t1[0] /= l; t1[1] /= l; t1[2] /= l; return [t1, [n[1] * t1[2] - n[2] * t1[1], n[2] * t1[0] - n[0] * t1[2], n[0] * t1[1] - n[1] * t1[0]]]; };
+    /* Einschuss: kleines Loch, Saum, Prellung */
+    add(P0, nin, size * 2.6, [0.55, 0.3, 0.34], 0.22, 90);
+    add(P0, nin, size * 1.55, [0.5, 0.08, 0.1], 0.5, 90);
+    if (!r.stopped && P1) {
+      const nE = capNormalAt(cap, P1, _tn2), nex = [nE[0], nE[1], nE[2]], [t1, t2] = tang(nex), big = size * (1.7 + Math.min(1.5, dmg * 6));
+      add(P1, nex, big * 2.0, [0.5, 0.2, 0.24], 0.25, 90);
+      add(P1, nex, big * 1.15, [0.5, 0.05, 0.07], 0.75, 90);
+      const nf = many ? 2 : 5;
+      for (let i = 0; i < nf; i++) { const an = Math.random() * 6.283, off = big * (0.55 + Math.random() * 0.6), p = [P1[0] + (t1[0] * Math.cos(an) + t2[0] * Math.sin(an)) * off, P1[1] + (t1[1] * Math.cos(an) + t2[1] * Math.sin(an)) * off, P1[2] + (t1[2] * Math.cos(an) + t2[2] * Math.sin(an)) * off]; add(p, nex, big * (0.5 + Math.random() * 0.4), i % 2 ? [0.62, 0.17, 0.2] : [0.34, 0.03, 0.05], 0.8, 90); }
+      if (!many && fx.puff) fx.puff(P1, nex, 5, 3.0, [0.7, 0.2, 0.22]);       // Gewebefetzen
+    }
+  }
+});
+
+/* ---------- Haengende Organe: Physik, Tropfen, Gefaessstrang ---------- */
+{
+  const gs = Game.prototype.goreStep;
+  Game.prototype.goreStep = function (dt) {
+    const r = gs.apply(this, arguments), G = this.gorel; if (!G) return r; dt = Math.min(dt, 1 / 30);
+    for (const o of G.org) {
+      const t = o.tether;
+      if (t) {
+        const A = t.b.l2w(V3(), V3(t.lp[0], t.lp[1], t.lp[2])); t.A = A; let dx = o.p[0] - A[0], dy = o.p[1] - A[1], dz = o.p[2] - A[2]; const d = Math.hypot(dx, dy, dz) || 1e-6;
+        if (d > t.len) {
+          const k = (d - t.len) / d; o.p[0] -= dx * k; o.p[1] -= dy * k; o.p[2] -= dz * k; dx /= d; dy /= d; dz /= d; const vr = o.v[0] * dx + o.v[1] * dy + o.v[2] * dz;
+          if (vr > 0) { o.v[0] -= dx * vr * 1.05; o.v[1] -= dy * vr * 1.05; o.v[2] -= dz * vr * 1.05; }
+          if (o.rest && d > t.len * 1.02) o.rest = 0; if (!o.rest && d > t.len * 1.4) { o.p[0] = A[0] + dx * t.len; o.p[1] = A[1] + dy * t.len; o.p[2] = A[2] + dz * t.len; }
+        }
+        if (!o.rest) { o.v[0] *= 0.996; o.v[1] *= 0.997; o.v[2] *= 0.996; }
+      }
+      if ((t || o.age < 25) && o.k !== 'tooth' && this.blood && this.goreOk(false)) {          // Blut tropft von frischen / haengenden Organen
+        o.dr = (o.dr || 0) - dt; if (o.dr <= 0) { o.dr = 0.35 + Math.random() * 0.7 + (o.age > 8 ? 0.6 : 0); this.blood.drop(o.p[0] + (Math.random() - 0.5) * 0.03, o.p[1] - 0.02, o.p[2] + (Math.random() - 0.5) * 0.03, (Math.random() - 0.5) * 0.15, -0.1, (Math.random() - 0.5) * 0.15, 0.4 + Math.random() * 0.7); }
+      }
+    }
+    return r;
+  };
+  const gd = Game.prototype.goreDraw;
+  Game.prototype.goreDraw = function (bd) {
+    const r = gd.apply(this, arguments), G = this.gorel;
+    if (G && this.ballMesh) for (const o of G.org) {
+      const t = o.tether; if (!t || !t.A) continue; const A = t.A, B = o.p, N = 8, dx = B[0] - A[0], dy = B[1] - A[1], dz = B[2] - A[2], d = Math.hypot(dx, dy, dz), sag = Math.max(0, t.len - d) * 0.55;
+      for (const [ox, oz, rr, col] of [[0, 0, 0.0075, [0.6, 0.1, 0.14]], [0.006, 0.004, 0.0048, [0.34, 0.2, 0.55]]]) {
+        let px = A[0], py = A[1], pz = A[2];
+        for (let i = 1; i <= N; i++) {
+          const f = i / N, s = 4 * f * (1 - f) * sag, x = A[0] + dx * f + ox * Math.sin(f * 3.14), y = A[1] + dy * f - s, z = A[2] + dz * f + oz * Math.sin(f * 3.14), sx = x - px, sy = y - py, sz = z - pz, l = Math.hypot(sx, sy, sz) || 0.005, q = Q4(), m = M4.id();
+          gAlignY(q, sx, sy, sz); M4.trs(m, [(x + px) / 2, (y + py) / 2, (z + pz) / 2], q, rr, l * 0.62, rr); bd.push({ mesh: this.ballMesh, model: m, tint: col }); px = x; py = y; pz = z;
+        }
+      }
+    }
+    return r;
+  };
+}
+
+;
+/* ---- weather.js: Regen (Einstellung "Regen"): Regenstreifen, Pfuetzen mit Wellen, nasse Flaechen, dunklerer Himmel, Regenrauschen, Gewitter ---- */
+'use strict';
+Object.assign(DE, {
+  'Rain': 'Regen', 'Puddles': 'Pfützen', 'Storm': 'Gewitter',
+  'Rain, wet ground and a darker sky. Puddles with ripples collect on every floor; above about 60% there is thunder and lightning.': 'Regen, nasser Boden und dunklerer Himmel. Auf jedem Boden bilden sich Pfützen mit Wellen; ab etwa 60 % gibt es Donner und Blitze.',
+  'Puddles with reflections and ripples while it rains': 'Pfützen mit Spiegelung und Wellen, solange es regnet'
+});
+{
+  const i = SET_UI.findIndex(x => x && x.k === 'fog');
+  SET_UI.splice(i >= 0 ? i + 1 : SET_UI.length, 0,
+    { k: 'rain', t: 'range', label: 'Rain', min: 0, max: 1, step: 0.05, fmt: v => v <= 0 ? 'Off' : Math.round(v * 100) + '%', help: 'Rain, wet ground and a darker sky. Puddles with ripples collect on every floor; above about 60% there is thunder and lightning.' },
+    { k: 'puddles', t: 'check', label: 'Puddles', help: 'Puddles with reflections and ripples while it rains' });
+  if (typeof SET_EMO !== 'undefined') { SET_EMO.rain = '🌧️'; SET_EMO.puddles = '💧'; }
+}
+/* Himmel, Licht und Nebel bei Regen */
+{
+  const as = Game.prototype.applySettings;
+  Game.prototype.applySettings = function () {
+    const r = as.apply(this, arguments);
+    try {
+      const g = this.gfx, R = Math.max(0, Math.min(1, +this.set.rain || 0)); if (!g) return r;
+      g.rain = R; g.rainPud = this.set.puddles === false ? 0 : 1;
+      if (R > 0) {
+        const gray = (c, k) => { const l = c[0] * 0.3 + c[1] * 0.59 + c[2] * 0.11; return [c[0] + (l - c[0]) * k, c[1] + (l - c[1]) * k, c[2] + (l - c[2]) * k]; };
+        g.sunCol = g.sunCol.map(v => v * (1 - 0.62 * R)); g.skyCol = gray(g.skyCol, 0.6 * R).map(v => v * (1 - 0.22 * R)); g.gndCol = gray(g.gndCol, 0.4 * R).map(v => v * (1 - 0.12 * R));
+        g.skyTop = gray(g.skyTop, 0.8 * R).map(v => v * (1 - 0.32 * R)); g.fogCol = gray(g.fogCol, 0.8 * R).map(v => v * (1 - 0.2 * R));
+        g.skyQ[0] = Math.max(g.skyQ[0], 0.45 + 0.5 * R); g.q2[0] *= 1 + R * 1.3;
+      }
+    } catch (e) { console.error(e); }
+    return r;
+  };
+}
+/* Regenstreifen (Ebene ueber dem 3D-Bild), Rauschen, Blitz und Donner */
+(function () {
+  const gl = document.getElementById('gl'); if (!gl) return;
+  const cv = document.createElement('canvas'); cv.id = 'rainfx'; cv.style.cssText = 'pointer-events:none;display:none'; gl.insertAdjacentElement('afterend', cv);
+  const c = cv.getContext('2d'); let W = 0, H = 0, drops = [], last = performance.now(), flash = 0, nextBolt = 8, thunderAt = -1, noiseSrc = null, noiseGain = null, tick = 0;
+  const size = () => { W = cv.width = Math.max(2, innerWidth | 0); H = cv.height = Math.max(2, innerHeight | 0); };
+  addEventListener('resize', size); size();
+  const mk = (far) => ({ x: Math.random() * (W + 200) - 100, y: Math.random() * H, l: far ? 12 + Math.random() * 12 : 26 + Math.random() * 26, v: far ? 760 + Math.random() * 260 : 1250 + Math.random() * 450, far });
+  function audio(R, g) {
+    const s = g.sfx; if (!s || !s.ctx || !s.master) return; const ac = s.ctx;
+    if (!noiseSrc) {
+      const n = ac.sampleRate * 3, b = ac.createBuffer(1, n, ac.sampleRate), d = b.getChannelData(0); let l = 0; for (let i = 0; i < n; i++) { const w = Math.random() * 2 - 1; l = 0.7 * l + 0.3 * w; d[i] = l * 1.6; }
+      noiseSrc = ac.createBufferSource(); noiseSrc.buffer = b; noiseSrc.loop = true; const bp = ac.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 2200; bp.Q.value = 0.35; const hp = ac.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 500;
+      noiseGain = ac.createGain(); noiseGain.gain.value = 0; noiseSrc.connect(bp); bp.connect(hp); hp.connect(noiseGain); noiseGain.connect(s.master); noiseSrc.start();
+    }
+    noiseGain.gain.setTargetAtTime(g.set.sound ? 0.16 * R : 0, ac.currentTime, 0.4);
+  }
+  function thunder(g) {
+    const s = g.sfx; if (!s || !s.ctx || !s.master || !g.set.sound) return; const ac = s.ctx, n = ac.sampleRate * 3, b = ac.createBuffer(1, n, ac.sampleRate), d = b.getChannelData(0); let l = 0;
+    for (let i = 0; i < n; i++) { const t = i / ac.sampleRate; l = 0.96 * l + 0.04 * (Math.random() * 2 - 1); d[i] = l * 9 * Math.exp(-t * 1.1) * (1 + 0.6 * Math.sin(t * 17)); }
+    const src = ac.createBufferSource(); src.buffer = b; const lp = ac.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 260; const gn = ac.createGain(); gn.gain.value = 0.9; src.connect(lp); lp.connect(gn); gn.connect(s.master); src.start();
+  }
+  function loop(now) {
+    requestAnimationFrame(loop); const g = window.__game; const dt = Math.min(0.05, (now - last) / 1000); last = now;
+    const R = g && g.set ? Math.max(0, Math.min(1, +g.set.rain || 0)) : 0;
+    if (R <= 0 || (g && g.thumbMode)) { if (cv.style.display !== 'none') { cv.style.display = 'none'; c.clearRect(0, 0, W, H); } if (noiseGain && ++tick % 30 === 0) noiseGain.gain.value = 0; return; }
+    if (W !== innerWidth || H !== innerHeight) size();
+    cv.style.display = 'block';
+    const want = Math.round(R * (W * H) / 2600), far = want * 0.6 | 0;
+    while (drops.length < want) drops.push(mk(drops.filter(d => d.far).length < far));
+    if (drops.length > want) drops.length = want;
+    c.clearRect(0, 0, W, H); const wind = 0.16 + 0.05 * Math.sin(now / 3000);
+    for (const pass of [true, false]) {
+      c.strokeStyle = pass ? 'rgba(200,215,235,0.20)' : 'rgba(225,235,250,0.36)'; c.lineWidth = pass ? 1 : 1.5; c.beginPath();
+      for (const d of drops) {
+        if (d.far !== pass) continue; d.y += d.v * dt; d.x += d.v * wind * dt; if (d.y > H + 40) { d.y = -50 - Math.random() * 80; d.x = Math.random() * (W + 200) - 100; }
+        c.moveTo(d.x, d.y); c.lineTo(d.x - d.l * wind, d.y - d.l);
+      }
+      c.stroke();
+    }
+    if (R >= 0.6) {
+      nextBolt -= dt; if (nextBolt <= 0) { nextBolt = 9 + Math.random() * 22; flash = 1; thunderAt = 0.35 + Math.random() * 1.8; }
+      if (thunderAt >= 0) { thunderAt -= dt; if (thunderAt < 0 && g) thunder(g); }
+    }
+    if (flash > 0) { c.fillStyle = `rgba(215,225,255,${Math.min(0.55, flash * 0.5)})`; c.fillRect(0, 0, W, H); flash = Math.max(0, flash - dt * (flash > 0.55 ? 4.5 : 2.2)); if (flash > 0.2 && flash < 0.5 && Math.random() < 0.1) flash = 0.95; }
+    if (g && ++tick % 20 === 0) audio(R, g);
+  }
+  requestAnimationFrame(loop);
+})();
+
+;
+/* ---- maps4.js: fuenf weitere Maps – Hafen, Kirche, U-Bahn, Burghof, Schrottplatz ---- */
+'use strict';
+MAP_ORDER.push('harbor', 'church', 'subway', 'castle', 'junkyard');
+Object.assign(MAP_INFO, {
+  harbor: { name: 'Harbor', desc: 'A container quay with a gantry crane and a cargo ship. Watch the edge.', icon: 'harbor' },
+  church: { name: 'Church', desc: 'A tall nave with columns, pews, stained glass and an organ loft.', icon: 'church' },
+  subway: { name: 'Subway', desc: 'A station with two platforms, tracks in between and a waiting train.', icon: 'subway' },
+  castle: { name: 'Castle', desc: 'A walled courtyard with towers, a keep and wall walks. Mind the battlements.', icon: 'castle' },
+  junkyard: { name: 'Junkyard', desc: 'Piles of wrecked cars, drums, tyres and a crane with a magnet.', icon: 'junkyard' }
+});
+Object.assign(MAP_SVG, {
+  harbor: '<path d="M4 58H116"/><path d="M14 58V26h54V58M40 26V58M14 42h54" stroke-width="2"/><path d="M78 58V14M112 58V14M74 14H116M96 14V30" /><path d="M78 58l-4-8h38l-4 8" stroke-width="2"/>',
+  church: '<path d="M30 62V28L60 8l30 20v34z"/><path d="M60 8V0M56 3h8" /><path d="M50 62V44a10 10 0 0120 0v18M38 36h8M74 36h8" stroke-width="2"/><path d="M6 62h108"/>',
+  subway: '<path d="M4 20H116V58H4z" opacity=".55"/><path d="M24 40H96V54H24zM24 46H96" /><path d="M32 40v-8h56v8M40 54v4M80 54v4" stroke-width="2"/><path d="M4 62H116" />',
+  castle: '<path d="M10 62V24h12V16h6v8h8V16h6v8h8V16h6v8h8V16h6v8h12v38z" /><path d="M50 62V44a10 10 0 0120 0v18" stroke-width="2"/><path d="M92 62V12h14v50M92 12l7-8 7 8" />',
+  junkyard: '<path d="M6 62H114"/><path d="M12 54H52V44L42 36H24L12 44zM60 40H100V30L90 24H72L60 30z"/><circle cx="24" cy="56" r="4"/><circle cx="42" cy="56" r="4"/><path d="M96 4V24M96 4H70M70 4v8" stroke-width="2"/>'
+});
+Object.assign(MAP_TAGS, { harbor: ['Containers', 'Crane', 'Ship'], church: ['Nave', 'Pews', 'Loft'], subway: ['Tracks', 'Platforms', 'Train'], castle: ['Towers', 'Keep', 'Walls'], junkyard: ['Wrecks', 'Crane', 'Drums'] });
+Object.assign(DE, {
+  'Harbor': 'Hafen', 'Church': 'Kirche', 'Subway': 'U-Bahn', 'Castle': 'Burghof', 'Junkyard': 'Schrottplatz',
+  'A container quay with a gantry crane and a cargo ship. Watch the edge.': 'Ein Containerkai mit Portalkran und Frachtschiff. Vorsicht an der Kante.',
+  'A tall nave with columns, pews, stained glass and an organ loft.': 'Ein hohes Kirchenschiff mit Säulen, Bänken, Buntglas und Orgelempore.',
+  'A station with two platforms, tracks in between and a waiting train.': 'Ein Bahnhof mit zwei Bahnsteigen, Gleisen dazwischen und einem wartenden Zug.',
+  'A walled courtyard with towers, a keep and wall walks. Mind the battlements.': 'Ein ummauerter Burghof mit Türmen, Bergfried und Wehrgängen. Vorsicht an den Zinnen.',
+  'Piles of wrecked cars, drums, tyres and a crane with a magnet.': 'Haufen aus Autowracks, Fässern, Reifen und ein Kran mit Magnet.',
+  'Containers': 'Container', 'Crane': 'Kran', 'Ship': 'Schiff', 'Nave': 'Kirchenschiff', 'Pews': 'Bänke', 'Loft': 'Empore', 'Tracks': 'Gleise', 'Platforms': 'Bahnsteige', 'Train': 'Zug', 'Towers': 'Türme', 'Keep': 'Bergfried', 'Walls': 'Mauern', 'Wrecks': 'Wracks', 'Drums': 'Fässer'
+});
+DE[MAP_ORDER.length + ' maps'] = MAP_ORDER.length + ' Karten';
+const MAPS4 = ['harbor', 'church', 'subway', 'castle', 'junkyard'];
+
+function buildMaps4(key, world, env, sp, add, deco, edge) {
+  const wood = 13, rnd = (() => { let s = 12345; return () => (s = (s * 1664525 + 1013904223) >>> 0) / 4294967296; })();
+  const box = (cx, cz, sx, sy, sz, y0, mat, v) => add([cx - sx / 2, y0, cz - sz / 2], [cx + sx / 2, y0 + sy, cz + sz / 2], mat, 0.9, v);
+  const dbox = (cx, cz, sx, sy, sz, y0, mat, v) => deco([cx - sx / 2, y0, cz - sz / 2], [cx + sx / 2, y0 + sy, cz + sz / 2], mat, v);
+  if (key === 'harbor') {
+    env.groundMat = 5; env.fogK = 0.45; env.bmap = { x0: -14, z0: -14, size: 28 };
+    /* Schiff an der Nordkante */
+    add([-17, 0, -24], [17, 5.5, -17], 7); add([-17, 5.5, -24], [17, 5.7, -17], 1); dbox(0, -20.5, 36, 0.6, 7.6, 5.7, 7);
+    add([-9, 5.7, -23], [-1, 11, -18.5], 3); deco([-8.5, 7, -18.45], [-1.5, 7.8, -18.4], 1); deco([-8.5, 9, -18.45], [-1.5, 9.8, -18.4], 1); add([-5.5, 11, -21.5], [-3.5, 14.5, -19.5], 8, 0.9, 0);
+    for (let x = -15; x <= 15; x += 3) deco([x - 0.05, 5.7, -17.1], [x + 0.05, 6.7, -17.05], 7);
+    deco([-17.1, 6.7, -17.1], [17.1, 6.8, -17.0], 7);
+    /* Gangway zum Schiff */
+    m3Ramp(add, 7, -14, -17, 11, 2.2, 5.7, 22, '-z'); deco([-14.1, 0, -17], [-14.0, 6.7, -6], 7); deco([-11.8, 0, -17], [-11.7, 6.7, -6], 7);
+    /* Containerstapel West und Ost */
+    const stack = (cx, cz, nx, nz, hi, v0) => { for (let i = 0; i < nx; i++) for (let j = 0; j < nz; j++) for (let k = 0; k < hi - ((i + j) % 2 && k0(hi)); k++) add([cx + i * 2.6 - 1.2, k * 2.6, cz + j * 6.2 - 3], [cx + i * 2.6 + 1.2, (k + 1) * 2.6, cz + j * 6.2 + 3], 8, 0.9, (v0 + i + j * 2 + k) % 5); };
+    const k0 = (h) => (h > 2 ? 1 : 0);
+    stack(-19, -5, 2, 1, 3, 0); stack(-19, 6, 2, 1, 2, 2); stack(-19, 17, 2, 1, 3, 4); stack(14, -4, 3, 1, 3, 1); stack(14, 5, 3, 1, 2, 3); stack(14, 14, 3, 1, 3, 0);
+    /* Portalkran ueber dem Kai */
+    for (const x of [-10.5, 10.5]) for (const z of [-14.5, -9]) { add([x - 0.35, 0, z - 0.35], [x + 0.35, 16, z + 0.35], 7); }
+    for (const x of [-10.5, 10.5]) { dbox(x, -11.75, 0.5, 0.5, 6.2, 16, 7); deco([x - 0.15, 4, -14.4], [x + 0.15, 4.4, -9.1], 7); }
+    dbox(0, -11.75, 22, 1.1, 1.4, 16, 7); dbox(0, -11.75, 22, 0.25, 6.4, 17.1, 7); add([-2, 16.4, -13], [2, 19, -10.5], 7); dbox(0, -11.75, 0.2, 5, 0.2, 11.4, 7);
+    for (let x = -10; x <= 10; x += 2.5) deco([x - 0.06, 14.9, -14.5], [x + 0.06, 16, -9], 7);
+    /* Poller, Paletten, Lampen, Kisten */
+    for (let x = -14; x <= 14; x += 4) if (Math.abs(x) > 12 || Math.abs(x) < 3.5 || true) add([x - 0.25, 0, -15.4], [x + 0.25, 0.6, -14.9], 7);
+    for (const [x, z] of [[-6, -5], [-6, 9], [6, -3], [7, 10], [-8, 18]]) { add([x - 0.7, 0, z - 0.6], [x + 0.7, 0.15, z + 0.6], wood); add([x - 0.65, 0.15, z - 0.55], [x + 0.65, 1.1, z + 0.55], wood); }
+    for (const [x, z] of [[-12, 8], [12, 6]]) { add([x - 0.3, 0, z - 0.3], [x + 0.3, 0.9, z + 0.3], 8, 0.9, 0); }
+    for (const [x, z] of [[-4.5, 12], [4.5, 12], [-4.5, -8], [4.5, -8]]) { deco([x - 0.08, 0, z - 0.08], [x + 0.08, 7.5, z + 0.08], 7); deco([x - 0.08, 7.4, z - 0.4], [x + 0.08, 7.5, z + 0.4], 7); deco([x - 0.15, 7.2, z - 0.55], [x + 0.15, 7.35, z - 0.35], 8, 3); }
+    sp.harbor = { x: 0, z: 2, yaw: 0, y: 0, cam: { yaw: 0.5, pitch: 0.16, dist: 5.4, tx: 0, ty: 1.0, tz: 2 } };
+  } else if (key === 'church') {
+    env.groundMat = 0; env.fogK = 0.55; env.bmap = { x0: -14, z0: -14, size: 28 };
+    const X = 10, Z0 = -24, Z1 = 14, H = 15;
+    add([-X - 0.6, 0, Z0 - 0.6], [X + 0.6, H, Z0], 3); add([-X - 0.6, 0, Z0], [-X, H, Z1], 3); add([X, 0, Z0], [X + 0.6, H, Z1], 3);
+    add([-X - 0.6, 0, Z1], [-2.6, H, Z1 + 0.6], 3); add([2.6, 0, Z1], [X + 0.6, H, Z1 + 0.6], 3); add([-2.6, 7.2, Z1], [2.6, H, Z1 + 0.6], 3);
+    add([-X - 0.6, H, Z0 - 0.6], [X + 0.6, H + 0.6, Z1 + 0.6], 3);
+    for (let i = 0; i < 6; i++) { deco([-X + i * 3.4 + 0.3, H - 1.0 + i * 0.0, Z0 + 0.1], [-X + i * 3.4 + 3.0, H - 0.9, Z1 - 0.1], 3); }
+    /* Gewoelberippen */
+    for (let z = -20; z <= 12; z += 4) { deco([-X, H - 1.4, z - 0.2], [X, H - 1.0, z + 0.2], 3); deco([-X, H - 2.4, z - 0.2], [-X + 2.4, H - 1.4, z + 0.2], 3); deco([X - 2.4, H - 2.4, z - 0.2], [X, H - 1.4, z + 0.2], 3); }
+    /* Saeulen */
+    for (const x of [-5.2, 5.2]) for (let z = -18; z <= 10; z += 6) { add([x - 0.55, 0, z - 0.55], [x + 0.55, 13.2, z + 0.55], 3); dbox(x, z, 1.4, 0.4, 1.4, 0, 3); dbox(x, z, 1.5, 0.5, 1.5, 12.8, 3); }
+    /* Buntglasfenster (Farbvarianten) */
+    for (let i = 0; i < 6; i++) { const z = -20.5 + i * 5.6; deco([-X + 0.01, 3.4, z - 0.8], [-X + 0.05, 11.6, z + 0.8], 8, i % 4); deco([X - 0.05, 3.4, z - 0.8], [X - 0.01, 11.6, z + 0.8], 8, (i + 2) % 4); }
+    deco([-3, 5.0, Z0 + 0.01], [3, 12.4, Z0 + 0.05], 8, 1); deco([-0.2, 6.0, Z0 + 0.06], [0.2, 11.6, Z0 + 0.1], 3);
+    /* Altarraum */
+    add([-6, 0, -24], [6, 0.5, -19.5], 3); add([-5, 0.5, -24], [5, 1.0, -20.5], 3); add([-1.6, 1.0, -23.4], [1.6, 2.1, -22.2], 3); dbox(0, -22.8, 0.3, 2.4, 0.3, 2.1, 13); dbox(0, -22.8, 1.4, 0.3, 0.3, 3.7, 13);
+    add([-4.8, 1.0, -22], [-3.6, 2.3, -21], wood); for (const x of [-3, 3]) dbox(x, -21.5, 0.2, 2.2, 0.2, 1.0, 7);
+    /* Kirchenbaenke: Mittelgang frei */
+    for (let r = 0; r < 7; r++) { const z = -17 + r * 2.1; for (const s of [-1, 1]) { const x0 = s < 0 ? -4.5 : 1.2, x1 = s < 0 ? -1.2 : 4.5; add([x0, 0, z], [x0 + 0.1, 0.9, z + 0.9], wood); add([x1 - 0.1, 0, z], [x1, 0.9, z + 0.9], wood); add([x0, 0.42, z], [x1, 0.5, z + 0.7], wood); add([x0, 0.5, z + 0.7], [x1, 1.25, z + 0.8], wood); } }
+    /* Empore (Orgel) */
+    add([-X, 5.4, 6], [X, 5.7, Z1], 3); for (const x of [-5.2, 5.2]) add([x - 0.5, 0, 6.8], [x + 0.5, 5.4, 7.8], 3);
+    add([-X, 5.7, 6], [X, 6.7, 6.2], 3); for (let x = -9.6; x < 9.6; x += 0.8) deco([x, 5.7, 6.0], [x + 0.1, 6.7, 6.2], 3);
+    m3Ramp(add, 3, X - 2.2, -8, 14, 2.2, 5.7, 28, '+z');
+    for (let k = 0; k < 9; k++) { const x = -3.4 + k * 0.85; dbox(x, 13.5, 0.5, 4.4 - Math.abs(k - 4) * 0.4, 0.5, 5.7, 7); }
+    dbox(0, 13.2, 8.6, 1.3, 0.8, 5.7, wood);
+    /* Kanzel, Leuchter, Eingangstuer */
+    add([6.2, 1.0, -12.6], [8.6, 3.0, -10.2], wood); add([6.0, 3.0, -12.8], [8.8, 3.2, -10.0], wood);
+    for (const [x, z] of [[-2.2, -19.6], [2.2, -19.6], [-2.2, 8], [2.2, 8]]) { dbox(x, z, 0.12, 2.0, 0.12, 0, 7); dbox(x, z, 0.5, 0.1, 0.5, 2.0, 7); }
+    deco([-2.6, 0, Z1 + 0.62], [2.6, 5.6, Z1 + 0.66], wood); dbox(0, Z1 + 0.64, 0.12, 5.6, 0.1, 0, 7);
+    sp.church = { x: 0, z: -2, yaw: 0, y: 0, cam: { yaw: 0.5, pitch: 0.15, dist: 5.6, tx: 0, ty: 1.0, tz: -2 } };
+  } else if (key === 'subway') {
+    env.groundMat = 0; env.fogK = 0.55; env.bmap = { x0: -14, z0: -14, size: 28 };
+    const X = 13, Z = 22, H = 6, PH = 1.1;
+    add([-X - 0.6, 0, -Z - 0.6], [X + 0.6, H + 1, -Z], 3); add([-X - 0.6, 0, -Z], [-X, H + 1, Z], 3); add([X, 0, -Z], [X + 0.6, H + 1, Z], 3);
+    add([-X - 0.6, 0, Z], [-3.2, H + 1, Z + 0.6], 3); add([3.2, 0, Z], [X + 0.6, H + 1, Z + 0.6], 3); add([-3.2, 4.4, Z], [3.2, H + 1, Z + 0.6], 3);
+    add([-X - 0.6, H, -Z - 0.6], [X + 0.6, H + 1, Z + 0.6], 3);
+    for (let z = -Z + 2; z < Z; z += 4) { deco([-X + 0.01, 0.0, z - 0.02], [-X + 0.04, H, z + 0.02], 3); deco([X - 0.04, 0.0, z - 0.02], [X - 0.01, H, z + 0.02], 3); }
+    /* Bahnsteige */
+    add([3.2, 0, -Z], [X, PH, Z], 0); add([-X, 0, -Z], [-3.2, PH, Z], 0);
+    edge(3.2, -Z, 3.2, Z, -1, 0, PH); edge(-3.2, -Z, -3.2, Z, 1, 0, PH);
+    dbox(3.55, 0, 0.5, 0.012, 2 * Z, PH, 8, 3); dbox(-3.55, 0, 0.5, 0.012, 2 * Z, PH, 8, 3);
+    deco([-X + 0.01, 1.0, -Z + 1], [-X + 0.05, 2.5, Z - 1], 8, 4); deco([X - 0.05, 1.0, -Z + 1], [X - 0.01, 2.5, Z - 1], 8, 4);
+    /* Gleisbett, Schienen */
+    dbox(0, 0, 6.2, 0.1, 2 * Z, 0, 14);
+    for (const x of [-0.72, 0.72]) dbox(x, 0, 0.1, 0.16, 2 * Z, 0.1, 7);
+    for (let z = -Z + 0.5; z < Z; z += 0.8) dbox(0, z, 2.2, 0.08, 0.2, 0.1, wood);
+    dbox(0, 0, 0.3, 0.1, 2 * Z, 0.1, 7);
+    /* Zug (wartend im Norden) */
+    add([-1.45, 0.55, -Z + 1], [1.45, 3.7, -7], 7); add([-1.4, 3.7, -Z + 1.3], [1.4, 3.85, -7.3], 7);
+    for (let i = 0; i < 6; i++) { const z = -Z + 2.6 + i * 2.3; for (const s of [-1, 1]) deco([s * 1.45 - (s > 0 ? 0.0 : 0.03), 1.7, z], [s * 1.45 + (s > 0 ? 0.03 : 0.0), 2.9, z + 1.5], 1); }
+    for (const s of [-1, 1]) { deco([s * 1.45 - (s > 0 ? 0 : 0.03), 0.6, -Z + 1.2], [s * 1.45 + (s > 0 ? 0.03 : 0), 3.3, -Z + 1.4], 8, 2); }
+    dbox(0, -Z + 1.0, 2.9, 1.8, 0.1, 1.2, 1); dbox(0, -Z + 0.95, 1.4, 0.6, 0.06, 3.1, 8, 3);
+    for (const z of [-Z + 3, -Z + 8, -7.8]) for (const x of [-0.9, 0.9]) dbox(x, z, 0.8, 0.5, 0.7, 0.05, 7);
+    /* Pfeiler, Deckenlicht, Baenke, Automaten, Schilder */
+    for (const x of [-6.5, 6.5]) for (let z = -18; z <= 18; z += 6) { add([x - 0.35, PH, z - 0.35], [x + 0.35, H, z + 0.35], 3); dbox(x, z, 0.8, 0.3, 0.8, H - 0.3, 3); }
+    for (let z = -20; z <= 20; z += 4) for (const x of [-6.5, 6.5, 0]) dbox(x, z, 1.6, 0.06, 0.4, H - 0.08, 8, 4);
+    for (const [x, z] of [[8, -12], [8, -5], [-8, 6], [-8, 14], [8, 16]]) { add([x - 0.9, PH, z - 0.3], [x + 0.9, PH + 0.45, z + 0.3], wood); add([x - 0.9, PH + 0.45, z + 0.25], [x + 0.9, PH + 1.0, z + 0.35], wood); }
+    for (const [x, z] of [[12.2, -9], [-12.2, 4]]) { add([x - 0.5, PH, z - 0.4], [x + 0.5, PH + 1.9, z + 0.4], 8, 0.9, x > 0 ? 0 : 1); }
+    for (const x of [-4.4, 4.4]) for (const z of [-14, 0, 14]) { deco([x - 0.02, PH + 2.2, z - 0.6], [x + 0.02, PH + 3.0, z + 0.6], 8, 1); deco([x - 0.01, PH + 3.0, z - 0.02], [x + 0.01, H, z + 0.02], 7); }
+    sp.subway = { x: 0, z: 6, yaw: 0, y: 0, cam: { yaw: 0.5, pitch: 0.16, dist: 5.2, tx: 0, ty: 1.0, tz: 6 } };
+  } else if (key === 'castle') {
+    env.groundMat = 14; env.fogK = 0.45; env.bmap = { x0: -14, z0: -14, size: 28 };
+    const R = 20, WH = 8, T = 1.6;
+    /* Ringmauer mit Tor im Sueden */
+    add([-R - T, 0, -R - T], [R + T, WH, -R], 3, 0.9, 0); add([-R - T, 0, -R], [-R, WH, R + T], 3); add([R, 0, -R], [R + T, WH, R + T], 3);
+    add([-R - T, 0, R], [-3.3, WH, R + T], 3); add([3.3, 0, R], [R + T, WH, R + T], 3); deco([-3.3, 5.6, R], [3.3, WH, R + T], 3);
+    deco([-3.3, 5.5, R + 0.2], [3.3, 5.7, R + T - 0.2], 7);
+    /* Zinnen */
+    const mer = (x0, z0, x1, z1) => { const L = Math.hypot(x1 - x0, z1 - z0), n = Math.floor(L / 1.5); for (let i = 0; i < n; i += 1) { const t = (i + 0.5) / n, x = x0 + (x1 - x0) * t, z = z0 + (z1 - z0) * t; deco([x - 0.3, WH, z - 0.3], [x + 0.3, WH + 0.9, z + 0.3], 3); } };
+    mer(-R - 1.2, -R - 1.2, R + 1.2, -R - 1.2); mer(-R - 1.2, -R - 1.2, -R - 1.2, R + 1.2); mer(R + 1.2, -R - 1.2, R + 1.2, R + 1.2); mer(-R - 1.2, R + 1.2, -4.6, R + 1.2); mer(4.6, R + 1.2, R + 1.2, R + 1.2);
+    /* Wehrgaenge innen + Treppen */
+    add([-R, 5.8, -R], [-R + 2.0, 6.0, R], 3); add([R - 2.0, 5.8, -R], [R, 6.0, R], 3); add([-R, 5.8, -R], [R, 6.0, -R + 2.0], 3);
+    edge(-R + 2.0, -R, -R + 2.0, R, 1, 0, 6.0); edge(R - 2.0, -R, R - 2.0, R, -1, 0, 6.0);
+    m3Ramp(add, 3, -R + 2.0, -2, 14, 1.8, 5.8, 28, '-z'); m3Ramp(add, 3, R - 3.8, -2, 14, 1.8, 5.8, 28, '-z');
+    /* Ecktuerme */
+    for (const [sx, sz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) { const cx = sx * (R + 0.2), cz = sz * (R + 0.2); if (sz > 0) continue; add([cx - 3.4, 0, cz - 3.4], [cx + 3.4, 14, cz + 3.4], 3); add([cx - 3.9, 14, cz - 3.9], [cx + 3.9, 14.6, cz + 3.9], 3); mer(cx - 3.6, cz - 3.6, cx + 3.6, cz - 3.6); mer(cx - 3.6, cz + 3.6, cx + 3.6, cz + 3.6); dbox(cx, cz, 0.1, 5, 0.1, 14.6, 7); dbox(cx + 0.7, cz, 1.4, 0.8, 0.05, 18.0, 8, 0); }
+    for (const sx of [-1, 1]) { const cx = sx * (R + 0.2), cz = R + 0.2; add([cx - 3.4, 0, cz - 3.4], [cx + 3.4, 14, cz + 3.4], 3); add([cx - 3.9, 14, cz - 3.9], [cx + 3.9, 14.6, cz + 3.9], 3); mer(cx - 3.6, cz - 3.6, cx + 3.6, cz - 3.6); mer(cx - 3.6, cz + 3.6, cx + 3.6, cz + 3.6); }
+    for (const x of [-4.9, 4.9]) { add([x - 1.2, 0, R - 0.4], [x + 1.2, 11, R + T + 0.4], 3); mer(x - 1.2, R - 0.3, x + 1.2, R + T + 0.3); deco([x - 1.3, 11, R - 0.5], [x + 1.3, 11.5, R + T + 0.5], 3); }
+    /* Bergfried (Nordseite) mit Eingang und Fenstern */
+    add([-7, 0, -17.5], [7, 13, -9], 3); add([-7.5, 13, -18], [7.5, 13.6, -8.5], 3); mer(-7.4, -17.9, 7.4, -17.9); mer(-7.4, -8.6, 7.4, -8.6); mer(-7.4, -17.9, -7.4, -8.6); mer(7.4, -17.9, 7.4, -8.6);
+    deco([-1.2, 0, -9.02], [1.2, 3.4, -8.98], wood); deco([-1.35, 3.4, -9.04], [1.35, 3.55, -8.96], 7);
+    for (const x of [-5, 5, -2.5, 2.5]) for (const y of [6, 9.4]) deco([x - 0.3, y, -9.02], [x + 0.3, y + 1.6, -8.98], 1);
+    for (let i = 0; i < 3; i++) add([-2.2 - i * 0.0, 0, -9 + 0.0 + i * 0.4], [2.2, 0.15 * (3 - i), -8.6 + i * 0.4], 3);
+    /* Brunnen, Staende, Strohballen, Pfaehle, Fahnen */
+    add([6.5, 0, 5.5], [9.5, 0.9, 8.5], 3); deco([7.0, 0.88, 6.0], [9.0, 0.92, 8.0], 1); for (const x of [6.7, 9.3]) add([x - 0.1, 0.9, 5.7], [x + 0.1, 3.2, 5.9], wood); add([6.5, 3.1, 5.6], [9.5, 3.3, 8.6], wood);
+    for (const [x, z] of [[-12, 8], [-14.5, 12], [12, 11], [14, 4]]) { add([x - 1.2, 0, z - 0.8], [x + 1.2, 0.9, z + 0.8], wood); for (const dx of [-1.1, 1.1]) add([x + dx - 0.07, 0.9, z - 0.7], [x + dx + 0.07, 2.6, z - 0.6], wood); deco([x - 1.4, 2.6, z - 0.9], [x + 1.4, 2.75, z + 0.9], 8, ((x * 7) | 0) & 3); }
+    for (const [x, z] of [[-9, -4], [-11, 2], [10, -3]]) { add([x - 0.9, 0, z - 0.45], [x + 0.9, 0.8, z + 0.45], wood, 0.9); }
+    for (const [x, z] of [[-9, 6], [-12, -6], [11, -7]]) { add([x - 0.1, 0, z - 0.1], [x + 0.1, 2.0, z + 0.1], wood); add([x - 0.4, 1.2, z - 0.05], [x + 0.4, 1.4, z + 0.05], wood); }
+    for (const x of [-12, 12]) { dbox(x, -R + 0.3, 0.1, 4, 0.1, WH, 7); deco([x - 0.05, 8.4, -R + 0.3], [x + 1.4, 11.6, -R + 0.35], 8, 0); }
+    sp.castle = { x: 0, z: 2, yaw: 0, y: 0, cam: { yaw: 0.5, pitch: 0.16, dist: 5.4, tx: 0, ty: 1.0, tz: 2 } };
+  } else if (key === 'junkyard') {
+    env.groundMat = 14; env.fogK = 0.5; env.bmap = { x0: -14, z0: -14, size: 28 };
+    const X = 24, Z = 24;
+    /* Zaun aus Wellblech */
+    add([-X - 0.3, 0, -Z - 0.3], [X + 0.3, 3.6, -Z], 7); add([-X - 0.3, 0, -Z], [-X, 3.6, Z], 7); add([X, 0, -Z], [X + 0.3, 3.6, Z], 7);
+    add([-X - 0.3, 0, Z], [-3.3, 3.6, Z + 0.3], 7); add([3.3, 0, Z], [X + 0.3, 3.6, Z + 0.3], 7);
+    for (let x = -X; x < X; x += 3) { deco([x, 0, -Z + 0.01], [x + 0.12, 3.6, -Z + 0.08], 8, (x / 3 + 8) % 5 | 0); }
+    for (let z = -Z; z < Z; z += 3) { deco([-X + 0.01, 0, z], [-X + 0.08, 3.6, z + 0.12], 8, ((z / 3) + 3 + 8) % 5 | 0); deco([X - 0.08, 0, z], [X - 0.01, 3.6, z + 0.12], 8, ((z / 3) + 11) % 5 | 0); }
+    /* Autowracks */
+    const car = (cx, cz, yaw, y0, v) => { const lx = yaw ? 1.9 : 4.4, lz = yaw ? 4.4 : 1.9, cl = yaw ? 1.6 : 2.4, cw = yaw ? 2.4 : 1.6; add([cx - lx / 2, y0 + 0.28, cz - lz / 2], [cx + lx / 2, y0 + 0.95, cz + lz / 2], 8, 0.9, v); add([cx - cl / 2 + (yaw ? 0 : -0.2), y0 + 0.95, cz - cw / 2 + (yaw ? -0.2 : 0)], [cx + cl / 2 + (yaw ? 0 : -0.2), y0 + 1.5, cz + cw / 2 + (yaw ? -0.2 : 0)], 8, 0.9, v); if (!y0) for (const sx of [-1.4, 1.4]) for (const sz of [-0.95, 0.95]) { if (yaw) dbox(cx + sz, cz + sx, 0.25, 0.6, 0.6, 0, 1); else dbox(cx + sx, cz + sz, 0.6, 0.6, 0.25, 0, 1); } };
+    const pile = (cx, cz, n, yaw0) => { for (let i = 0; i < n; i++) { const yaw = (yaw0 + i) % 2; car(cx + (i % 2 ? 0.3 : -0.2), cz + (i % 2 ? -0.2 : 0.1), yaw, i * 1.5, (i * 2 + ((cx * 3) | 0) + 10) % 5); } };
+    pile(-17, -15, 3, 0); pile(-6, -17, 2, 1); pile(8, -16, 4, 0); pile(18, -12, 3, 1); pile(-18, 0, 2, 0); pile(19, 2, 2, 1); pile(-16, 14, 3, 1); pile(15, 15, 2, 0);
+    car(-10, -6, 0, 0, 3); car(9, -7, 1, 0, 0); car(-9, 9, 1, 0, 4); car(8, 10, 0, 0, 2);
+    /* Faesser, Reifen, Kisten */
+    for (const [x, z] of [[-6, 3], [-6.9, 3.4], [-6.3, 4.1], [6.5, 2], [7.4, 2.4], [6.8, 3.2], [-13, -9], [-13.8, -9.2], [12, -3], [12.9, -3.3], [4, 16], [4.9, 16.3]]) add([x - 0.3, 0, z - 0.3], [x + 0.3, 0.9, z + 0.3], 8, 0.9, ((x * 2) | 0) & 1 ? 0 : 1);
+    for (const [x, z, n] of [[-14, 6, 4], [14, 8, 3], [0, -10.5, 3], [-3.8, -12.5, 2]]) for (let k = 0; k < n; k++) { add([x - 0.55, k * 0.45, z - 0.55], [x + 0.55, (k + 1) * 0.45, z + 0.55], 1); dbox(x, z, 0.5, 0.02, 0.5, (k + 1) * 0.45 - 0.01, 1); }
+    /* Container-Buero und Presse */
+    add([-22, 0, 8], [-17.5, 2.6, 13.5], 8, 0.9, 4); add([-22, 2.6, 8], [-17.5, 5.2, 13.5], 8, 0.9, 1); deco([-17.5, 0.4, 9.6], [-17.45, 2.0, 11.8], 1); deco([-17.5, 3.0, 9.6], [-17.45, 4.6, 11.8], 1);
+    add([14, 0, -22], [23, 4.2, -17], 7); deco([14, 0.6, -17.02], [23, 3.5, -16.98], 1); add([14.6, 4.2, -21.6], [22.4, 5.0, -17.4], 7); dbox(18.5, -19.5, 3, 0.4, 3.2, 5.0, 8, 0);
+    /* Kran mit Magnet */
+    for (const [x, z] of [[-13.5, -9.5], [-13.5, -2.5], [2.5, -9.5], [2.5, -2.5]]) add([x - 0.3, 0, z - 0.3], [x + 0.3, 11, z + 0.3], 7);
+    dbox(-5.5, -6, 17.6, 0.9, 0.9, 11, 7); dbox(-5.5, -6, 0.9, 0.9, 8.6, 11, 7); for (let x = -13; x <= 2; x += 1.5) deco([x - 0.04, 9.7, -9.5], [x + 0.04, 11, -2.5], 7);
+    dbox(-6, -6, 1.6, 1.4, 1.6, 9.6, 8, 3); deco([-6.03, 3.0, -6.03], [-5.97, 9.6, -5.97], 7); add([-6.9, 2.2, -6.9], [-5.1, 3.1, -5.1], 7);
+    sp.junkyard = { x: 0, z: 2, yaw: 0, y: 0, cam: { yaw: 0.5, pitch: 0.16, dist: 5.4, tx: 0, ty: 1.0, tz: 2 } };
+  }
 }
 
 ;
@@ -15423,24 +16017,32 @@ Renderer.prototype.setFoliage = function (f) {
   })();
 
   /* ---------- Karten-Ladescreen: Blendenverschluss mit echten Schritten ---------- */
-  const STEPS = [['🏗️', 'Gelände aufbauen', 'Building terrain'], ['⚙️', 'Physik und Figur', 'Physics and dummy'], ['💡', 'Licht und Schatten', 'Light and shadows'], ['🚀', 'Start', 'Launch']];
+  const STEPS = [['🏗️', 'Gelände aufbauen', 'Building terrain'], ['🧱', 'Wände und Objekte', 'Walls and props'], ['⚙️', 'Physik starten', 'Starting physics'], ['🧍', 'Figur zusammensetzen', 'Assembling the dummy'], ['🫀', 'Skelett und Organe', 'Skeleton and organs'], ['🚑', 'Fahrzeuge und Einsätze', 'Vehicles and scenes'], ['💡', 'Licht und Schatten', 'Light and shadows'], ['🚀', 'Start', 'Launch']];
+  const TIPS = [['Tipp: Mit Tab wechselst du jederzeit die Welt.', 'Tip: Press Tab to switch worlds at any time.'], ['Tipp: In der Kugel-Kamera siehst du Knochenbrüche in Zeitlupe.', 'Tip: The bullet cam shows bone fractures in slow motion.'], ['Tipp: Verbesserte Organe findest du in den Einstellungen (ab 18).', 'Tip: Improved organs are in the settings (18+).'], ['Tipp: Im Röntgen-Modus siehst du Rippen, Organe und Gebiss.', 'Tip: X-ray mode shows ribs, organs and teeth.'], ['Tipp: Regen und Pfützen stellst du unter „Atmosphäre“ ein.', 'Tip: Rain and puddles are set under "Atmosphere".'], ['Tipp: Fahrzeuge fahren auch auf den neuen Karten.', 'Tip: Vehicles also drive on the new maps.']];
   const raf2 = () => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))), wait = ms => new Promise(r => setTimeout(r, ms));
   window.__loadWorld = function (name, fn, ms, after) {
     const el = $('wload'); if (!el) { fn(); if (after) after(); return; }
     const g = window.__game, key = Object.keys(MAP_INFO).find(k => MAP_INFO[k].name === name) || '', I = MAP_INFO[key] || { name, desc: '', icon: '' }, idx = Math.max(0, MAP_ORDER.indexOf(key));
-    const nm = T(I.name || name);
+    const nm = T(I.name || name), total = window.__fastLoad ? 1400 : Math.max(1200, ms || 1000), long = total >= 6000;
+    const steps = long ? STEPS : [STEPS[0], STEPS[2], STEPS[6], STEPS[7]];
+    const tip = long ? TIPS[Math.floor(Math.random() * TIPS.length)] : null;
     el.innerHTML = '<div class="wp t"></div><div class="wp b"></div><div class="wc"><div class="wring"><svg viewBox="0 0 120 64">' + (MAP_SVG[I.icon] || '') + '</svg></div><small>' + D('', 'KARTE', 'MAP') + ' ' + String(idx + 1).padStart(2, '0') + ' / ' + String(MAP_ORDER.length).padStart(2, '0') + '</small><b>' +
-      Array.from(nm).map((ch, i) => ch === ' ' ? '<i class="sp"></i>' : '<i style="--i:' + i + '">' + ch.replace('<', '') + '</i>').join('') + '</b><p>' + (I.desc ? T(I.desc) : '') + '</p><ul>' + STEPS.map((s, i) => '<li data-i="' + i + '"><span>' + s[0] + '</span>' + D('', s[1], s[2]) + '</li>').join('') + '</ul><em><u></u></em><span class="wpc">0 %</span></div>';
+      Array.from(nm).map((ch, i) => ch === ' ' ? '<i class="sp"></i>' : '<i style="--i:' + i + '">' + ch.replace('<', '') + '</i>').join('') + '</b><p>' + (I.desc ? T(I.desc) : '') + '</p><ul class="' + (long ? 'two' : '') + '">' + steps.map((s, i) => '<li data-i="' + i + '"><span>' + s[0] + '</span>' + D('', s[1], s[2]) + '</li>').join('') + '</ul><em><u></u></em><span class="wpc">0 %</span>' + (tip ? '<div class="wtip">' + D('', tip[0], tip[1]) + '</div>' : '') + '</div>';
     const bar = el.querySelector('em u'), pc = el.querySelector('.wpc'), lis = el.querySelectorAll('li');
-    const prog = (p, st) => { bar.style.width = p + '%'; pc.textContent = Math.round(p) + ' %'; lis.forEach((l, i) => { l.classList.toggle('ok', i < st); l.classList.toggle('act', i === st); }); };
-    prog(2, 0); void el.offsetWidth; el.classList.add('on');
+    let shown = 0; const prog = (p, st) => { shown = p; bar.style.width = p + '%'; pc.textContent = Math.round(p) + ' %'; lis.forEach((l, i) => { l.classList.toggle('ok', i < st); l.classList.toggle('act', i === st); }); };
+    prog(1, 0); void el.offsetWidth; el.classList.add('on');
     (async () => {
-      const cv = document.getElementById('gl');
-      await wait(560); prog(22, 0); await raf2(); prog(34, 1); await raf2(); await raf2();
-      try { fn(); } catch (e) { console.error(e); }
-      prog(72, 2); await raf2();
-      try { if (g && g.render) { g.render(); g.render(); } } catch (e) { }
-      prog(92, 3); await raf2(); await wait(Math.max(160, (ms || 1000) * 0.2)); prog(100, 4); await wait(260);
+      const cv = document.getElementById('gl'), t0 = performance.now(), N = steps.length;
+      /* Zeitplan: die Schritte laufen gleichmaessig ueber die Gesamtdauer; die echte Arbeit (fn) passiert kurz vor Schluss, damit das Spiel erst nach dem Lader loslaeuft */
+      const at = f => { const d = t0 + total * f - performance.now(); return d > 0 ? wait(d) : raf2(); };
+      let worked = false;
+      const upd = () => { const f = Math.min(1, (performance.now() - t0) / total), p = 1 + 98 * (f < .5 ? 2 * f * f : 1 - 2 * (1 - f) * (1 - f)); prog(Math.max(shown, p), Math.min(N - 1, Math.floor(f * N * 0.999))); };
+      const iv = setInterval(upd, 120);
+      await at(long ? 0.92 : 0.3); await raf2();
+      try { fn(); worked = true; } catch (e) { console.error(e); }
+      /* Shader und Schatten warmlaufen lassen */
+      for (let k = 0; k < 3; k++) { try { if (g && g.render) g.render(); } catch (e) { } await raf2(); }
+      await at(1.0); clearInterval(iv); prog(100, N); await wait(320);
       if (cv) { cv.classList.remove('wjoin'); void cv.offsetWidth; cv.classList.add('wjoin'); setTimeout(() => cv.classList.remove('wjoin'), 1500); }
       el.classList.remove('on'); setTimeout(() => { if (after) after(); }, 380);
     })();
@@ -15454,9 +16056,19 @@ Renderer.prototype.setFoliage = function (f) {
    changelog.js — Versionsnummer, Update-Protokoll (Einstellungen) und kurzes Update-Fenster beim ersten Start nach einer neuen Version.
    Neue Version: APP_VERSION hochzaehlen und oben in APP_LOG einen Eintrag ergaenzen.
    =================================================================== */
-const APP_VERSION = '1.6';
+const APP_VERSION = '1.7';
 const APP_ICON = 'data:image/png;base64,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';
 const APP_LOG = [
+  { v: '1.7', date: '24.11.2026', title: ['Regen, Durchschüsse, Organe 2 und fünf neue Karten', 'Rain, through-and-through shots, organs 2 and five new maps'], items: [
+    ['Karten-Ladeanimation dauert jetzt 15 Sekunden, mit acht Ladeschritten und Tipps', 'Map loading animation now lasts 15 seconds, with eight loading steps and tips'],
+    ['Regen als Einstellung: Regenstreifen, dunklerer Himmel, nasser Boden, Pfützen mit Spiegelung und Wellen, Regenrauschen, Gewitter ab 60 %', 'Rain as a setting: streaks, darker sky, wet ground, puddles with reflections and ripples, rain noise, thunderstorms above 60%'],
+    ['Durchschüsse: kleiner Einschuss mit Saum, größerer zerrissener Austritt; der Schusskanal verletzt die Organe auf seinem Weg', 'Through-and-through shots: small entry with rim, larger ragged exit; the shot path injures organs along the way'],
+    ['Röntgen zeigt Schusskanäle als rote Linien und hängende Organe in Orange', 'X-ray shows shot paths as red lines and hanging organs in orange'],
+    ['Organe können herausfallen, an ihren Gefäßen hängen bleiben oder im Körper bleiben', 'Organs can fall out, hang from their vessels or stay inside the body'],
+    ['Neue Organe (Verbesserte Organe): Gebiss mit Zähnen, Augen am Sehnerv, Luftröhre, Bauchspeicheldrüse, Blase', 'New organs (Improved organs): teeth, eyes on the optic nerve, windpipe, pancreas, bladder'],
+    ['Zähne fliegen bei Kopftreffern, Brüchen und harten Aufprallen heraus', 'Teeth fly out on head hits, fractures and hard impacts'],
+    ['Fünf neue Karten: Hafen, Kirche, U-Bahn, Burghof, Schrottplatz (jetzt 27 Karten)', 'Five new maps: harbor, church, subway, castle, junkyard (27 maps now)'],
+    ['Röntgen-Liste schneidet Texte nicht mehr ab', 'X-ray list no longer cuts off text'] ] },
   { v: '1.6', date: '23.11.2026', title: ['Update-Protokoll und App-Logo', 'Update log and app logo'], items: [
     ['Update-Protokoll in den Einstellungen: alle Änderungen pro Version', 'Update log in the settings: all changes per version'],
     ['Kurzes Update-Fenster beim ersten Start nach einer neuen Version', 'Short update window on the first start after a new version'],
@@ -15540,7 +16152,7 @@ const APP_LOG = [
     el.querySelector('button').addEventListener('click', close);
     el.addEventListener('pointerdown', ev => { if (ev.target === el) close(); });
   };
-  if (seen !== APP_VERSION) {
+  if (seen !== APP_VERSION && !window.__fastLoad) {
     /* erst zeigen, wenn Ladebildschirm weg ist (Menue sichtbar) */
     let n = 0, tH = 0; const iv = setInterval(() => {
       const ml = $('mload'), mn = $('menu'); n++;
