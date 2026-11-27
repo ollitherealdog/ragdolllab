@@ -9882,7 +9882,7 @@ Object.assign(Game.prototype, {
 
   /* ---------- Platz suchen ---------- */
   boxHit(x, z, r, hy) {            // trifft ein Hindernis (mit Hoehe > hy) den Kreis um (x,z)?
-    for (const b of this.env.boxes) if (b.max[1] > hy && x > b.min[0] - r && x < b.max[0] + r && z > b.min[2] - r && z < b.max[2] + r) return true;
+    for (const b of this.env.boxes) if (!b.deck && b.max[1] > hy && x > b.min[0] - r && x < b.max[0] + r && z > b.min[2] - r && z < b.max[2] + r) return true;
     return false;
   },
   supportInfo() {
@@ -12613,7 +12613,7 @@ Object.assign(Game.prototype, {
         const w = inn ? [vwl(v, this.x, this.z)].concat(pO.slice().reverse()) : pO.slice(), yy = inn ? [y0].concat(ys.slice().reverse()) : ys.slice();
         T.pts = w; T.ys = yy;
       } else T.pts = inn ? [vwl(v, this.x, this.z), mid, seat] : [seat, mid, mid];
-      T.y0 = inn ? y0 : y1; T.y1 = inn ? y1 : 0; T.yaw0 = this.yaw;
+      T.y0 = inn ? y0 : y1; T.y1 = inn ? y1 : (v.y || 0); T.yaw0 = this.yaw;
       let L = 0; T.seg = []; for (let k = 0; k < T.pts.length - 1; k++) { const d = Math.hypot(T.pts[k + 1][0] - T.pts[k][0], T.pts[k + 1][1] - T.pts[k][1]); T.seg.push(d); L += d; } T.L = Math.max(0.1, L); T.dur = Math.max(1.2, L / 1.5); this.boarded = false; this.gunSeat = 0;
     }
     const nk = T.pts.length - 1, u = Math.min(1, T.t / T.dur), e = sw ? u : u * u * (3 - 2 * u); let d = e * T.L, k = 0; while (k < nk - 1 && d > T.seg[k]) { d -= T.seg[k]; k++; }
@@ -14618,7 +14618,7 @@ Object.assign(World.prototype, {
     if (W) {
       if (p[0] > W.x0 && p[0] < W.x1 && p[2] > W.z0 && p[2] < W.z1 && W.y - p[1] > -0.15) {
         const dep = W.y - p[1], fr = Math.min(1, (dep + 0.15) / 0.5), sp = Math.hypot(v[0], v[1], v[2]);
-        v[1] -= this.gravity[1] * 1.38 * fr * h;                    // Auftrieb: schwimmt knapp unter der Oberflaeche
+        v[1] -= this.gravity[1] * (this.wBuoy || 1.38) * fr * h;                    // Auftrieb: schwimmt knapp unter der Oberflaeche
         const dl = Math.max(0, 1 - (3.2 + 0.28 * sp) * fr * h), wd = Math.max(0, 1 - 2.6 * fr * h);
         v[0] *= dl; v[1] *= dl; v[2] *= dl; b.w[0] *= wd; b.w[1] *= wd; b.w[2] *= wd;
         if (!b.inW) { b.inW = 1; if (sp > 2.2) { const q = this.splashes || (this.splashes = []); if (q.length < 60) q.push(p[0], p[2], sp); } }
@@ -14806,7 +14806,7 @@ Object.assign(Game.prototype, {
 });
 { const s0 = Game.prototype.startScene; Game.prototype.startScene = function () {      // liegt er im Becken, fischt die Crew ihn vorher an den Rand
   const W = this.world && this.world.water, br = this.brain;
-  if (W && br && br.com[0] > W.x0 && br.com[0] < W.x1 && br.com[2] > W.z0 && br.com[2] < W.z1 && br.com[1] < W.y + 0.5) {
+  if (false && W && br && br.com[0] > W.x0 && br.com[0] < W.x1 && br.com[2] > W.z0 && br.com[2] < W.z1 && br.com[1] < W.y + 0.5) {
     const tx = br.com[0] >= 0 ? W.x1 + 1.6 : W.x0 - 1.6, dx = tx - br.com[0], dz = Math.max(-6, Math.min(6, br.com[2])) - br.com[2], dy = 3.2 + 0.3 - br.com[1];
     for (const b of this.dummy.list) { b.p[0] += dx; b.p[1] += dy; b.p[2] += dz; b.pp[0] = b.p[0]; b.pp[1] = b.p[1]; b.pp[2] = b.p[2]; b.v.fill(0); b.w.fill(0); b.inW = 0; }
   }
@@ -15451,7 +15451,7 @@ Object.assign(DE, {
 'use strict';
 MAP_ORDER.push('harbor', 'church', 'subway', 'castle', 'junkyard');
 Object.assign(MAP_INFO, {
-  harbor: { name: 'Harbor', desc: 'A container quay with a gantry crane and a cargo ship. Watch the edge.', icon: 'harbor' },
+  harbor: { name: 'Harbor', desc: 'A container quay on the open sea with a gantry crane and a cargo ship. Falling in means drowning.', icon: 'harbor' },
   church: { name: 'Church', desc: 'A tall nave with columns, pews, stained glass and an organ loft.', icon: 'church' },
   subway: { name: 'Subway', desc: 'A station with two platforms, tracks in between and a waiting train.', icon: 'subway' },
   castle: { name: 'Castle', desc: 'A walled courtyard with towers, a keep and wall walks. Mind the battlements.', icon: 'castle' },
@@ -15467,7 +15467,7 @@ Object.assign(MAP_SVG, {
 Object.assign(MAP_TAGS, { harbor: ['Containers', 'Crane', 'Ship'], church: ['Nave', 'Pews', 'Loft'], subway: ['Tracks', 'Platforms', 'Train'], castle: ['Towers', 'Keep', 'Walls'], junkyard: ['Wrecks', 'Crane', 'Drums'] });
 Object.assign(DE, {
   'Harbor': 'Hafen', 'Church': 'Kirche', 'Subway': 'U-Bahn', 'Castle': 'Burghof', 'Junkyard': 'Schrottplatz',
-  'A container quay with a gantry crane and a cargo ship. Watch the edge.': 'Ein Containerkai mit Portalkran und Frachtschiff. Vorsicht an der Kante.',
+  'A container quay with a gantry crane and a cargo ship. Watch the edge.': 'Ein Containerkai am offenen Meer mit Portalkran und Frachtschiff. Wer reinfällt, ertrinkt.',
   'A tall nave with columns, pews, stained glass and an organ loft.': 'Ein hohes Kirchenschiff mit Säulen, Bänken, Buntglas und Orgelempore.',
   'A station with two platforms, tracks in between and a waiting train.': 'Ein Bahnhof mit zwei Bahnsteigen, Gleisen dazwischen und einem wartenden Zug.',
   'A walled courtyard with towers, a keep and wall walks. Mind the battlements.': 'Ein ummauerter Burghof mit Türmen, Bergfried und Wehrgängen. Vorsicht an den Zinnen.',
@@ -15478,33 +15478,41 @@ DE[MAP_ORDER.length + ' maps'] = MAP_ORDER.length + ' Karten';
 const MAPS4 = ['harbor', 'church', 'subway', 'castle', 'junkyard'];
 
 function buildMaps4(key, world, env, sp, add, deco, edge) {
+  if (key === 'chambers') return buildChambers(key, world, env, sp, add, deco, edge);
   const wood = 13, rnd = (() => { let s = 12345; return () => (s = (s * 1664525 + 1013904223) >>> 0) / 4294967296; })();
   const box = (cx, cz, sx, sy, sz, y0, mat, v) => add([cx - sx / 2, y0, cz - sz / 2], [cx + sx / 2, y0 + sy, cz + sz / 2], mat, 0.9, v);
   const dbox = (cx, cz, sx, sy, sz, y0, mat, v) => deco([cx - sx / 2, y0, cz - sz / 2], [cx + sx / 2, y0 + sy, cz + sz / 2], mat, v);
   if (key === 'harbor') {
-    env.groundMat = 5; env.fogK = 0.45; env.bmap = { x0: -14, z0: -14, size: 28 };
-    /* Schiff an der Nordkante */
-    add([-17, 0, -24], [17, 5.5, -17], 7); add([-17, 5.5, -24], [17, 5.7, -17], 1); dbox(0, -20.5, 36, 0.6, 7.6, 5.7, 7);
-    add([-9, 5.7, -23], [-1, 11, -18.5], 3); deco([-8.5, 7, -18.45], [-1.5, 7.8, -18.4], 1); deco([-8.5, 9, -18.45], [-1.5, 9.8, -18.4], 1); add([-5.5, 11, -21.5], [-3.5, 14.5, -19.5], 8, 0.9, 0);
-    for (let x = -15; x <= 15; x += 3) deco([x - 0.05, 5.7, -17.1], [x + 0.05, 6.7, -17.05], 7);
-    deco([-17.1, 6.7, -17.1], [17.1, 6.8, -17.0], 7);
-    /* Gangway zum Schiff */
-    m3Ramp(add, 7, -14, -17, 11, 2.2, 5.7, 22, '-z'); deco([-14.1, 0, -17], [-14.0, 6.7, -6], 7); deco([-11.8, 0, -17], [-11.7, 6.7, -6], 7);
+    /* Containerkai (2,4 m ueber dem Wasser) am offenen Meer */
+    const Q = 2.4, add0 = add, deco0 = deco;
+    env.groundMat = 14; env.fogK = 0.4; env.bmap = { x0: -14, z0: -14, size: 28 };
+    add0([-34, 0, -15.5], [34, Q, 34], 0, 0.9, 0); env.boxes[env.boxes.length - 1].deck = true; env.deckY = Q;
+    env.water = { x0: -150, x1: 150, z0: -150, z1: -15.5, y: 1.75, sea: true };
+    const addQ = (a, b, m, f, v) => add0([a[0], a[1] + Q, a[2]], [b[0], b[1] + Q, b[2]], m, f, v), decoQ = (a, b, m, v) => deco0([a[0], a[1] + Q, a[2]], [b[0], b[1] + Q, b[2]], m, v);
+    const dbox = (cx, cz, sx, sy, sz, y0, mat, v) => decoQ([cx - sx / 2, y0, cz - sz / 2], [cx + sx / 2, y0 + sy, cz + sz / 2], mat, v);
+    /* Schiff im Wasser vor dem Kai (Rumpf steht auf dem Meeresboden) */
+    add0([-17, 0, -24], [17, 5.5, -17], 7); add0([-17, 5.5, -24], [17, 5.7, -17], 1); deco0([-17, 5.7, -24], [17, 6.3, -16.4], 7);
+    add0([-9, 5.7, -23], [-1, 11, -18.5], 3); deco0([-8.5, 7, -18.45], [-1.5, 7.8, -18.4], 1); deco0([-8.5, 9, -18.45], [-1.5, 9.8, -18.4], 1); add0([-5.5, 11, -21.5], [-3.5, 14.5, -19.5], 8, 0.9, 0);
+    for (let x = -15; x <= 15; x += 3) deco0([x - 0.05, 5.7, -17.1], [x + 0.05, 6.7, -17.05], 7);
+    deco0([-17.1, 6.7, -17.1], [17.1, 6.8, -17.0], 7);
+    /* Gangway vom Kai zum Schiff */
+    m3Ramp(addQ, 7, -14, -17, 11, 2.2, 5.7 - Q, 22, '-z'); deco0([-14.1, Q, -17], [-14.0, 6.9, -6], 7); deco0([-11.8, Q, -17], [-11.7, 6.9, -6], 7);
     /* Containerstapel West und Ost */
-    const stack = (cx, cz, nx, nz, hi, v0) => { for (let i = 0; i < nx; i++) for (let j = 0; j < nz; j++) for (let k = 0; k < hi - ((i + j) % 2 && k0(hi)); k++) add([cx + i * 2.6 - 1.2, k * 2.6, cz + j * 6.2 - 3], [cx + i * 2.6 + 1.2, (k + 1) * 2.6, cz + j * 6.2 + 3], 8, 0.9, (v0 + i + j * 2 + k) % 5); };
     const k0 = (h) => (h > 2 ? 1 : 0);
+    const stack = (cx, cz, nx, nz, hi, v0) => { for (let i = 0; i < nx; i++) for (let j = 0; j < nz; j++) for (let k = 0; k < hi - ((i + j) % 2 && k0(hi)); k++) addQ([cx + i * 2.6 - 1.2, k * 2.6, cz + j * 6.2 - 3], [cx + i * 2.6 + 1.2, (k + 1) * 2.6, cz + j * 6.2 + 3], 8, 0.9, (v0 + i + j * 2 + k) % 5); };
     stack(-19, -5, 2, 1, 3, 0); stack(-19, 6, 2, 1, 2, 2); stack(-19, 17, 2, 1, 3, 4); stack(14, -4, 3, 1, 3, 1); stack(14, 5, 3, 1, 2, 3); stack(14, 14, 3, 1, 3, 0);
     /* Portalkran ueber dem Kai */
-    for (const x of [-10.5, 10.5]) for (const z of [-14.5, -9]) { add([x - 0.35, 0, z - 0.35], [x + 0.35, 16, z + 0.35], 7); }
-    for (const x of [-10.5, 10.5]) { dbox(x, -11.75, 0.5, 0.5, 6.2, 16, 7); deco([x - 0.15, 4, -14.4], [x + 0.15, 4.4, -9.1], 7); }
-    dbox(0, -11.75, 22, 1.1, 1.4, 16, 7); dbox(0, -11.75, 22, 0.25, 6.4, 17.1, 7); add([-2, 16.4, -13], [2, 19, -10.5], 7); dbox(0, -11.75, 0.2, 5, 0.2, 11.4, 7);
-    for (let x = -10; x <= 10; x += 2.5) deco([x - 0.06, 14.9, -14.5], [x + 0.06, 16, -9], 7);
-    /* Poller, Paletten, Lampen, Kisten */
-    for (let x = -14; x <= 14; x += 4) if (Math.abs(x) > 12 || Math.abs(x) < 3.5 || true) add([x - 0.25, 0, -15.4], [x + 0.25, 0.6, -14.9], 7);
-    for (const [x, z] of [[-6, -5], [-6, 9], [6, -3], [7, 10], [-8, 18]]) { add([x - 0.7, 0, z - 0.6], [x + 0.7, 0.15, z + 0.6], wood); add([x - 0.65, 0.15, z - 0.55], [x + 0.65, 1.1, z + 0.55], wood); }
-    for (const [x, z] of [[-12, 8], [12, 6]]) { add([x - 0.3, 0, z - 0.3], [x + 0.3, 0.9, z + 0.3], 8, 0.9, 0); }
-    for (const [x, z] of [[-4.5, 12], [4.5, 12], [-4.5, -8], [4.5, -8]]) { deco([x - 0.08, 0, z - 0.08], [x + 0.08, 7.5, z + 0.08], 7); deco([x - 0.08, 7.4, z - 0.4], [x + 0.08, 7.5, z + 0.4], 7); deco([x - 0.15, 7.2, z - 0.55], [x + 0.15, 7.35, z - 0.35], 8, 3); }
-    sp.harbor = { x: 0, z: 2, yaw: 0, y: 0, cam: { yaw: 0.5, pitch: 0.16, dist: 5.4, tx: 0, ty: 1.0, tz: 2 } };
+    for (const x of [-10.5, 10.5]) for (const z of [-14.5, -9]) { addQ([x - 0.35, 0, z - 0.35], [x + 0.35, 16, z + 0.35], 7); }
+    for (const x of [-10.5, 10.5]) { dbox(x, -11.75, 0.5, 0.5, 6.2, 16, 7); decoQ([x - 0.15, 4, -14.4], [x + 0.15, 4.4, -9.1], 7); }
+    dbox(0, -11.75, 22, 1.1, 1.4, 16, 7); dbox(0, -11.75, 22, 0.25, 6.4, 17.1, 7); addQ([-2, 16.4, -13], [2, 19, -10.5], 7); dbox(0, -11.75, 0.2, 5, 0.2, 11.4, 7);
+    for (let x = -10; x <= 10; x += 2.5) decoQ([x - 0.06, 14.9, -14.5], [x + 0.06, 16, -9], 7);
+    /* Poller, Paletten, Lampen, Kisten, Kaikante */
+    for (let x = -30; x <= 30; x += 4) addQ([x - 0.25, 0, -15.4], [x + 0.25, 0.6, -14.9], 7);
+    decoQ([-34, 0, -15.62], [34, 0.12, -15.5], 7);
+    for (const [x, z] of [[-6, -5], [-6, 9], [6, -3], [7, 10], [-8, 18], [24, 2], [-25, 12]]) { addQ([x - 0.7, 0, z - 0.6], [x + 0.7, 0.15, z + 0.6], wood); addQ([x - 0.65, 0.15, z - 0.55], [x + 0.65, 1.1, z + 0.55], wood); }
+    for (const [x, z] of [[-12, 8], [12, 6]]) { addQ([x - 0.3, 0, z - 0.3], [x + 0.3, 0.9, z + 0.3], 8, 0.9, 0); }
+    for (const [x, z] of [[-4.5, 12], [4.5, 12], [-4.5, -8], [4.5, -8], [-26, -6], [26, -6]]) { decoQ([x - 0.08, 0, z - 0.08], [x + 0.08, 7.5, z + 0.08], 7); decoQ([x - 0.08, 7.4, z - 0.4], [x + 0.08, 7.5, z + 0.4], 7); decoQ([x - 0.15, 7.2, z - 0.55], [x + 0.15, 7.35, z - 0.35], 8, 3); }
+    sp.harbor = { x: 0, z: 2, yaw: 0, y: Q, cam: { yaw: 0.5, pitch: 0.16, dist: 5.4, tx: 0, ty: Q + 1.0, tz: 2 } };
   } else if (key === 'church') {
     env.groundMat = 0; env.fogK = 0.55; env.bmap = { x0: -14, z0: -14, size: 28 };
     const X = 10, Z0 = -24, Z1 = 14, H = 15;
@@ -15620,6 +15628,511 @@ function buildMaps4(key, world, env, sp, add, deco, edge) {
     dbox(-6, -6, 1.6, 1.4, 1.6, 9.6, 8, 3); deco([-6.03, 3.0, -6.03], [-5.97, 9.6, -5.97], 7); add([-6.9, 2.2, -6.9], [-5.1, 3.1, -5.1], 7);
     sp.junkyard = { x: 0, z: 2, yaw: 0, y: 0, cam: { yaw: 0.5, pitch: 0.16, dist: 5.4, tx: 0, ty: 1.0, tz: 2 } };
   }
+}
+
+;
+/* ---- water2.js: Ertrinken, Rettungsschwimmer, Rettungsboot, Sperre des Rettungsdienstes ---- */
+// (c) 2026 Olli - Ragdoll Lab. Idee: Olli, Code gemeinsam mit Claude (Anthropic). Credits nicht entfernen.
+'use strict';
+Object.assign(DE, {
+  'DROWNING': 'ERTRINKT', 'EXHAUSTED': 'ERSCHÖPFT', 'LIFEGUARDS': 'RETTUNGSSCHWIMMER', 'RESCUE BOAT': 'RETTUNGSBOOT', 'SAVED': 'GERETTET',
+  'NO PARAMEDICS HERE': 'HIER KOMMT KEIN RETTUNGSDIENST', 'Nobody can reach this place. No ambulance, no police.': 'Hier kommt niemand hin. Kein Krankenwagen, keine Polizei.',
+  'Air': 'Luft', 'GASP': 'LUFT!', 'Lifeguards pull him out': 'Die Rettungsschwimmer ziehen ihn raus', 'The boat brings him ashore': 'Das Boot bringt ihn an Land'
+});
+const NOMEDIC = { prison: 1, chambers: 1 };
+const _clm = (v, a, b) => Math.max(a, Math.min(b, v));
+
+/* ---------- Boot-Mesh ---------- */
+const K_BOATW = NC(0.93, 0.93, 0.92, 0.35), K_BOATO = NC(0.95, 0.38, 0.03, 0.55), K_BOATD = NC(0.08, 0.09, 0.1, 0.5), K_BOATB = NC(0.1, 0.35, 1.0, 0.3);
+function boatMesh() {
+  const mb = new MB();
+  mbPrism(mb, [[-2.5, 0.05], [2.2, 0.05], [3.1, 0.55], [3.2, 0.85], [-2.5, 0.85]], -0.62, 0.62, K_BOATW);
+  mbBox(mb, -1.0, 0.05, -2.5, -0.62, 0.9, 2.3, K_BOATO); mbBox(mb, 0.62, 0.05, -2.5, 1.0, 0.9, 2.3, K_BOATO);
+  mbBox(mb, -1.0, 0.8, -2.5, 1.0, 0.95, 2.3, K_BOATD); mbBox(mb, -0.8, 0.6, 2.3, 0.0, 0.86, 3.3, K_BOATO); mbBox(mb, 0.0, 0.6, 2.3, 0.8, 0.86, 3.3, K_BOATO);
+  mbBox(mb, -0.5, 0.85, 0.5, 0.5, 1.5, 1.7, K_BOATW); mbBox(mb, -0.52, 1.1, 0.52, 0.52, 1.4, 1.62, K_GLASS); mbBox(mb, -0.45, 1.5, 0.55, 0.45, 1.56, 1.65, K_BOATD);
+  mbBox(mb, -0.3, 1.56, 0.9, 0.3, 1.66, 1.1, K_BOATB); mbBox(mb, -0.12, 0.96, -2.7, 0.12, 1.1, -2.5, K_BOATD); mbBox(mb, -0.14, 0.2, -2.9, 0.14, 1.0, -2.5, K_BOATD);
+  mbBox(mb, -0.5, 0.9, -1.3, 0.5, 0.97, -0.8, K_BOATD);
+  return mb.finish();
+}
+
+/* ---------- Schwimm-Pose (Kraulen) ---------- */
+{
+  const p0 = Npc.prototype.pose;
+  Npc.prototype.pose = function () {
+    if (!this.swim) return p0.call(this);
+    this.down = 1; this.fallDir = 1; p0.call(this);
+    const q = this.q, a = this.ph, s = Math.sin(a), c = Math.cos(a), k = Math.sin(a * 2.4);
+    q.shoulderL = [-(2.3 + 0.95 * s), 0, 0.18]; q.shoulderR = [-(2.3 - 0.95 * s), 0, -0.18];
+    q.elbowL = [-(0.25 + 0.6 * Math.max(0, -c)), 0, 0]; q.elbowR = [-(0.25 + 0.6 * Math.max(0, c)), 0, 0];
+    q.hipL = [0.1 * k, 0, 0.05]; q.hipR = [-0.1 * k, 0, -0.05]; q.kneeL = [0.15 + 0.1 * Math.max(0, k), 0, 0]; q.kneeR = [0.15 + 0.1 * Math.max(0, -k), 0, 0];
+    q.lumbar = [0, 0, 0]; q.thoracic = [0, 0.12 * s, 0]; q.neck = [-0.7, 0, 0]; q.head = [-0.2, 0, 0];
+    this.fk(true);
+  };
+}
+
+/* ---------- Hilfsfunktionen ---------- */
+Object.assign(Game.prototype, {
+  dummyInWater() {
+    const W = this.world && this.world.water; if (!W || !this.dummy) return false; const p = this.dummy.b.pelvis.p;
+    return p[0] > W.x0 && p[0] < W.x1 && p[2] > W.z0 && p[2] < W.z1 && p[1] < W.y + 0.6;
+  },
+  shiftDummy(dx, dy, dz) { for (const b of this.dummy.list) { b.p[0] += dx; b.p[1] += dy; b.p[2] += dz; b.pp[0] += dx; b.pp[1] += dy; b.pp[2] += dz; b.v.fill(0); b.w.fill(0); b.inW = 0; } },
+  /* Koerper sanft zu einem Punkt fuehren (Pelvis -> Ziel) */
+  dragDummy(tx, ty, tz, k, floorY) {
+    const P = this.dummy.b.pelvis.p, dx = (tx - P[0]) * k, dy = (ty - P[1]) * k, dz = (tz - P[2]) * k;
+    for (const b of this.dummy.list) { b.p[0] += dx; b.p[1] += dy; b.p[2] += dz; b.pp[0] = b.p[0]; b.pp[1] = b.p[1]; b.pp[2] = b.p[2]; b.v.fill(0); b.w.fill(0); if (floorY !== undefined && b.p[1] < floorY) { b.p[1] = floorY; b.pp[1] = floorY; } }
+  },
+  /* Koerper komplett auf eine feste Flaeche legen */
+  placeDummy(x, z, y) {
+    const P = this.dummy.b.pelvis.p; this.shiftDummy(x - P[0], 0, z - P[2]);
+    let lo = 1e9; for (const b of this.dummy.list) lo = Math.min(lo, b.p[1]); this.shiftDummy(0, y + 0.12 - lo, 0);
+  },
+  waterDepthAt(x, z) { const W = this.world.water; return W ? W.y - this.groundY(x, z, W.y + 0.4) : 0; }
+});
+
+/* ---------- Rettungsdienst sperren / Wasserrettung statt Teleport ---------- */
+{
+  const s0 = Game.prototype.startScene, si0 = Game.prototype.supportInfo;
+  Game.prototype.supportInfo = function () { if (this._wrInfo) return this._wrInfo; return si0.apply(this, arguments); };
+  Game.prototype.startScene = function (kind) {
+    if (NOMEDIC[this.spawnKey] && (kind === 'medic' || kind === 'cop' || kind === 'fire')) { this.popup('NO PARAMEDICS HERE', this.dummy.b.head.p, '#ff8a3d', 1.8); return; }
+    if (kind === 'medic' && this.act && !this.act.busy && this.world && this.world.water && this.dummyInWater()) return this.startWaterRescue(s0);
+    return s0.apply(this, arguments);
+  };
+  Game.prototype.startWaterRescue = function (s0) {
+    const W = this.world.water, D = this.dummy.b.pelvis.p, sea = !!W.sea; let E, R = null, info;
+    if (sea) {
+      E = { x: _clm(D[0], -28, 28), z: W.z1 + 2.4, y: this.env.deckY || 2.4 };
+    } else {
+      const east = D[0] >= (W.x0 + W.x1) / 2, rim = east ? W.x1 : W.x0, ox = east ? -1 : 1, tz = _clm(D[2], W.z0 + 3, W.z1 - 3);
+      let top = 3.2; for (const b of this.env.boxes) if (rim - ox * 1.6 > b.min[0] && rim - ox * 1.6 < b.max[0] && tz > b.min[2] && tz < b.max[2] && b.max[1] > W.y) top = Math.max(top > W.y ? 0 : top, b.max[1]);
+      E = { x: rim - ox * 1.6, z: tz, y: top }; R = { x: rim, z: tz, ox };
+    }
+    let plat = null; for (const b of this.env.boxes) if (E.x > b.min[0] && E.x < b.max[0] && E.z > b.min[2] && E.z < b.max[2] && Math.abs(b.max[1] - E.y) < 0.3) plat = b;
+    this._wrInfo = { x: E.x, z: E.z, y: E.y, plat }; const had = this.act.sc;
+    try { s0.call(this, 'medic'); } finally { this._wrInfo = null; }
+    const sc = this.act.sc; if (!sc || sc === had) return;
+    if (sea && sc.veh && this.env.deckY) sc.veh.y = this.env.deckY;
+    sc.wr = { E, R, sea, done: false, init: false, bs: 'go', bt: 0, pend: 0 };
+    this.popup(sea ? 'RESCUE BOAT' : 'LIFEGUARDS', this.dummy.b.head.p, '#4ac8ff', 1.8);
+    if (sea) this.launchBoat(sc);
+  };
+  /* Beim Aussteigen: Wege der Besatzung so berechnen, als laege die Figur schon am Rand */
+  const cs0 = Game.prototype.crewScript;
+  Game.prototype.crewScript = function (sc, n, i) {
+    if (!sc.wr || !sc.wr.E) return cs0.apply(this, arguments);
+    const P = this.dummy.b.pelvis.p, sv = [P[0], P[1], P[2]], E = sc.wr.E; P[0] = E.x; P[1] = E.y + 0.25; P[2] = E.z;
+    try { return cs0.apply(this, arguments); } finally { P[0] = sv[0]; P[1] = sv[1]; P[2] = sv[2]; }
+  };
+  const sl0 = Game.prototype.sceneLogic;
+  Game.prototype.sceneLogic = function (sc, dt) {
+    const wr = sc.wr;
+    if (wr && !wr.done) {
+      if (sc.st === 'crew') { sc.t = Math.min(sc.t, 5); if (sc.npcs.length && sc.arrived >= sc.npcs.length) { if (!wr.sea && !wr.init) this.poolRescueInit(sc); return; } }
+    }
+    return sl0.apply(this, arguments);
+  };
+  const st0 = Game.prototype.stepScenes;
+  Game.prototype.stepScenes = function (dt) { this._sdt = dt; return st0.apply(this, arguments); };
+}
+
+/* ---------- Pool: Rettungsschwimmer schwimmen zur Figur und ziehen sie raus ---------- */
+Object.assign(Game.prototype, {
+  swimTask(n, tx, spd, tow) {
+    const g = this, W = this.world.water;
+    return {
+      k: 'ride', fn: (m) => {
+        const dt = Math.min(0.05, g._sdt || 0.016), T = tx();
+        if (!m._c) { m._c = [m.x + Math.sin(m.yaw) * 0.9, m.z + Math.cos(m.yaw) * 0.9]; }
+        let dx = T[0] - m._c[0], dz = T[1] - m._c[1], d = Math.hypot(dx, dz) || 1;
+        const st = Math.min(d, spd * dt); m._c[0] += dx / d * st; m._c[1] += dz / d * st; m.ph += dt * 7;
+        const ty = Math.atan2(dx, dz); { let dyw = ty - m.yaw; while (dyw > Math.PI) dyw -= 6.2832; while (dyw < -Math.PI) dyw += 6.2832; m.yaw += dyw * Math.min(1, 5 * dt); } m.swim = 1;
+        if (Math.random() < dt * 5) g.fx.emit(m._c[0] + (Math.random() - 0.5) * 0.4, W.y + 0.03, m._c[1] + (Math.random() - 0.5) * 0.4, 0, 0.6, 0, 0.5, 0.05, 0.02, 0.85, 0.93, 1, 0.7, 0.3, 9.8, false, 0);
+        if (tow) { const sc = g.act.sc; if (sc && sc.wr) { const sx = Math.sin(m.yaw), cz = Math.cos(m.yaw); g.dragDummy(m._c[0] - sx * 0.35, W.y - 0.5, m._c[1] - cz * 0.35, 0.35); } }
+        return [m._c[0] - Math.sin(m.yaw) * 0.9, W.y - 0.4 + Math.sin(m.ph * 0.5) * 0.03, m._c[1] - Math.cos(m.yaw) * 0.9, m.yaw];
+      }, until: (m) => !!m._c && Math.hypot(tx()[0] - m._c[0], tx()[1] - m._c[1]) < 0.35
+    };
+  },
+  poolRescueInit(sc) {
+    const wr = sc.wr, R = wr.R, W = this.world.water, g = this, E = wr.E; wr.init = true; wr.pend = sc.npcs.length;
+    this.popup('LIFEGUARDS', this.dummy.b.head.p, '#4ac8ff', 1.6);
+    sc.npcs.forEach((n, i) => {
+      const tk = [], lat = i === 0 ? -0.85 : 0.85;
+      const toD = () => { const P = g.dummy.b.pelvis.p; return [P[0] - Math.sin(n.yaw || 0) * 0.0, P[2] + lat * 0.4]; };
+      tk.push({ k: 'walk', x: R.x - R.ox * 0.5, z: R.z + lat, spd: 2.6 });
+      tk.push({
+        k: 'do', fn: (m) => {
+          m.yaw = Math.atan2(R.ox, 0); m.swim = 1; m.free = false; m._c = [R.x + R.ox * 0.6, R.z + lat]; m.x = R.x + R.ox * 0.6 - Math.sin(m.yaw) * 0.9; m.z = R.z + lat - Math.cos(m.yaw) * 0.9; m.y = W.y - 0.4;
+          g.sfx.play('splash', { vol: 0.8, pitch: 1.1 }); g.fx.addShake(0.08);
+          for (let j = 0; j < 26; j++) { const a = Math.random() * 6.283, s = 0.6 + Math.random() * 1.8; g.fx.emit(R.x + R.ox * 0.6, W.y + 0.05, R.z + lat, Math.cos(a) * s, 2 + Math.random() * 3, Math.sin(a) * s, 0.7 + Math.random() * 0.6, 0.06, 0.02, 0.85, 0.93, 1, 0.85, 0.25, 9.8, false, 0); }
+        }
+      });
+      tk.push(this.swimTask(n, () => { const P = g.dummy.b.pelvis.p; return [P[0], P[2]]; }, 1.9, false));
+      tk.push({ k: 'do', fn: () => { if (i === 0) g.popup('SAVED', g.dummy.b.head.p, '#7dff9a', 1.0); g.sfx.play('gasp', { vol: 0.4 }); } });
+      tk.push(this.swimTask(n, () => [R.x + R.ox * 1.0, R.z + lat * 0.4], 1.5, i === 0));
+      tk.push({
+        k: 'do', fn: (m) => {
+          m.swim = 0; m.down = 0; m._c = null; m.free = false; m.yaw = Math.atan2(-R.ox, 0); m.x = R.x + R.ox * 0.5; m.z = R.z + lat * 0.5; m.y = W.y - 1.0;
+          if (i === 0) g.placeDummy(E.x, E.z, E.y);
+        }
+      });
+      tk.push({ k: 'climb', y: E.y, spd: 1.7 });
+      tk.push({ k: 'do', fn: (m) => { m.x = R.x - R.ox * 0.5; m.z = R.z + lat; m.free = true; if (--wr.pend <= 0) { wr.done = true; g.popup('SAVED', E.y ? [E.x, E.y + 0.6, E.z] : g.dummy.b.head.p, '#7dff9a', 1.4); } } });
+      n.tasks.unshift(...tk);
+    });
+  }
+});
+
+/* ---------- Meer: Rettungsboot holt die Figur ab ---------- */
+Object.assign(Game.prototype, {
+  launchBoat(sc) {
+    const D = this.dummy.b.pelvis.p, W = this.world.water, wr = sc.wr;
+    const B = this.wrBoat = { x: _clm(D[0] + 26, -90, 90), z: W.z0 + 70, y: W.y, yaw: Math.PI, v: 0, tx: D[0], tz: D[2], vis: true, arr: false, ph: Math.random() * 6, vmax: 9 };
+    B.yaw = Math.atan2(D[0] - B.x, D[2] - B.z); wr.bs = 'go'; this.boatGo(B, D[0] + 1.6, D[2], 9);
+    const g = this;
+    for (let i = 0; i < 2; i++) {
+      const n = new Npc('medic', B.x, W.y, B.z, B.yaw); n.skin = 0; n.role = 'guard'; n.bag = false; this.act.npcs.push(n);
+      const lx = i === 0 ? 0.45 : -0.45, lz = i === 0 ? -1.15 : -1.65;
+      n.push({
+        k: 'ride', fn: (m) => {
+          const b = g.wrBoat; if (!b) return [m.x, m.y, m.z, m.yaw]; const c = Math.cos(b.yaw), s = Math.sin(b.yaw);
+          m.wrT = (g.wrBoat && wr.bs === 'pick' && i === 0) ? 1 : 0; m.crouchT = (wr.bs === 'pick' || wr.bs === 'lift') ? 0.6 : 0; if (wr.bs === 'pick' || wr.bs === 'lift') m.yaw = b.yaw + (i === 0 ? 1.4 : -1.4);
+          return [b.x + lx * c + lz * s, b.y + 0.28, b.z - lx * s + lz * c, wr.bs === 'pick' || wr.bs === 'lift' ? m.yaw : b.yaw];
+        }, until: () => !g.wrBoat
+      });
+      n.push({ k: 'hide' });
+    }
+  },
+  boatGo(B, x, z, vmax) { B.tx = x; B.tz = z; B.arr = false; B.vmax = vmax || 9; },
+  boatStep(dt) {
+    const B = this.wrBoat, W = this.world && this.world.water; if (!B || !W) return;
+    const dx = B.tx - B.x, dz = B.tz - B.z, d = Math.hypot(dx, dz);
+    if (!B.arr) {
+      const want = Math.atan2(dx, dz); let dy = want - B.yaw; while (dy > Math.PI) dy -= 6.2832; while (dy < -Math.PI) dy += 6.2832; B.yaw += _clm(dy, -1.4 * dt, 1.4 * dt);
+      const vt = _clm(d * 0.9 + 0.3, 0, B.vmax) * (Math.abs(dy) > 1.2 ? 0.3 : 1); B.v += _clm(vt - B.v, -5 * dt, 3.2 * dt);
+      B.x += Math.sin(B.yaw) * B.v * dt; B.z += Math.cos(B.yaw) * B.v * dt; if (d < 0.45) { B.arr = true; B.v = 0; }
+    } else B.v *= Math.exp(-3 * dt);
+    B.ph += dt; B.y = W.y + 0.02 + Math.sin(B.ph * 1.7) * 0.04;
+    if (B.v > 3 && Math.random() < dt * 40) { const a = B.yaw + Math.PI; this.fx.emit(B.x + Math.sin(a) * 2.6 + (Math.random() - 0.5), W.y + 0.05, B.z + Math.cos(a) * 2.6, Math.sin(a) * 1.5, 1.2 + Math.random(), Math.cos(a) * 1.5, 0.8, 0.12, 0.03, 0.9, 0.95, 1, 0.7, 0.3, 9.8, false, 0); }
+    const sp = this.spatial(B.x, B.y, B.z); if (this.sfx && this.sfx.play && B.v > 1 && (this._boatSnd = (this._boatSnd || 0) - dt) < 0) { this._boatSnd = 0.25; this.sfx.play('whoosh', { vol: 0.16 * sp.vol, pan: sp.pan, pitch: 0.5 }); }
+  },
+  seaRescueStep(sc, dt) {
+    const wr = sc.wr, B = this.wrBoat, W = this.world.water, E = wr.E, g = this, P = this.dummy.b.pelvis.p;
+    if (!B || wr.done && wr.bs === 'end') return;
+    const deck = () => { const c = Math.cos(B.yaw), s = Math.sin(B.yaw); return [B.x + 0.0 * c + (-0.6) * s - 0.55 * c, B.y + 0.5, B.z - 0.0 * s + (-0.6) * c + 0.55 * s]; };
+    switch (wr.bs) {
+      case 'go': if (B.arr) { wr.bs = 'pick'; wr.bt = 0; wr.p0 = [P[0], P[1], P[2]]; this.sfx.play('whoosh', { vol: 0.4, pitch: 0.7 }); } break;
+      case 'pick': {
+        wr.bt += dt; const k = _clm(wr.bt / 2.6, 0, 1), s = k * k * (3 - 2 * k), d = deck(); this.dragDummy(wr.p0[0] + (d[0] - wr.p0[0]) * s, wr.p0[1] + (d[1] - wr.p0[1]) * s + Math.sin(k * 3.14) * 0.5, wr.p0[2] + (d[2] - wr.p0[2]) * s, 0.4);
+        if (wr.bt > 3.2) { wr.bs = 'back'; wr.bt = 0; this.boatGo(B, E.x + 12, W.z1 - 3.4, 8); wr.leg = 1; this.popup('SAVED', this.dummy.b.head.p, '#7dff9a', 1.0); }
+        break;
+      }
+      case 'back': {
+        const d = deck(); this.dragDummy(d[0], d[1], d[2], 0.5, B.y + 0.25);
+        if (B.arr) { if (wr.leg === 1) { wr.leg = 2; this.boatGo(B, E.x, W.z1 - 1.5, 3.5); } else if (B.v < 0.3) { wr.bs = 'lift'; wr.bt = 0; wr.p0 = [P[0], P[1], P[2]]; } }
+        break;
+      }
+      case 'lift': {
+        wr.bt += dt; const k = _clm(wr.bt / 2.4, 0, 1), s = k * k * (3 - 2 * k); this.dragDummy(wr.p0[0] + (E.x - wr.p0[0]) * s, wr.p0[1] + (E.y + 0.3 - wr.p0[1]) * s + Math.sin(k * 3.14) * 0.6, wr.p0[2] + (E.z - wr.p0[2]) * s, 0.5);
+        if (wr.bt > 2.6) { this.placeDummy(E.x, E.z, E.y); wr.bs = 'leave'; wr.bt = 0; this.boatGo(B, E.x + 60, W.z0 + 60, 9); wr.done = true; this.sfx.play('thud', { vol: 0.5 }); this.popup('SAVED', [E.x, E.y + 0.6, E.z], '#7dff9a', 1.4); }
+        break;
+      }
+      case 'leave': { wr.bt += dt; if (Math.hypot(B.x - E.x, B.z - E.z) > 55 || wr.bt > 14) { this.wrBoat = null; wr.bs = 'end'; } break; }
+    }
+  }
+});
+
+/* ---------- Ertrinken, Auftrieb, Selbstausloesung ---------- */
+{
+  const mkBar = () => {
+    let el = document.getElementById('airbar'); if (el) return el;
+    el = document.createElement('div'); el.id = 'airbar'; el.innerHTML = '<span id="airlbl">Air</span><i><b id="airfill"></b></i>';
+    el.style.cssText = 'position:fixed;left:50%;bottom:calc(86px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:25;display:none;align-items:center;gap:8px;padding:6px 12px;border-radius:999px;background:rgba(10,30,50,.7);border:1px solid rgba(120,200,255,.5);color:#bfe6ff;font:600 12px system-ui,sans-serif;backdrop-filter:blur(4px)';
+    const st = document.createElement('style'); st.textContent = '#airbar i{display:block;width:120px;height:8px;border-radius:5px;background:rgba(255,255,255,.15);overflow:hidden}#airbar b{display:block;height:100%;width:100%;background:linear-gradient(90deg,#3aa8ff,#9be0ff);transition:width .15s}#airbar.low b{background:linear-gradient(90deg,#ff4a3a,#ff9a5a)}';
+    document.head.appendChild(st); document.body.appendChild(el); return el;
+  };
+  const t0 = Game.prototype.tick;
+  Game.prototype.tick = function () {
+    const r = t0.apply(this, arguments); try { this.waterTick(DT); } catch (e) { console.error(e); } return r;
+  };
+  Game.prototype.waterTick = function (dt) {
+    const w = this.world, br = this.brain, W = w && w.water; if (!W || !br || !this.dummy) { if (this._airOn) { this._airOn = false; const el = document.getElementById('airbar'); if (el) el.style.display = 'none'; } return; }
+    const d = this.dummy.b, hp = d.head.p, pp = d.pelvis.p, inRect = (p) => p[0] > W.x0 && p[0] < W.x1 && p[2] > W.z0 && p[2] < W.z1;
+    const st = this._dr || (this._dr = { air: 1, tired: 0, deadT: 0, gasp: 0 });
+    const under = inRect(hp) && hp[1] < W.y - 0.04, inW = inRect(pp) && pp[1] < W.y + 0.5, surf = this.sc_ || null;
+    // Auftrieb: lebend / muede / tot
+    let buoy = 1.38;
+    if (!br.alive) buoy = 0.93; else if (inW && this.waterDepthAt(pp[0], pp[2]) > 1.4) { st.tired += dt; if (st.tired > 16) { buoy = 0.96; if (!st.tiredShown) { st.tiredShown = 1; this.popup('EXHAUSTED', hp, '#ffb04a', 1.4); } } } else { st.tired = Math.max(0, st.tired - dt * 2); if (st.tired < 8) st.tiredShown = 0; }
+    w.wBuoy = buoy;
+    // Luft
+    const mortal = !!(this.set && this.set.mortal);
+    if (under && br.alive) {
+      st.air = Math.max(0, st.air - dt / (st.tired > 16 ? 9 : 16));
+      if (Math.random() < dt * (3 + (1 - st.air) * 8)) this.fx.emit(hp[0] + (Math.random() - 0.5) * 0.1, hp[1] + 0.1, hp[2] + (Math.random() - 0.5) * 0.1, (Math.random() - 0.5) * 0.2, 0.9, (Math.random() - 0.5) * 0.2, 1.4, 0.035, 0.01, 0.85, 0.95, 1, 0.8, 0.0, -2.0, false, 0);
+      if (st.air <= 0) {
+        if (!st.warn) { st.warn = 1; this.popup('DROWNING', hp, '#4ac8ff', 1.6); this.sfx.play('gasp', { vol: 0.8 }); }
+        br.pain = Math.min(1.2, br.pain + dt * 0.2); br.shock = Math.min(1, br.shock + dt * 0.12);
+        if (mortal) { br.health -= dt * 0.045; if (br.health <= 0 && br.alive) br.die({}); }
+        if (Math.random() < dt * 1.2) { for (const b of d.list) { b.v[0] += (Math.random() - 0.5) * 1.2; b.v[1] += (Math.random() - 0.3) * 1.2; b.v[2] += (Math.random() - 0.5) * 1.2; } }
+      }
+    } else if (!under) { if (st.air < 0.6 && st.air > 0 && br.alive && (st.gasp -= dt) < 0) { st.gasp = 4; this.sfx.play('gasp', { vol: 0.6 }); } st.air = Math.min(1, st.air + dt / 2.2); if (st.air > 0.5) st.warn = 0; }
+    if (!br.alive && under && st.air > 0) st.air = Math.max(0, st.air - dt / 10);
+    const show = (under && br.alive) || (st.air < 0.99 && br.alive && inW);
+    if (show !== this._airOn) { this._airOn = show; const el = mkBar(); el.style.display = show ? 'flex' : 'none'; const l = document.getElementById('airlbl'); if (l) l.textContent = T('Air'); }
+    if (show) { const f = document.getElementById('airfill'); if (f) f.style.width = Math.round(st.air * 100) + '%'; const el = document.getElementById('airbar'); if (el) el.classList.toggle('low', st.air < 0.3); }
+    // Selbstausloesung bei Tod im Wasser
+    if (!br.alive && inW) st.deadT += dt; else st.deadT = 0;
+    if (st.deadT > 3.2 && this.act && !this.act.busy && !this.menuOn && !this.intro && !this.hideDummy && !NOMEDIC[this.spawnKey] && this.set && this.set.autoRescue !== false) { st.deadT = -30; this.startScene('medic'); }
+    if (br.alive && !under && !inW) { st.tired = 0; }
+    // Rettung
+    const sc = this.act && this.act.sc; if (sc && sc.wr) { if (sc.wr.sea) this.seaRescueStep(sc, dt); }
+    this.boatStep(dt);
+  };
+  Game.prototype.healDummyW = null;
+  const hd0 = Game.prototype.healDummy;
+  Game.prototype.healDummy = function () { this._dr = null; return hd0.apply(this, arguments); };
+  const b0 = Game.prototype.buildWorld;
+  Game.prototype.buildWorld = function () { this.wrBoat = null; this._dr = null; const r = b0.apply(this, arguments); if (this.world) this.world.wBuoy = 1.38; return r; };
+  const a0 = Game.prototype.appendScenes;
+  Game.prototype.appendScenes = function (bd) {
+    const r = a0.apply(this, arguments), B = this.wrBoat;
+    if (B && B.vis) {
+      const M = this._sm || (this._sm = {}); const mesh = M.boat || (M.boat = this.gfx.upload(boatMesh())), q = Q4(), m = M4.id();
+      qfromAxisAngle(q, 0, 1, 0, B.yaw); const pr = Math.sin(B.ph * 1.3) * 0.015 + (B.v || 0) * 0.008; M4.trs(m, [B.x, B.y - 0.12, B.z], q, 1, 1, 1); bd.push({ mesh, model: m, tint: [1, 1, 1] });
+    }
+    return r;
+  };
+}
+
+;
+/* ---- chambers.js: Experimentier-Labor mit 30 Kammern ---- */
+// (c) 2026 Olli - Ragdoll Lab. Idee: Olli, Code gemeinsam mit Claude (Anthropic). Credits nicht entfernen.
+'use strict';
+MAP_ORDER.push('chambers');
+MAP_INFO.chambers = { name: 'Experiment Labs', desc: '30 sealed chambers: gases, heat, cold, gravity, electricity, acid and more. No paramedics down here.', icon: 'chambers' };
+MAP_SVG.chambers = '<path d="M6 62h108M6 10h108M6 10v52M114 10v52"/><path d="M34 10v52M62 10v52M90 10v52M6 36h108" opacity=".6"/><path d="M14 52q4-10 8 0M42 24l3-8 3 8M70 46q6-8 12 0M98 22v10M94 27h8" stroke-width="2"/>';
+MAP_TAGS.chambers = ['30 chambers', 'Gas', 'Heat & cold'];
+MAPS4.push('chambers');
+Object.assign(DE, {
+  'Experiment Labs': 'Experimentier-Labor', '30 sealed chambers: gases, heat, cold, gravity, electricity, acid and more. No paramedics down here.': '30 versiegelte Kammern: Gase, Hitze, Kälte, Schwerkraft, Strom, Säure und mehr. Hier unten kommt kein Rettungsdienst.',
+  '30 chambers': '30 Kammern', 'Gas': 'Gas', 'Heat & cold': 'Hitze & Kälte', 'Chamber': 'Kammer', 'Chambers': 'Kammern', 'CRUSHED': 'ZERQUETSCHT', 'FROZEN': 'EINGEFROREN', 'BURNING': 'BRENNT', 'ELECTROCUTED': 'ELEKTRISIERT', 'Previous': 'Zurück', 'Next': 'Weiter'
+});
+DE[MAP_ORDER.length + ' maps'] = MAP_ORDER.length + ' Karten';
+
+/* ---- Kammer-Tabelle: t = Wirkungsart, fv = Bodenfarbe (Container-Variante), ov = Bildschirmtoenung ---- */
+const CH_P = 14, CH_X0 = -35, CH_Z0 = -28, CH_H = 3.4, CH_R = 6;
+const CH = [
+  { t: 'gas', fv: 2, en: 'Toxic gas', de: 'Giftgas', d: ['Green fog. Coughing fits, slow poisoning.', 'Grüner Nebel. Hustenanfälle, langsame Vergiftung.'], rgb: [0.35, 0.85, 0.2], dps: 0.012, pain: 0.06, conv: 0.7, ov: [60, 200, 30, 0.22] },
+  { t: 'gas', fv: 3, en: 'Spray lab', de: 'Sprühlabor', d: ['Ceiling nozzles spray chemical mist and push downwards.', 'Düsen an der Decke sprühen Chemienebel und drücken nach unten.'], rgb: [0.75, 0.4, 0.95], dps: 0.009, pain: 0.05, conv: 0.5, ov: [170, 80, 230, 0.2], down: 2.5 },
+  { t: 'gas', fv: 3, en: 'Nerve gas', de: 'Nervengas', d: ['Yellow gas. Violent convulsions, fast.', 'Gelbes Gas. Heftige Krämpfe, schnell.'], rgb: [0.95, 0.9, 0.25], dps: 0.03, pain: 0.1, conv: 2.6, ov: [240, 220, 40, 0.2] },
+  { t: 'gas', fv: 2, en: 'Chlorine', de: 'Chlorgas', d: ['Pale green cloud. Coughing and burning lungs.', 'Fahlgrüne Wolke. Husten und brennende Lunge.'], rgb: [0.7, 0.9, 0.45], dps: 0.016, pain: 0.08, conv: 1.1, ov: [150, 220, 80, 0.2] },
+  { t: 'co2', fv: 4, en: 'CO2 chamber', de: 'CO₂-Kammer', d: ['Heavy white gas. No pain, he just drifts away.', 'Schweres weißes Gas. Kein Schmerz, er wird nur bewusstlos.'], rgb: [0.92, 0.95, 1], ov: [220, 235, 255, 0.18] },
+  { t: 'helium', fv: 3, en: 'Helium', de: 'Helium', d: ['Light gas: floaty movement and a squeaky voice.', 'Leichtes Gas: schwebende Bewegung und Quietschstimme.'], rgb: [1, 0.85, 0.4], ov: [255, 220, 100, 0.1] },
+  { t: 'heat', fv: 0, en: 'Heat chamber 120 °C', de: 'Hitzekammer 120 °C', d: ['Hot air. After a few seconds the skin starts to burn.', 'Heiße Luft. Nach wenigen Sekunden fängt die Haut an zu brennen.'], temp: 120, ov: [255, 120, 20, 0.25] },
+  { t: 'fire', fv: 0, en: 'Inferno', de: 'Brandkammer', d: ['Everything burns. He catches fire immediately.', 'Alles brennt. Er fängt sofort Feuer.'], temp: 600, ov: [255, 90, 10, 0.3] },
+  { t: 'cold', fv: 1, en: 'Cold chamber -60 °C', de: 'Kältekammer -60 °C', d: ['He stiffens up slowly and freezes.', 'Er wird langsam steif und friert ein.'], temp: -60, rate: 1 / 28, ov: [120, 190, 255, 0.22] },
+  { t: 'cold', fv: 1, en: 'Liquid nitrogen -196 °C', de: 'Flüssigstickstoff -196 °C', d: ['Flash freeze within seconds.', 'Schockgefrieren innerhalb von Sekunden.'], temp: -196, rate: 1 / 6, ov: [190, 235, 255, 0.28] },
+  { t: 'vac', fv: 4, en: 'Vacuum', de: 'Vakuum', d: ['No air at all. Unconscious after a few seconds, then it gets deadly.', 'Gar keine Luft. Nach Sekunden bewusstlos, dann tödlich.'], ov: [10, 10, 30, 0.2] },
+  { t: 'grav', fv: 4, en: 'Zero gravity', de: 'Schwerelosigkeit', m: 0, d: ['Everything floats. Shots send him spinning.', 'Alles schwebt. Schüsse lassen ihn rotieren.'], ov: [90, 90, 160, 0.06] },
+  { t: 'grav', fv: 4, en: 'Moon gravity', de: 'Mondschwerkraft', m: 0.17, d: ['One sixth of normal gravity.', 'Ein Sechstel der normalen Schwerkraft.'], ov: [180, 180, 200, 0.05] },
+  { t: 'grav', fv: 0, en: 'Gravity x3', de: 'Schwerkraft x3', m: 3, d: ['Triple gravity. Everything slams down hard.', 'Dreifache Schwerkraft. Alles knallt hart runter.'], ov: [120, 40, 40, 0.1] },
+  { t: 'wind', fv: 1, en: 'Hurricane', de: 'Orkan', a: [14, 2, 3], d: ['A storm tunnel blows him against the wall.', 'Ein Sturmtunnel bläst ihn gegen die Wand.'], ov: [200, 220, 240, 0.06] },
+  { t: 'ice', fv: 1, en: 'Ice rink', de: 'Eisfläche', d: ['No friction. Everything keeps sliding.', 'Keine Reibung. Alles rutscht weiter.'], ov: [180, 230, 255, 0.06] },
+  { t: 'sticky', fv: 3, en: 'Glue floor', de: 'Klebeboden', d: ['Sticky floor: hard to get anywhere.', 'Klebriger Boden: kaum von der Stelle zu kommen.'], ov: [230, 190, 60, 0.06] },
+  { t: 'tramp', fv: 0, en: 'Trampoline', de: 'Trampolin', d: ['The whole floor is a trampoline.', 'Der ganze Boden ist ein Trampolin.'], ov: [255, 120, 160, 0.04] },
+  { t: 'belt', fv: 4, en: 'Conveyor belt', de: 'Förderband', d: ['A fast belt carries him straight into the wall.', 'Ein schnelles Band trägt ihn geradewegs gegen die Wand.'], ov: [90, 90, 90, 0.04] },
+  { t: 'shock', fv: 3, en: 'Electric chamber', de: 'Elektrokammer', d: ['Arcs jump through the room every second.', 'Im Sekundentakt springen Blitze durch den Raum.'], ov: [90, 140, 255, 0.12] },
+  { t: 'acid', fv: 2, en: 'Acid rain', de: 'Säureregen', d: ['Green drops fall from the ceiling and burn.', 'Grüne Tropfen fallen von der Decke und ätzen.'], ov: [90, 230, 40, 0.14] },
+  { t: 'rad', fv: 3, en: 'Radiation', de: 'Strahlung', d: ['Invisible rays. Slow damage and a ghostly glow.', 'Unsichtbare Strahlen. Langsamer Schaden und gespenstisches Leuchten.'], ov: [150, 255, 120, 0.16] },
+  { t: 'press', fv: 0, en: 'Stomper', de: 'Stampfer', d: ['A giant plate drops down every 5 seconds.', 'Eine Riesenplatte kracht alle 5 Sekunden herunter.'], ov: [60, 60, 60, 0.02] },
+  { t: 'magnet', fv: 4, en: 'Magnet chamber', de: 'Magnetkammer', d: ['A giant magnet pulls him up to the ceiling.', 'Ein Riesenmagnet zieht ihn an die Decke.'], ov: [200, 60, 60, 0.05] },
+  { t: 'vortex', fv: 1, en: 'Vortex', de: 'Strudel', d: ['A tornado spins everything around.', 'Ein Wirbel dreht alles im Kreis.'], ov: [200, 210, 230, 0.06] },
+  { t: 'bumper', fv: 3, en: 'Pinball', de: 'Flipper', d: ['Bumpers kick him around like a pinball.', 'Bumper schießen ihn wie eine Flipperkugel herum.'], ov: [255, 90, 190, 0.05] },
+  { t: 'foam', fv: 4, en: 'Foam bath', de: 'Schaumbad', d: ['Thick foam slows everything down.', 'Dicker Schaum bremst alles ab.'], ov: [240, 245, 255, 0.1] },
+  { t: 'slime', fv: 2, en: 'Slime pit', de: 'Schleimgrube', d: ['Heavy green slime. He barely moves.', 'Zäher grüner Schleim. Er bewegt sich kaum.'], ov: [90, 200, 50, 0.1] },
+  { t: 'flood', fv: 1, en: 'Flood chamber', de: 'Flutkammer', d: ['Water rises to the ceiling. He can drown.', 'Wasser steigt bis zur Decke. Er kann ertrinken.'], ov: [40, 110, 210, 0.06] },
+  { t: 'centri', fv: 0, en: 'Centrifuge', de: 'Zentrifuge', d: ['The floor spins and flings him outwards.', 'Der Boden dreht sich und schleudert ihn nach außen.'], ov: [255, 255, 255, 0.03] }
+];
+CH.forEach((c, i) => { c.i = i; c.cx = CH_X0 + (i % 6) * CH_P; c.cz = CH_Z0 + Math.floor(i / 6) * CH_P; });
+Object.assign(DE, { 'Toxic gas': 'Giftgas' });
+CH.forEach(c => { DE[c.en] = c.de; DE[c.d[0]] = c.d[1]; });
+const chAt = (x, z, y) => {
+  const i = Math.round((x - CH_X0) / CH_P), j = Math.round((z - CH_Z0) / CH_P); if (i < 0 || i > 5 || j < 0 || j > 4) return null;
+  const c = CH[j * 6 + i]; if (Math.abs(x - c.cx) > CH_R + 0.3 || Math.abs(z - c.cz) > CH_R + 0.3 || y > 9 || y < -1) return null; return c;
+};
+
+function buildChambers(key, world, env, sp, add, deco, edge) {
+  env.groundMat = 0; env.fogK = 0.12; env.bmap = { x0: -48, z0: -42, size: 96 };
+  const W0 = CH_X0 - CH_P / 2, W1 = CH_X0 + 5 * CH_P + CH_P / 2, Z0 = CH_Z0 - CH_P / 2, Z1 = CH_Z0 + 4 * CH_P + CH_P / 2;
+  for (let i = 0; i <= 6; i++) { const x = W0 + i * CH_P; add([x - 1, 0, Z0 - 1], [x + 1, CH_H, Z1 + 1], 3, 0.9, 0); deco([x - 1.05, CH_H, Z0 - 1.05], [x + 1.05, CH_H + 0.12, Z1 + 1.05], 8, 3); }
+  for (let j = 0; j <= 5; j++) { const z = Z0 + j * CH_P; add([W0 + 1, 0, z - 1], [W1 - 1, CH_H, z + 1], 3, 0.9, 0); deco([W0 + 1, CH_H, z - 1.05], [W1 - 1, CH_H + 0.12, z + 1.05], 8, 3); }
+  CH.forEach(c => {
+    const x = c.cx, z = c.cz, v = c.fv;
+    deco([x - 6, 0, z - 6], [x + 6, 0.05, z + 6], 8, v);                                    // farbige Bodenplatte
+    deco([x - 5.1, 0.05, z - 5.1], [x + 5.1, 0.07, z + 5.1], c.t === 'ice' ? 1 : 0, 0);
+    deco([x - 2.2, 1.2, z + 5.2], [x + 2.2, 2.6, z + 5.38], 8, v); deco([x - 2.4, 1.1, z + 5.12], [x + 2.4, 1.2, z + 5.4], 7); deco([x - 2.4, 2.6, z + 5.12], [x + 2.4, 2.7, z + 5.4], 7);
+    for (let k = -1; k <= 1; k++) deco([x + k * 1.2 - 0.3, 1.5, z + 5.38], [x + k * 1.2 + 0.3, 2.3, z + 5.45], 7);      // Schild-Rippen
+    deco([x - 6, 0, z - 6], [x - 5.6, 0.7, z + 6], 8, 4); deco([x + 5.6, 0, z - 6], [x + 6, 0.7, z + 6], 8, 4);              // Warnstreifen
+    switch (c.t) {
+      case 'gas': case 'co2': case 'helium': for (let k = -4; k <= 4; k += 2) { deco([x + k - 0.12, 2.6, z - 5.9], [x + k + 0.12, 3.2, z - 5.6], 7); deco([x + k - 0.3, 3.1, z - 5.95], [x + k + 0.3, 3.25, z - 5.55], 7); } break;
+      case 'heat': case 'fire': for (let k = -4; k <= 4; k += 2) deco([x + k - 0.5, 0.2, z - 5.9], [x + k + 0.5, 2.4, z - 5.75], 8, 0); break;
+      case 'cold': for (let k = -4; k <= 4; k += 2) deco([x + k - 0.4, 0.2, z - 5.9], [x + k + 0.4, 2.4, z - 5.75], 0); break;
+      case 'press': for (const sx of [-1, 1]) for (const sz of [-1, 1]) add([x + sx * 5.2 - 0.4, 0, z + sz * 5.2 - 0.4], [x + sx * 5.2 + 0.4, 3.3, z + sz * 5.2 + 0.4], 7, 0.9, 0); break;
+      case 'tramp': deco([x - 5.2, 0.07, z - 5.2], [x + 5.2, 0.3, z + 5.2], 8, 0); break;
+      case 'belt': for (let k = -5; k <= 5; k += 1.5) deco([x + k - 0.3, 0.07, z - 3], [x + k + 0.3, 0.1, z + 3], 7); break;
+      case 'bumper': for (const [bx, bz] of [[-3, -3], [3, -3], [0, 0], [-3, 3], [3, 3], [0, -4.5], [0, 4.5]]) deco([x + bx - 0.5, 0, z + bz - 0.5], [x + bx + 0.5, 0.4, z + bz + 0.5], 7); break;
+      case 'magnet': deco([x - 1.2, CH_H + 0.3, z - 1.2], [x + 1.2, CH_H + 1.3, z + 1.2], 7); break;
+      case 'vortex': for (let a = 0; a < 6.28; a += 1.047) deco([x + Math.cos(a) * 5.3 - 0.2, 0, z + Math.sin(a) * 5.3 - 0.2], [x + Math.cos(a) * 5.3 + 0.2, 2.6, z + Math.sin(a) * 5.3 + 0.2], 7); break;
+      case 'slime': case 'foam': deco([x - 5.9, 0.07, z - 5.9], [x + 5.9, 0.12, z + 5.9], 8, c.t === 'slime' ? 2 : 4); break;
+      case 'flood': deco([x - 5.9, 0.07, z - 5.9], [x + 5.9, 0.12, z + 5.9], 1); break;
+    }
+  });
+  env.water = { x0: CH[28].cx - CH_R, x1: CH[28].cx + CH_R, z0: CH[28].cz - CH_R, z1: CH[28].cz + CH_R, y: -0.7 };
+  sp.chambers = { x: CH[0].cx, z: CH[0].cz, yaw: 0, y: 0, cam: { yaw: 0.5, pitch: 0.2, dist: 5.0, tx: CH[0].cx, ty: 1.0, tz: CH[0].cz } };
+}
+
+/* ---------- Kraftfelder pro Koerper und Physik-Substep ---------- */
+{
+  const ef0 = World.prototype.envField;
+  World.prototype.envField = function (b, h) {
+    ef0.call(this, b, h);
+    if (!this.chOn) return;
+    const p = b.p, v = b.v, c = chAt(p[0], p[2], p[1]); if (!c) return; const t = this.chT || 0, gy = this.gravity[1], dx = p[0] - c.cx, dz = p[2] - c.cz, fl = p[1] < 0.45;
+    switch (c.t) {
+      case 'gas': case 'co2': case 'vac': case 'rad': { const k = c.t === 'vac' ? 0 : 0.4; v[0] *= 1 - k * h; v[1] *= 1 - k * h; v[2] *= 1 - k * h; if (c.down) v[1] -= c.down * h; if (c.t === 'vac') v[1] -= gy * h * 0.97; break; }
+      case 'helium': v[1] += gy * (0.3 - 1) * h; v[0] *= 1 - 0.5 * h; v[2] *= 1 - 0.5 * h; break;
+      case 'grav': v[1] += gy * (c.m - 1) * h; if (c.m === 0) { v[0] *= 1 - 0.08 * h; v[1] *= 1 - 0.08 * h; v[2] *= 1 - 0.08 * h; } break;
+      case 'wind': { const gu = 1 + 0.45 * Math.sin(t * 1.7 + dz * 0.4) + 0.2 * Math.sin(t * 5.3); v[0] += c.a[0] * gu * h; v[1] += c.a[1] * gu * h; v[2] += c.a[2] * Math.sin(t * 0.9) * h; break; }
+      case 'ice': if (fl) { const k = 1 + 2.4 * h; v[0] *= k; v[2] *= k; } break;
+      case 'sticky': if (fl) { const k = Math.max(0, 1 - 11 * h); v[0] *= k; v[2] *= k; if (v[1] > 0) v[1] *= k; } break;
+      case 'tramp': if (p[1] < 0.4 && v[1] < -0.5 && !(b.trT > 0)) { v[1] = Math.min(15, -v[1] * 1.05 + 6); b.trT = 0.25; } if (b.trT > 0) b.trT -= h; break;
+      case 'belt': if (fl) { v[0] += (3.4 - v[0]) * Math.min(1, 7 * h); } break;
+      case 'press': { const P = c.pl; if (P && P.fall && Math.abs(dx) < 2.5 && Math.abs(dz) < 2.5 && p[1] > P.y - 0.2) { v[1] = Math.min(v[1], -17); if (p[1] > P.y - 0.08) p[1] = P.y - 0.08; } break; }
+      case 'magnet': { const mx = -dx, my = CH_H + 0.2 - p[1], mz = -dz, d = Math.hypot(mx, my, mz) + 0.5, f = 38 / (d * d + 2); v[0] += mx / d * f * h; v[1] += (my / d * f + 9.4) * h; v[2] += mz / d * f * h; if (p[1] > CH_H - 0.2 && d < 2.2) { v[0] *= 1 - 4 * h; v[1] *= 1 - 4 * h; v[2] *= 1 - 4 * h; } break; }
+      case 'vortex': { const r = Math.hypot(dx, dz) + 0.3, tx = -dz / r, tz = dx / r, k = Math.min(1, r / 2); v[0] += (tx * 14 * k - dx / r * 3.2) * h; v[2] += (tz * 14 * k - dz / r * 3.2) * h; v[1] += (2.0 + 2.5 * Math.max(0, 1 - r / 5)) * h; v[0] *= 1 - 0.3 * h; v[2] *= 1 - 0.3 * h; break; }
+      case 'bumper': { if (p[1] < 1.9) { for (const [bx, bz] of c.bump || (c.bump = [[-3, -3], [3, -3], [0, 0], [-3, 3], [3, 3], [0, -4.5], [0, 4.5]])) { const ex = p[0] - (c.cx + bx), ez = p[2] - (c.cz + bz), d = Math.hypot(ex, ez); if (d < 1.2 && d > 1e-3 && !(b.bpT > 0)) { v[0] = ex / d * 10; v[2] = ez / d * 10; v[1] = Math.max(v[1], 4.5); b.bpT = 0.3; c.hit = (c.hit || 0) + 1; } } } if (b.bpT > 0) b.bpT -= h; break; }
+      case 'foam': { if (p[1] < 1.7) { const k = Math.max(0, 1 - 4.5 * h); v[0] *= k; v[1] *= k; v[2] *= k; b.w[0] *= k; b.w[1] *= k; b.w[2] *= k; } break; }
+      case 'slime': { if (p[1] < 1.1) { const k = Math.max(0, 1 - 8 * h); v[0] *= k; v[1] *= k; v[2] *= k; b.w[0] *= k; b.w[1] *= k; b.w[2] *= k; } break; }
+      case 'centri': { if (p[1] < 1.5) { const r = Math.hypot(dx, dz) + 0.2, tx = -dz / r, tz = dx / r; v[0] += (tx * 4 + dx / r * 3.4 * Math.min(1, r / 3)) * h; v[2] += (tz * 4 + dz / r * 3.4 * Math.min(1, r / 3)) * h; } break; }
+    }
+  };
+}
+
+/* ---------- Zustand, Wirkung auf die Figur, Oberflaeche ---------- */
+{
+  const _rn = (a, b) => a + Math.random() * (b - a);
+  const mkHud = (g) => {
+    let bar = document.getElementById('chbar'); if (bar) return bar;
+    const st = document.createElement('style');
+    st.textContent = '#chbar{position:fixed;left:50%;top:calc(58px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:26;display:none;flex-direction:column;align-items:center;gap:6px;max-width:min(94vw,560px);font:600 13px system-ui,sans-serif;color:#eaf6ff;pointer-events:none}#chbar .r{display:flex;gap:8px;align-items:center;pointer-events:auto}#chbar button{border:1px solid rgba(160,210,255,.5);background:rgba(8,24,40,.72);color:#cfeaff;border-radius:10px;padding:6px 12px;font:700 14px system-ui;backdrop-filter:blur(4px);cursor:pointer}#chbar .t{padding:6px 14px;border-radius:12px;background:rgba(8,24,40,.72);border:1px solid rgba(160,210,255,.4);backdrop-filter:blur(4px);text-align:center;min-width:190px}#chbar .t small{display:block;font-weight:500;opacity:.8;font-size:11.5px;margin-top:2px}#chgrid{display:none;grid-template-columns:repeat(6,1fr);gap:5px;padding:8px;border-radius:12px;background:rgba(8,24,40,.86);border:1px solid rgba(160,210,255,.4);pointer-events:auto;backdrop-filter:blur(6px)}#chgrid button{padding:7px 0;font-size:12px;min-width:34px}#chfx{position:fixed;inset:0;z-index:5;pointer-events:none;opacity:0;transition:opacity .25s}';
+    document.head.appendChild(st);
+    bar = document.createElement('div'); bar.id = 'chbar'; bar.innerHTML = '<div class="r"><button id="chp">◀</button><div class="t" id="cht"></div><button id="chn">▶</button><button id="chg">☰</button></div><div id="chgrid"></div>';
+    document.body.appendChild(bar);
+    const fx = document.createElement('div'); fx.id = 'chfx'; document.body.appendChild(fx);
+    const grid = bar.querySelector('#chgrid'); CH.forEach((c, i) => { const b = document.createElement('button'); b.textContent = i + 1; b.title = c.en; b.dataset.i = i; b.onclick = () => { g.chGo(i); grid.style.display = 'none'; }; grid.appendChild(b); });
+    bar.querySelector('#chp').onclick = () => g.chGo((g.chI + 29) % 30); bar.querySelector('#chn').onclick = () => g.chGo((g.chI + 1) % 30);
+    bar.querySelector('#chg').onclick = () => { grid.style.display = grid.style.display === 'grid' ? 'none' : 'grid'; };
+    addEventListener('keydown', (e) => { if (g.spawnKey !== 'chambers') return; if (e.code === 'BracketRight') g.chGo((g.chI + 1) % 30); if (e.code === 'BracketLeft') g.chGo((g.chI + 29) % 30); });
+    return bar;
+  };
+  const dmg = (g, a) => { const br = g.brain; if (!br.alive) return; br.health -= a; if (br.health <= 0) { if (g.set && g.set.mortal) br.die({}); else br.health = 0.3; } };
+  const emit = (g, x, y, z, vx, vy, vz, life, s, gr, r, gg, bb, a, drag, grav, add) => g.fx.emit(x, y, z, vx, vy, vz, life, s, gr, r, gg, bb, a, drag, grav, !!add, 0);
+  Object.assign(Game.prototype, {
+    chGo(i) {
+      const c = CH[i]; if (!c || !this.dummy) return; this.chI = i; const dead = !this.brain.alive;
+      this.placeDummy(c.cx, c.cz, 0); this._chS = null; if (this.world.water) this.world.water.y = -0.7;
+      const cm = this.cam; if (cm) { cm.tx = c.cx; cm.tz = c.cz; }
+      if (dead && this.healDummy) this.healDummy();
+      this.chHud();
+    },
+    chHud() {
+      const c = CH[this.chI || 0], t = document.getElementById('cht'); if (!t) return;
+      t.innerHTML = (T('Chamber') + ' ' + (c.i + 1) + '/30 · <b>' + tx2(c.de, c.en) + '</b><small>' + tx2(c.d[1], c.d[0]) + '</small>');
+    },
+    chTick(dt) {
+      const key = this.spawnKey, bar = document.getElementById('chbar');
+      if (key !== 'chambers') { if (bar && bar.style.display !== 'none') { bar.style.display = 'none'; const f = document.getElementById('chfx'); if (f) f.style.opacity = 0; } if (this.world) this.world.chOn = false; return; }
+      const w = this.world; if (!w) return; const bar2 = mkHud(this); if (this.chI === undefined) this.chI = 0; if (bar2.style.display !== 'flex') { bar2.style.display = 'flex'; this.chHud(); }
+      w.chOn = true; w.chT = (w.chT || 0) + dt; const t = w.chT;
+      // Stampfer und Flutkammer laufen unabhaengig
+      const press = CH[22], pl = press.pl || (press.pl = { y: 3.2, ph: 0, fall: false, hit: false });
+      pl.ph = (pl.ph + dt) % 5; const ph = pl.ph; pl.fall = ph > 2.6 && ph < 2.95; pl.y = ph < 2.6 ? 3.2 : ph < 2.95 ? 3.2 - (ph - 2.6) / 0.35 * 2.9 : ph < 3.6 ? 0.3 : 0.3 + (ph - 3.6) / 1.4 * 2.9;
+      if (ph > 2.9 && ph < 3.0 && !pl.hit) { pl.hit = true; this.fx.addShake && this.fx.addShake(0.25); this.sfx.play('thud', { vol: 0.9, pitch: 0.6 }); const P = this.dummy.b.pelvis.p; if (chAt(P[0], P[2], P[1]) === press && Math.abs(P[0] - press.cx) < 2.5 && Math.abs(P[2] - press.cz) < 2.5 && P[1] < 1.4) { dmg(this, 0.3); this.brain.pain = Math.min(1.2, this.brain.pain + 0.5); this.popup('CRUSHED', P, '#ff5a3a', 1.4); for (let k = 0; k < 24; k++) emit(this, P[0], 0.2, P[2], _rn(-3, 3), _rn(1, 4), _rn(-3, 3), _rn(0.5, 1), 0.07, 0.02, 0.6, 0.02, 0.02, 0.9, 0.3, 9.8, false); } }
+      if (ph < 2) pl.hit = false;
+      const fl = CH[28], W = w.water; if (W) { const dc = chAt(this.dummy.b.pelvis.p[0], this.dummy.b.pelvis.p[2], this.dummy.b.pelvis.p[1]); if (dc === fl) W.y = Math.min(3.3, W.y + 0.38 * dt); else W.y = Math.max(-0.7, W.y - 1.2 * dt); }
+      // Wirkung auf die Figur
+      const D = this.dummy, P = D.b.pelvis.p, br = this.brain, c = chAt(P[0], P[2], P[1]), S = this._chS || (this._chS = { e: 0, heat: 0, frost: 0, burn: 0, shT: 1.5, vac: 0, tag: 0, fz: 0 });
+      this.helium = !!(c && c.t === 'helium');
+      if (c) { const ci = c.i; if (ci !== this.chI) { this.chI = ci; this.chHud(); } }
+      S.e += ((c ? 1 : 0) - S.e) * Math.min(1, dt * 2.5);
+      const list = D.list;
+      if (c && br.alive) switch (c.t) {
+        case 'gas': {
+          dmg(this, c.dps * dt); br.pain = Math.min(1.1, br.pain + c.pain * dt);
+          if (Math.random() < dt * c.conv) { const s = 1.5 + c.conv; for (const b of list) { b.v[0] += _rn(-s, s); b.v[1] += _rn(0, s); b.v[2] += _rn(-s, s); } if (Math.random() < 0.5) this.sfx.play('gasp', { vol: 0.5 }); }
+          break;
+        }
+        case 'co2': br.shock = Math.min(1, br.shock + 0.12 * dt); br.stun = Math.min(1, (br.stun || 0) + 0.04 * dt); break;
+        case 'heat': S.heat += dt; if (S.heat > 6 && !S.burn) { S.burn = 1; this.popup('BURNING', P, '#ff8a1e', 1.4); } if (S.heat > 2) { dmg(this, 0.004 * dt * S.heat); br.pain = Math.min(1.1, br.pain + 0.03 * dt); } break;
+        case 'fire': if (!S.burn) { S.burn = 1; this.popup('BURNING', P, '#ff8a1e', 1.4); } break;
+        case 'cold': S.frost = Math.min(1, S.frost + dt * c.rate); dmg(this, 0.006 * dt * S.frost); if (S.frost >= 1 && !S.fz) { S.fz = 1; this.popup('FROZEN', P, '#9ee0ff', 1.6); } break;
+        case 'vac': S.vac += dt; if (S.vac > 5) br.shock = Math.min(1, br.shock + 0.1 * dt); if (S.vac > 12) dmg(this, 0.05 * dt); break;
+        case 'shock': S.shT -= dt; if (S.shT < 0) { S.shT = _rn(1.3, 2.8); S.flash = 1; for (const b of list) { b.v[0] += _rn(-8, 8); b.v[1] += _rn(2, 8); b.v[2] += _rn(-8, 8); } dmg(this, 0.04); br.pain = Math.min(1.2, br.pain + 0.3); this.sfx.play('thud', { vol: 0.5, pitch: 2.2 }); this.popup('ELECTROCUTED', P, '#8ab4ff', 0.9); for (let k = 0; k < 26; k++) { const b = list[(Math.random() * list.length) | 0]; emit(this, b.p[0], b.p[1], b.p[2], _rn(-3, 3), _rn(-1, 3), _rn(-3, 3), _rn(0.12, 0.35), 0.05, 0, 0.7, 0.85, 1, 1, 1.5, 0, true); } } break;
+        case 'acid': dmg(this, 0.02 * dt); br.pain = Math.min(1.1, br.pain + 0.07 * dt); break;
+        case 'rad': dmg(this, 0.008 * dt); br.shock = Math.min(1, br.shock + 0.015 * dt); break;
+      }
+      if (!c || (c.t !== 'heat')) S.heat = Math.max(0, S.heat - dt * 2);
+      if (!c || c.t !== 'cold') S.frost = Math.max(0, S.frost - dt * 0.05);
+      if (S.frost < 0.8) S.fz = 0;
+      if (S.frost > 0.05) { const k = Math.exp(-(S.frost > 0.99 ? 10 : 3.5 * S.frost) * dt); for (const b of list) { b.v[0] *= k; b.v[1] *= k; b.v[2] *= k; b.w[0] *= k; b.w[1] *= k; b.w[2] *= k; } }
+      if (S.burn) {
+        if (c && (c.t === 'cold' || c.t === 'flood')) S.burn = 0;
+        else { if (!(c && (c.t === 'fire'))) { S.burnT = (S.burnT || 0) + dt; if (S.burnT > 14) { S.burn = 0; S.burnT = 0; } } else S.burnT = 0;
+          if (br.alive) { dmg(this, 0.03 * dt); br.pain = Math.min(1.2, br.pain + 0.2 * dt); if (Math.random() < dt * 1.5) for (const b of list) { b.v[0] += _rn(-2.2, 2.2); b.v[1] += _rn(0, 2.4); b.v[2] += _rn(-2.2, 2.2); } }
+          for (let k = 0; k < 3; k++) { const b = list[(Math.random() * list.length) | 0], p = b.p; emit(this, p[0] + _rn(-.1, .1), p[1] + 0.05, p[2] + _rn(-.1, .1), _rn(-.3, .3), _rn(1, 2.2), _rn(-.3, .3), _rn(0.3, 0.7), 0.16, 0.12, 1, _rn(0.4, 0.7), 0.1, 0.8, 0.5, -2.2, true); }
+          const b = list[(Math.random() * list.length) | 0], p = b.p; emit(this, p[0], p[1] + 0.2, p[2], 0, 1.2, 0, _rn(0.8, 1.6), 0.2, 0.25, 0.18, 0.18, 0.18, 0.5, 0.4, -1.2, false); }
+      }
+      // Partikel / Atmosphaere der aktuellen Kammer
+      if (c) {
+        const x = c.cx, z = c.cz, rg = c.rgb;
+        if (c.rgb && (c.t === 'gas' || c.t === 'co2' || c.t === 'helium')) { const n = c.t === 'co2' ? 0.6 : 1.2; for (let k = 0; k < 3; k++) if (Math.random() < n * dt * 30) emit(this, x + _rn(-5.8, 5.8), c.t === 'co2' ? _rn(0.1, 1.0) : _rn(0.3, 2.8), z + _rn(-5.8, 5.8), _rn(-.3, .3), _rn(-.1, .3), _rn(-.3, .3), _rn(2.2, 4), c.t === 'helium' ? 0.5 : 1.1, 0.6, rg[0], rg[1], rg[2], c.t === 'helium' ? 0.12 : 0.2, 0.6, 0, false); }
+        if (c.t === 'gas' && c.down) { for (let k = -4; k <= 4; k += 2) if (Math.random() < dt * 20) emit(this, x + k, 3.0, z - 5.7 + _rn(0, 0.2), _rn(-.5, .5), _rn(-2.5, -1), _rn(0.8, 2.2), _rn(1, 1.8), 0.25, 0.4, rg[0], rg[1], rg[2], 0.3, 0.7, 0, false); }
+        if (c.t === 'acid') { for (let k = 0; k < 3; k++) if (Math.random() < dt * 40) emit(this, x + _rn(-5.8, 5.8), 3.3, z + _rn(-5.8, 5.8), 0, _rn(-6, -3), 0, 0.9, 0.05, 0, 0.45, 0.95, 0.15, 0.9, 0, 0, false); }
+        if (c.t === 'rad' && Math.random() < dt * 14) emit(this, x + _rn(-5, 5), _rn(0.2, 2.8), z + _rn(-5, 5), _rn(-.2, .2), _rn(-.1, .3), _rn(-.2, .2), _rn(1, 2), 0.3, 0.3, 0.5, 1, 0.3, 0.12, 0.4, 0, true);
+        if (c.t === 'heat' || c.t === 'fire') { const n = c.t === 'fire' ? 140 : 40; for (let k = 0; k < 2; k++) if (Math.random() < dt * n) { const sx = _rn(-5.7, 5.7); emit(this, x + sx, 0.1, z + (Math.random() < 0.5 ? -5.7 : 5.7) * (c.t === 'fire' ? 1 : 0) + (c.t === 'fire' ? _rn(-0.2, 0.2) : _rn(-5.7, 5.7)), _rn(-.2, .2), _rn(1.2, 3.2), _rn(-.2, .2), _rn(0.5, 1.1), c.t === 'fire' ? 0.5 : 0.25, 0.4, 1, _rn(0.35, 0.65), 0.08, c.t === 'fire' ? 0.55 : 0.16, 0.5, -1.5, true); } if (c.t === 'fire' && Math.random() < dt * 15) emit(this, x + _rn(-5, 5), _rn(0.5, 2), z + _rn(-5, 5), 0, 1, 0, 2, 0.8, 0.5, 0.12, 0.12, 0.12, 0.35, 0.4, -0.6, false); }
+        if (c.t === 'cold') { for (let k = 0; k < 2; k++) if (Math.random() < dt * (c.rate > 0.1 ? 60 : 25)) emit(this, x + _rn(-5.8, 5.8), _rn(0.1, 3), z + _rn(-5.8, 5.8), _rn(-.2, .2), _rn(-.3, 0.2), _rn(-.2, .2), _rn(1.5, 3), c.rate > 0.1 ? 0.5 : 0.08, 0.1, 0.85, 0.95, 1, c.rate > 0.1 ? 0.18 : 0.8, 0.5, 0.2, false); }
+        if (c.t === 'foam' && Math.random() < dt * 25) emit(this, x + _rn(-5.8, 5.8), _rn(0.3, 1.8), z + _rn(-5.8, 5.8), 0, 0.15, 0, _rn(1.5, 3), 0.5, 0.2, 0.95, 0.97, 1, 0.5, 0.5, 0, false);
+        if (c.t === 'slime' && Math.random() < dt * 8) emit(this, x + _rn(-5, 5), 0.9, z + _rn(-5, 5), 0, 0.3, 0, 1, 0.12, 0.03, 0.4, 0.8, 0.2, 0.6, 0.5, 0, false);
+        if (c.t === 'wind') for (let k = 0; k < 2; k++) if (Math.random() < dt * 40) emit(this, x - 6, _rn(0.2, 3), z + _rn(-5.5, 5.5), 18, _rn(-.5, .5), _rn(-1, 1), 0.7, 0.03, 0, 1, 1, 1, 0.35, 0, 0, true);
+        if (c.t === 'vortex' && Math.random() < dt * 40) { const a = _rn(0, 6.28), r = _rn(1, 5); emit(this, x + Math.cos(a) * r, _rn(0.1, 2.5), z + Math.sin(a) * r, -Math.sin(a) * 6, 1, Math.cos(a) * 6, 0.6, 0.04, 0, 0.9, 0.95, 1, 0.4, 1, 0, true); }
+        if (c.t === 'magnet' && Math.random() < dt * 20) emit(this, x + _rn(-.8, .8), CH_H + 0.2, z + _rn(-.8, .8), _rn(-.2, .2), -1, _rn(-.2, .2), 0.7, 0.04, 0, 1, 0.3, 0.3, 0.7, 0, 0, true);
+        if (c.t === 'centri' && Math.random() < dt * 20) { const a = _rn(0, 6.28), r = _rn(1, 5.5); emit(this, x + Math.cos(a) * r, 0.1, z + Math.sin(a) * r, -Math.sin(a) * 4, 0.2, Math.cos(a) * 4, 0.5, 0.03, 0, 1, 1, 1, 0.4, 0, 0, true); }
+        if (c.t === 'shock' && Math.random() < dt * 30) { const a = _rn(0, 6.28); emit(this, x + Math.cos(a) * 5.7, _rn(0.2, 3), z + Math.sin(a) * 5.7, 0, 0, 0, 0.1, 0.12, 0, 0.7, 0.85, 1, 0.9, 0, 0, true); }
+      }
+      // Bildschirm-Toenung
+      const fx = document.getElementById('chfx'), ov = c ? c.ov : null;
+      if (fx) { if (ov) { let a = ov[3] * S.e * (c.t === 'shock' ? 0.5 + (S.flash || 0) * 2 : c.t === 'rad' ? 0.7 + 0.3 * Math.sin(t * 17) : 1); if (S.burn) a = Math.max(a, 0.2); const col = S.burn && c.t !== 'heat' && c.t !== 'fire' ? [255, 110, 20] : ov; fx.style.background = 'radial-gradient(ellipse at center, rgba(' + col[0] + ',' + col[1] + ',' + col[2] + ',' + (a * 0.3).toFixed(3) + ') 30%, rgba(' + col[0] + ',' + col[1] + ',' + col[2] + ',' + a.toFixed(3) + ') 100%)'; fx.style.opacity = 1; } else fx.style.opacity = 0; }
+      if (S.flash) S.flash = Math.max(0, S.flash - dt * 6);
+    }
+  });
+  const t0 = Game.prototype.tick;
+  Game.prototype.tick = function () { const r = t0.apply(this, arguments); try { this.chTick(DT); } catch (e) { console.error(e); } return r; };
+  // Helium: hohe Stimme
+  const mkVoice = (g) => { const s = g.sfx; if (!s || s._chW) return; s._chW = 1; const p0 = s.play; s.play = function (name, o) { if (g.helium && /scream|pain|gasp|groan|moan|cough|yell|cry|voice|grunt|hit/i.test(String(name))) { o = Object.assign({}, o); o.pitch = (o.pitch || 1) * 1.9; } return p0.call(this, name, o); }; };
+  const bw0 = Game.prototype.buildWorld;
+  Game.prototype.buildWorld = function (key) { const r = bw0.apply(this, arguments); this._chS = null; this.helium = false; if (key === 'chambers') { mkVoice(this); if (this.world) { this.world.chOn = true; this.world.chT = 0; } } return r; };
+  /* dynamische Teile: Stampferplatte, Zentrifugenscheibe, Magnet, Bumper */
+  const ap0 = Game.prototype.appendScenes;
+  Game.prototype.appendScenes = function (bd) {
+    const r = ap0.apply(this, arguments); if (this.spawnKey !== 'chambers' || !this.world) return r;
+    const M = this._sm || (this._sm = {}); if (!M.cbox) { const mb = new MB(); mbBox(mb, -0.5, -0.5, -0.5, 0.5, 0.5, 0.5, NC(1, 1, 1, 0.5)); M.cbox = this.gfx.upload(mb.finish()); }
+    const t = this.world.chT || 0, q = Q4(), put = (mesh, x, y, z, sx, sy, sz, ang, tint) => { const m = M4.id(); qfromAxisAngle(q, 0, 1, 0, ang || 0); M4.trs(m, [x, y, z], q, sx, sy, sz); bd.push({ mesh, model: m, tint }); };
+    const pr = CH[22], pl = pr.pl; if (pl) { put(M.cbox, pr.cx, pl.y + 0.3, pr.cz, 4.8, 0.6, 4.8, 0, [0.35, 0.36, 0.4]); put(M.cbox, pr.cx, pl.y + 0.3 + 1.8, pr.cz, 1.2, 3.6, 1.2, 0, [0.5, 0.5, 0.55]); put(M.cbox, pr.cx, pl.y + 0.02, pr.cz, 4.9, 0.12, 4.9, 0, [0.95, 0.8, 0.1]); }
+    const ce = CH[29]; put(this.ballMesh, ce.cx, 0.1, ce.cz, 5.4, 0.08, 5.4, t * 2.2, [0.8, 0.8, 0.85]); put(M.cbox, ce.cx, 0.17, ce.cz, 0.5, 0.1, 5.2, t * 2.2, [0.95, 0.5, 0.1]); put(M.cbox, ce.cx, 0.17, ce.cz, 5.2, 0.1, 0.5, t * 2.2, [0.95, 0.5, 0.1]);
+    const mg = CH[23]; put(M.cbox, mg.cx, CH_H + 0.05, mg.cz, 2.4, 0.5, 2.4, 0, [0.8, 0.12, 0.12]);
+    const bp = CH[25]; for (const [bx, bz] of bp.bump || (bp.bump = [[-3, -3], [3, -3], [0, 0], [-3, 3], [3, 3], [0, -4.5], [0, 4.5]])) put(this.ballMesh, bp.cx + bx, 0.9, bp.cz + bz, 0.8, 0.8, 0.8, 0, [1, 0.3, 0.7]);
+    return r;
+  };
 }
 
 ;
@@ -16056,9 +16569,19 @@ Renderer.prototype.setFoliage = function (f) {
    changelog.js — Versionsnummer, Update-Protokoll (Einstellungen) und kurzes Update-Fenster beim ersten Start nach einer neuen Version.
    Neue Version: APP_VERSION hochzaehlen und oben in APP_LOG einen Eintrag ergaenzen.
    =================================================================== */
-const APP_VERSION = '1.7';
+const APP_VERSION = '1.8';
 const APP_ICON = 'data:image/png;base64,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';
 const APP_LOG = [
+  { v: '1.8', date: '27.11.2026', title: ['Meer, Rettung im Wasser und 30 Experimentierkammern', 'Sea, water rescue and 30 experiment chambers'], items: [
+    ['Hafen neu: Containerkai 2,4 m über einem echten Meer, Schiff im Wasser, Kai-Kante mit Pollern', 'Harbor rebuilt: container quay 2.4 m above a real sea, ship in the water, quay edge with bollards'],
+    ['Ertrinken: Kopf unter Wasser = Luftanzeige; ohne Luft Schmerz, Schock und Schaden. Nach etwa 16 Sekunden im tiefen Wasser wird er müde und sinkt; Tote sinken langsam', 'Drowning: head under water shows an air bar; without air pain, shock and damage. After about 16 seconds in deep water he gets tired and sinks; dead bodies sink slowly'],
+    ['Pool: Stirbt er im Wasser, kommen die Sanitäter als Rettungsschwimmer aus dem Krankenwagen, schwimmen hin, ziehen ihn raus und legen ihn an den Rand', 'Pool: if he dies in the water, the crew comes out of the ambulance as lifeguards, swims over, pulls him out and lays him at the edge'],
+    ['Hafen: Ein Rettungsboot fährt aufs Meer, holt ihn an Bord und bringt ihn zum Kai, danach übernimmt der Rettungsdienst', 'Harbor: a rescue boat races out to sea, picks him up and brings him to the quay, then the paramedics take over'],
+    ['Neue Karte Experimentier-Labor mit 30 Kammern: Giftgas, Sprühlabor, Nervengas, Chlor, CO₂, Helium (hohe Stimme), Hitze, Brand, Kälte, Flüssigstickstoff, Vakuum, Schwerelosigkeit, Mond, Schwerkraft x3, Orkan, Eis, Kleber, Trampolin, Förderband, Strom, Säure, Strahlung, Stampfer, Magnet, Strudel, Flipper, Schaum, Schleim, Flut, Zentrifuge', 'New map Experiment Labs with 30 chambers: toxic gas, spray lab, nerve gas, chlorine, CO2, helium (squeaky voice), heat, inferno, cold, liquid nitrogen, vacuum, zero gravity, moon, gravity x3, hurricane, ice, glue, trampoline, conveyor, electricity, acid, radiation, stomper, magnet, vortex, pinball, foam, slime, flood, centrifuge'],
+    ['Kammerwahl oben mit Pfeilen und Liste, Tasten [ und ]; Schießen und alle Werkzeuge funktionieren weiter', 'Chamber selector at the top with arrows and list, keys [ and ]; shooting and all tools still work'],
+    ['In den Kammern und im Gefängnis kommt kein Rettungsdienst (Hinweis erscheint)', 'No paramedics in the chambers or in the prison (a notice appears)'],
+    ['Rettungsfahrzeuge und Besatzung fahren auf dem erhöhten Kai auf richtiger Höhe', 'Ambulance and crew work at the right height on the raised quay'],
+    ['Jetzt 28 Karten', '28 maps now'] ] },
   { v: '1.7', date: '24.11.2026', title: ['Regen, Durchschüsse, Organe 2 und fünf neue Karten', 'Rain, through-and-through shots, organs 2 and five new maps'], items: [
     ['Karten-Ladeanimation dauert jetzt 15 Sekunden, mit acht Ladeschritten und Tipps', 'Map loading animation now lasts 15 seconds, with eight loading steps and tips'],
     ['Regen als Einstellung: Regenstreifen, dunklerer Himmel, nasser Boden, Pfützen mit Spiegelung und Wellen, Regenrauschen, Gewitter ab 60 %', 'Rain as a setting: streaks, darker sky, wet ground, puddles with reflections and ripples, rain noise, thunderstorms above 60%'],
