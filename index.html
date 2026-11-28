@@ -16208,11 +16208,11 @@ Object.assign(DE, {
 }
 
 ;
-/* ---- firebase.js: Firebase-Anbindung (Realtime Database + anonyme Anmeldung), faul geladen ---- */
+/* ---- firebase.js: Firebase-Anbindung (Cloud Firestore + Anmeldung), faul geladen ---- */
 // (c) 2026 Olli - Ragdoll Lab. Idee: Olli, Code gemeinsam mit Claude (Anthropic). Credits nicht entfernen.
 'use strict';
 /* Nichts davon laeuft beim Spielstart (ausser account.js, das beim ersten Start die Anmeldung zeigt). Erst der erste Aufruf von RLFirebase.ready()/get()/set()... laedt das SDK.
-   Analytics ist bewusst NICHT eingebunden. Die Config ist oeffentlich; geschuetzt wird per Realtime-Database-Rules. */
+   Analytics ist bewusst NICHT eingebunden. Die Config ist oeffentlich; geschuetzt wird per Firestore-Rules. */
 window.RLFirebase = (() => {
   const CFG = {
     apiKey: "AIzaSyCh8lRcaFHfV4qEXOm6nCpPevy8D8bntNg",
@@ -16225,13 +16225,17 @@ window.RLFirebase = (() => {
   };
   const V = '10.12.2', CDN = 'https://www.gstatic.com/firebasejs/' + V + '/';
   let P = null, S = null, st = 'idle', err = null;
+  const seg = p => String(p).split('/').filter(Boolean);
+  /* TS-Platzhalter -> serverTimestamp(); Timestamp -> Millisekunden */
+  const enc = (D, v) => { if (v && typeof v === 'object') { if (v['.sv'] === 'timestamp') return D.serverTimestamp(); if (Array.isArray(v)) return v.map(x => enc(D, x)); const o = {}; for (const k in v) if (v[k] !== undefined) o[k] = enc(D, v[k]); return o; } return v; };
+  const dec = v => { if (v && typeof v === 'object') { if (typeof v.toMillis === 'function') return v.toMillis(); if (Array.isArray(v)) return v.map(dec); const o = {}; for (const k in v) o[k] = dec(v[k]); return o; } return v; };
   const api = {
     cfg: CFG, enabled: true,
     get status() { return st; }, get error() { return err; },
     get uid() { return S && S.auth.currentUser ? S.auth.currentUser.uid : null; },
     TS: { '.sv': 'timestamp' },
     /* ---- Konto ---- */
-    _u(u) { return u ? { uid: u.uid, name: u.displayName || '', anon: !!u.isAnonymous } : null; },
+    _u(u) { return u ? { uid: u.uid, name: u.displayName || '', anon: !!u.isAnonymous, email: u.email || '' } : null; },
     get user() { return S ? api._u(S.auth.currentUser) : null; },
     async authReady() { if (!(await api.ready())) return null; return api._u(await S.authP); },
     async _auth(fn) { if (!(await api.ready())) return { ok: false, code: 'offline' }; try { return { ok: true, user: api._u(await fn(S.Au, S.auth)) }; } catch (e) { return { ok: false, code: String(e && e.code || e && e.message || e) }; } },
@@ -16239,10 +16243,21 @@ window.RLFirebase = (() => {
     signUp(email, pw, name) { return api._auth(async (Au, a) => { const c = await Au.createUserWithEmailAndPassword(a, email, pw); await Au.updateProfile(c.user, { displayName: name }); return a.currentUser; }); },
     guest() { return api._auth(async (Au, a) => a.currentUser && a.currentUser.isAnonymous ? a.currentUser : (await Au.signInAnonymously(a)).user); },
     async signOut() { if (!(await api.ready())) return false; try { await S.Au.signOut(S.auth); return true; } catch (e) { return false; } },
-    /* beim Trennen der Verbindung Pfad loeschen (Praesenz) */
-    async onDisc(path) { return api._run(async (D, db) => { await D.onDisconnect(D.ref(db, path)).remove(); return true; }, false); },
-    /* Live-Abo auf die letzten n Eintraege (nach Schluessel = zeitlich bei push) */
-    async listenLast(path, n, cb) { if (!(await api.ready())) return () => { }; return S.D.onValue(S.D.query(S.D.ref(S.db, path), S.D.orderByKey(), S.D.limitToLast(n)), s => { try { cb(s.exists() ? s.val() : null); } catch (e) { console.warn(e); } }); },
+    /* Passwort aendern (mit erneuter Bestaetigung des alten) */
+    async changePassword(cur, pw) {
+      if (!(await api.ready())) return { ok: false, code: 'offline' };
+      try { const u = S.auth.currentUser; if (!u || !u.email) return { ok: false, code: 'no-user' }; await S.Au.reauthenticateWithCredential(u, S.Au.EmailAuthProvider.credential(u.email, cur)); await S.Au.updatePassword(u, pw); return { ok: true }; }
+      catch (e) { return { ok: false, code: String(e && e.code || e && e.message || e) }; }
+    },
+    async setName(name) { if (!(await api.ready())) return { ok: false, code: 'offline' }; try { await S.Au.updateProfile(S.auth.currentUser, { displayName: name }); return { ok: true }; } catch (e) { return { ok: false, code: String(e && e.code || e) }; } },
+    /* Firestore kennt kein onDisconnect: Praesenz laeuft ueber den Herzschlag (ts) */
+    async onDisc() { return true; },
+    /* Live-Abo auf die letzten n Eintraege einer Sammlung (nach ts), Ergebnis aelteste -> neueste */
+    async listenLast(path, n, cb) {
+      if (!(await api.ready())) return () => { };
+      const D = S.D, q = D.query(D.collection(S.db, ...seg(path)), D.orderBy('ts', 'desc'), D.limit(n));
+      return D.onSnapshot(q, s => { const arr = []; s.forEach(d => arr.push([d.id, dec(d.data())])); arr.reverse(); const o = {}; for (const [k, v] of arr) o[k] = v; try { cb(arr.length ? o : null); } catch (e) { console.warn(e); } }, e => console.warn('[RLFirebase] listen', e && e.code));
+    },
     /* Laedt SDK + meldet anonym an. Gibt true/false zurueck, wirft nie. */
     ready() {
       if (!api.enabled) return Promise.resolve(false);
@@ -16250,8 +16265,8 @@ window.RLFirebase = (() => {
       st = 'loading';
       P = (async () => {
         try {
-          const [A, Au, D] = await Promise.all([import(CDN + 'firebase-app.js'), import(CDN + 'firebase-auth.js'), import(CDN + 'firebase-database.js')]);
-          const app = A.initializeApp(CFG), auth = Au.getAuth(app), db = D.getDatabase(app);
+          const [A, Au, D] = await Promise.all([import(CDN + 'firebase-app.js'), import(CDN + 'firebase-auth.js'), import(CDN + 'firebase-firestore.js')]);
+          const app = A.initializeApp(CFG), auth = Au.getAuth(app), db = D.getFirestore(app);
           S = { app, auth, db, D, Au }; st = 'ready';
           S.authP = new Promise(res => { const un = Au.onAuthStateChanged(auth, u => { res(u); try { un(); } catch (e) { } }); });
           return true;
@@ -16260,19 +16275,21 @@ window.RLFirebase = (() => {
       return P;
     },
     async _run(fn, dflt) { if (!(await api.ready())) return dflt; try { return await fn(S.D, S.db); } catch (e) { err = String(e && e.message || e); console.warn('[RLFirebase]', err); return dflt; } },
-    get(path) { return api._run(async (D, db) => { const s = await D.get(D.ref(db, path)); return s.exists() ? s.val() : null; }, null); },
-    set(path, val) { return api._run(async (D, db) => { await D.set(D.ref(db, path), val); return true; }, false); },
-    update(path, val) { return api._run(async (D, db) => { await D.update(D.ref(db, path), val); return true; }, false); },
-    remove(path) { return api._run(async (D, db) => { await D.remove(D.ref(db, path)); return true; }, false); },
-    push(path, val) { return api._run(async (D, db) => { const r = D.push(D.ref(db, path)); await D.set(r, val); return r.key; }, null); },
+    /* Pfade: gerade Segmentzahl = Dokument ('site/state'), ungerade = Sammlung ('logins') */
+    get(path) { return api._run(async (D, db) => { const sg = seg(path); if (sg.length % 2) { const s = await D.getDocs(D.collection(db, ...sg)); const o = {}; s.forEach(d => o[d.id] = dec(d.data())); return s.empty ? null : o; } const s = await D.getDoc(D.doc(db, ...sg)); return s.exists() ? dec(s.data()) : null; }, null); },
+    set(path, val) { return api._run(async (D, db) => { const r = D.doc(db, ...seg(path)); if (val === null) await D.deleteDoc(r); else await D.setDoc(r, enc(D, val)); return true; }, false); },
+    update(path, val) { return api._run(async (D, db) => { await D.setDoc(D.doc(db, ...seg(path)), enc(D, val), { merge: true }); return true; }, false); },
+    remove(path) { return api._run(async (D, db) => { await D.deleteDoc(D.doc(db, ...seg(path))); return true; }, false); },
+    push(path, val) { return api._run(async (D, db) => (await D.addDoc(D.collection(db, ...seg(path)), enc(D, val))).id, null); },
     /* Live-Abo; gibt (async) eine Abmelde-Funktion zurueck */
-    async listen(path, cb) { if (!(await api.ready())) return () => { }; return S.D.onValue(S.D.ref(S.db, path), s => { try { cb(s.exists() ? s.val() : null); } catch (e) { console.warn(e); } }); },
+    async listen(path, cb) {
+      if (!(await api.ready())) return () => { }; const D = S.D, sg = seg(path), er = e => console.warn('[RLFirebase] listen ' + path, e && e.code);
+      if (sg.length % 2) return D.onSnapshot(D.collection(S.db, ...sg), s => { const o = {}; s.forEach(d => o[d.id] = dec(d.data())); try { cb(s.empty ? null : o); } catch (e) { console.warn(e); } }, er);
+      return D.onSnapshot(D.doc(S.db, ...sg), s => { try { cb(s.exists() ? dec(s.data()) : null); } catch (e) { console.warn(e); } }, er);
+    },
     /* Top-N nach Zahlenfeld, absteigend, z.B. top('scores','score',10) */
     top(path, field, n) {
-      return api._run(async (D, db) => {
-        const s = await D.get(D.query(D.ref(db, path), D.orderByChild(field), D.limitToLast(n || 10)));
-        const out = []; s.forEach(c => { out.push(Object.assign({ id: c.key }, c.val())); }); return out.reverse();
-      }, []);
+      return api._run(async (D, db) => { const s = await D.getDocs(D.query(D.collection(db, ...seg(path)), D.orderBy(field, 'desc'), D.limit(n || 10))); const out = []; s.forEach(c => out.push(Object.assign({ id: c.id }, dec(c.data())))); return out; }, []);
     }
   };
   return api;
@@ -16294,6 +16311,8 @@ window.RLAccount = (() => {
   const lsSet = v => { try { if (v) localStorage.setItem(LSK, JSON.stringify(v)); else localStorage.removeItem(LSK); } catch (e) { } };
   const game = () => window.__game;
   const TEST = () => !!window.__fastLoad && !window.__acctForce;
+  /* Entwickler-Konten (zusaetzlich zu /admins/<uid> in der Datenbank). Eine UID ist keine Zugangsdaten; die Rechte erzwingen die Rules. */
+  const DEV_UIDS = ['bLwbjsRmVvcygIhiXdQcNp6D11S2'];
   const DOM = 'ragdoll-lab.app', RESERVED = ['admin', 'administrator', 'entwickler', 'developer', 'owner', 'moderator', 'system', 'support'];
   const slug = n => String(n).normalize('NFKD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
   const emailOf = n => slug(n) + '@' + DOM;
@@ -16365,6 +16384,14 @@ window.RLAccount = (() => {
 #banov{z-index:9500;background:#12060a;flex-direction:column;text-align:center}#banov h2{color:#ff6b6b;font-size:26px;margin:0 0 10px}#banov p{color:#c9a0a6;max-width:480px;line-height:1.5}
 #acchip{position:fixed;right:14px;top:calc(12px + env(safe-area-inset-top,0px));z-index:14;padding:7px 12px;border-radius:999px;background:rgba(14,19,28,.82);border:1px solid #2c3850;color:#dfe7f5;font:600 13px system-ui,sans-serif;cursor:pointer;backdrop-filter:blur(6px);display:none}
 body.inmenu #acchip{display:block}#acchip.dev{border-color:#b8902c;color:#ffd46b}
+#acchip{display:none;align-items:center;gap:8px;padding:4px 14px 4px 5px}body.inmenu #acchip{display:flex}
+.cav{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-size:13px;font-weight:800;color:#fff;background:linear-gradient(145deg,#ff5a5f,#b3161c)}.cav.dev{background:linear-gradient(145deg,#ffd46b,#b8860b);color:#2a1d00}.cav.guest{background:linear-gradient(145deg,#5b6b86,#323c50)}
+.pcard{grid-column:1/-1;display:flex;gap:16px;align-items:center;padding:18px;border-radius:18px;background:linear-gradient(135deg,rgba(255,255,255,.07),rgba(255,255,255,.02));border:1px solid rgba(255,255,255,.12);margin-bottom:12px}
+.pav{flex:none;width:72px;height:72px;border-radius:50%;display:grid;place-items:center;font-size:32px;font-weight:800;color:#fff;background:linear-gradient(145deg,#ff5a5f,#b3161c);box-shadow:0 8px 24px rgba(224,56,62,.35)}.pav.dev{background:linear-gradient(145deg,#ffd46b,#b8860b);color:#2a1d00;box-shadow:0 8px 24px rgba(255,200,60,.35)}.pav.guest{background:linear-gradient(145deg,#5b6b86,#323c50);box-shadow:none}
+.pnm{font-size:21px;font-weight:800;line-height:1.2;word-break:break-word}.pbd{display:inline-block;margin-top:5px;padding:2px 10px;border-radius:999px;font-size:12px;font-weight:700;background:rgba(224,56,62,.2);color:#ff9aa0}.pbd.dev{background:rgba(255,200,60,.2);color:#ffd46b}.pbd.guest{background:rgba(255,255,255,.1);color:#b4c0d4}
+.pid{grid-column:1/-1;display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:12px;background:rgba(0,0,0,.28);border:1px solid rgba(255,255,255,.07);margin-bottom:8px;font-size:13px}.pid code{flex:1;user-select:all;word-break:break-all;color:#cfd8e8;font-size:12.5px}.pid small{opacity:.65}
+.pact{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:8px;margin:6px 0}.pact .rb{width:auto;flex:1 1 170px;margin:0;padding:12px 14px;font-size:14px}
+.pform{grid-column:1/-1;padding:14px;border-radius:14px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);margin:6px 0}.pform .rf{margin:8px 0}.pform .rb{margin:8px 0 0}.pform .rm{min-height:0}.pform .rm.ok{color:#8dffa8}
 #accpop{position:fixed;right:14px;top:calc(50px + env(safe-area-inset-top,0px));z-index:15;background:#0e131c;border:1px solid #2c3850;border-radius:12px;padding:8px;display:none;min-width:190px}#accpop.on{display:block}#accpop .rb{margin:4px 0;padding:9px 11px;font-size:13.5px}
 #devb{position:fixed;left:8px;bottom:8px;z-index:60;width:34px;height:34px;border-radius:50%;border:1px solid #b8902c;background:rgba(40,30,8,.7);color:#ffd46b;font-size:16px;cursor:pointer;opacity:.5;display:none}#devb:hover{opacity:1}
 body.inmenu #devb{display:none!important}
@@ -16489,7 +16516,8 @@ body.inmenu #devb{display:none!important}
     A.uid = u.uid; A.mode = u.anon ? 'guest' : 'user'; A.name = u.anon ? L('Gast', 'Guest') : (u.name || (lsGet() || {}).name || '?');
     lsSet({ mode: A.mode, name: A.name });
     A.dev = false;
-    if (!u.anon) { const v = await FB.get('admins/' + u.uid); A.dev = v === true; }
+    if (!u.anon) { const v = await FB.get('admins/' + u.uid); A.dev = v === true || !!(v && v.admin === true) || DEV_UIDS.includes(u.uid); }
+    A.email = u.email || ''; A.loginName = (A.email.split('@')[0]) || slug(A.name);
     if (!u.anon) FB.update('users/' + u.uid, Object.assign({ name: A.name, last: FB.TS }, type === 'register' ? { created: FB.TS } : {}));
     if (type) logLogin(type);
     sub(); presence(); ui(); decorate(); renderBan(); A.ready = true;
@@ -16516,15 +16544,83 @@ body.inmenu #devb{display:none!important}
   /* ---------- Chip + kleines Menue ---------- */
   function ui() {
     const c = mk('acchip', A.dev ? 'dev' : '');
-    c.textContent = A.dev ? '🛠️ ' + A.name + ' · ' + L('Entwickler', 'Developer') : A.mode === 'guest' ? '👤 ' + L('Gast – anmelden', 'Guest – sign in') : '👤 ' + A.name;
-    c.onclick = e => { e.stopPropagation(); const p = mk('accpop', 'on', ''); p.classList.toggle('on', !p.dataset.o); p.dataset.o = p.dataset.o ? '' : '1'; p.innerHTML = (A.dev ? '<button class="rb" id="p-dev">🛠️ ' + h(L('Entwickler-Panel', 'Developer panel')) + '</button>' : '') + (A.uid && A.mode !== 'guest' ? '<div class="rn">' + h(L('Deine ID:', 'Your ID:')) + '<br><code style="user-select:all;word-break:break-all">' + h(A.uid) + '</code></div><button class="rb" id="p-id">📋 ' + h(L('ID kopieren', 'Copy ID')) + '</button>' : '') + (A.mode === 'guest' ? '<button class="rb pri" id="p-in">🔑 ' + h(L('Anmelden', 'Sign in')) + '</button>' : '<button class="rb" id="p-out">↩ ' + h(L('Abmelden', 'Sign out')) + '</button>'); if (!p.dataset.o) p.classList.remove('on');
+    const ini = (A.mode === 'guest' ? '👤' : (A.name || '?').trim().charAt(0).toUpperCase());
+    c.innerHTML = '<span class="cav ' + (A.dev ? 'dev' : A.mode === 'guest' ? 'guest' : '') + '">' + h(ini) + '</span><span>' + h(A.dev ? A.name + ' · ' + L('Entwickler', 'Developer') : A.mode === 'guest' ? L('Gast – anmelden', 'Guest – sign in') : A.name) + '</span>';
+    c.onclick = e => { e.stopPropagation(); const p = mk('accpop', 'on', ''); p.classList.toggle('on', !p.dataset.o); p.dataset.o = p.dataset.o ? '' : '1'; p.innerHTML = '<button class="rb" id="p-prof">👤 ' + h(L('Profil & Einstellungen', 'Profile & settings')) + '</button>' + (A.dev ? '<button class="rb" id="p-dev">🛠️ ' + h(L('Entwickler-Panel', 'Developer panel')) + '</button>' : '') + (A.uid && A.mode !== 'guest' ? '<div class="rn">' + h(L('Deine ID:', 'Your ID:')) + '<br><code style="user-select:all;word-break:break-all">' + h(A.uid) + '</code></div><button class="rb" id="p-id">📋 ' + h(L('ID kopieren', 'Copy ID')) + '</button>' : '') + (A.mode === 'guest' ? '<button class="rb pri" id="p-in">🔑 ' + h(L('Anmelden', 'Sign in')) + '</button>' : '<button class="rb" id="p-out">↩ ' + h(L('Abmelden', 'Sign out')) + '</button>'); if (!p.dataset.o) p.classList.remove('on');
+      if ($('p-prof')) $('p-prof').onclick = () => { p.classList.remove('on'); p.dataset.o = ''; openProfile(); };
       if ($('p-dev')) $('p-dev').onclick = () => { p.classList.remove('on'); p.dataset.o = ''; devOpen(); };
       if ($('p-id')) $('p-id').onclick = ev => { ev.stopPropagation(); try { navigator.clipboard.writeText(A.uid); toast(L('ID kopiert.', 'ID copied.')); } catch (x) { toast(A.uid, 8000); } };
       if ($('p-in')) $('p-in').onclick = () => { p.classList.remove('on'); p.dataset.o = ''; showGate('login', true); };
       if ($('p-out')) $('p-out').onclick = async () => { await FB.signOut(); lsSet(null); location.reload(); }; };
     const b = mk('devb', ''); b.textContent = '🛠'; b.title = L('Entwickler-Panel', 'Developer panel'); b.style.display = A.dev ? 'block' : 'none'; b.onclick = devOpen;
     document.addEventListener('click', () => { const p = $('accpop'); if (p) { p.classList.remove('on'); p.dataset.o = ''; } });
-    decorate(); renderLock();
+    decorate(); renderLock(); renderProfile();
+  }
+
+
+  /* ---------- Profil (Einstellungen -> Konto) ---------- */
+  if (typeof DE !== 'undefined') DE['Account'] = 'Konto';
+  if (typeof TAB_ICON !== 'undefined') TAB_ICON['Account'] = '<span class="emo">👤</span>';
+  let pf = null, pmsg = '', pok = false;
+  function secEl() { return document.querySelector('#sbody section[data-acct]'); }
+  function renderProfile() {
+    const sec = secEl(); if (!sec) return; const grp = sec.querySelector('.grp'); if (!grp) return;
+    const role = A.dev ? 'dev' : A.mode === 'guest' ? 'guest' : 'user', RT = { dev: L('🛠️ Entwickler', '🛠️ Developer'), guest: L('Gast', 'Guest'), user: L('Konto', 'Account') };
+    const ini = role === 'guest' ? '👤' : (A.name || '?').trim().charAt(0).toUpperCase(), real = A.mode !== 'guest' && !!A.uid;
+    let x = '<div class="pcard"><div class="pav ' + role + '">' + h(ini) + '</div><div><div class="pnm">' + h(A.name || L('Nicht angemeldet', 'Not signed in')) + '</div><span class="pbd ' + role + '">' + h(RT[role]) + '</span>' + (A.offline ? '<div class="rn" style="text-align:left;margin-top:6px">' + h(L('Offline', 'Offline')) + '</div>' : '') + '</div></div>';
+    if (A.uid) x += '<div class="pid"><span>🆔</span><code>' + h(A.uid) + '</code><button class="rb sm" data-p="copy">📋 ' + h(L('Kopieren', 'Copy')) + '</button></div>';
+    if (real && A.loginName) x += '<div class="pid"><small>' + h(L('Zum Anmelden brauchst du den Namen:', 'To sign in you need the name:')) + '</small> <b>' + h(A.loginName) + '</b></div>';
+    if (real) {
+      x += '<div class="pact"><button class="rb" data-p="name">✏️ ' + h(L('Anzeigename ändern', 'Change display name')) + '</button><button class="rb" data-p="pw">🔑 ' + h(L('Passwort ändern', 'Change password')) + '</button><button class="rb" data-p="out">↩ ' + h(L('Abmelden', 'Sign out')) + '</button></div>';
+      if (pf === 'name') x += '<div class="pform"><div class="rf"><i>✏️</i><input class="ri" id="pf-n" maxlength="20" placeholder="' + h(L('Neuer Anzeigename', 'New display name')) + '" value="' + h(A.name) + '"></div><div class="rn" style="text-align:left">' + h(L('Nur die Anzeige ändert sich. Zum Anmelden brauchst du weiterhin deinen Anmeldenamen.', 'Only the display changes. You still sign in with your login name.')) + '</div><button class="rb pri" data-p="name-ok">' + h(L('Speichern', 'Save')) + '</button><div class="rm' + (pok ? ' ok' : '') + '">' + h(pmsg) + '</div></div>';
+      if (pf === 'pw') x += '<div class="pform"><div class="rf"><i>🔒</i><input class="ri" id="pf-c" type="password" autocomplete="current-password" placeholder="' + h(L('Aktuelles Passwort', 'Current password')) + '"></div><div class="rf"><i>🔑</i><input class="ri" id="pf-p" type="password" autocomplete="new-password" placeholder="' + h(L('Neues Passwort (min. 6 Zeichen)', 'New password (min. 6 chars)')) + '"></div><div class="rf"><i>🔑</i><input class="ri" id="pf-p2" type="password" autocomplete="new-password" placeholder="' + h(L('Neues Passwort wiederholen', 'Repeat new password')) + '"></div><button class="rb pri" data-p="pw-ok">' + h(L('Passwort ändern', 'Change password')) + '</button><div class="rm' + (pok ? ' ok' : '') + '">' + h(pmsg) + '</div></div>';
+    } else if (A.mode === 'guest') {
+      x += '<div class="pact"><button class="rb pri" data-p="in">🔑 ' + h(L('Anmelden / Registrieren', 'Sign in / Register')) + '</button></div><div class="rn" style="text-align:left">' + h(L('Als Gast: nur das erste Level, Updates später.', 'As a guest: first level only, updates later.')) + '</div>';
+    } else x += '<div class="pact"><button class="rb pri" data-p="in">🔑 ' + h(L('Anmelden / Registrieren', 'Sign in / Register')) + '</button></div>';
+    grp.innerHTML = x;
+  }
+  async function pAction(a) {
+    if (a === 'copy') { try { await navigator.clipboard.writeText(A.uid); toast(L('ID kopiert.', 'ID copied.')); } catch (e) { toast(A.uid, 9000); } return; }
+    if (a === 'in') { showGate('login', true); return; }
+    if (a === 'out') { await FB.signOut(); lsSet(null); location.reload(); return; }
+    if (a === 'name' || a === 'pw') { pf = pf === a ? null : a; pmsg = ''; pok = false; renderProfile(); return; }
+    if (a === 'name-ok') {
+      const n = ($('pf-n').value || '').trim().replace(/\s+/g, ' ');
+      if (n.length < 3 || slug(n).length < 3) { pmsg = L('Mindestens 3 Zeichen.', 'At least 3 characters.'); pok = false; renderProfile(); return; }
+      if (!A.dev && RESERVED.includes(n.toLowerCase().replace(/[^a-z0-9]/g, ''))) { pmsg = L('Dieser Name ist reserviert.', 'This name is reserved.'); pok = false; renderProfile(); return; }
+      const r = await FB.setName(n); if (!r.ok) { pmsg = ERR(r.code); pok = false; renderProfile(); return; }
+      A.name = n; lsSet({ mode: A.mode, name: n }); FB.update('users/' + A.uid, { name: n, last: FB.TS }); FB.update('presence/' + A.uid, { name: n });
+      pmsg = L('Gespeichert.', 'Saved.'); pok = true; ui(); renderProfile(); return;
+    }
+    if (a === 'pw-ok') {
+      const c = $('pf-c').value, p = $('pf-p').value, p2 = $('pf-p2').value;
+      if (p.length < 6) pmsg = L('Neues Passwort: mindestens 6 Zeichen.', 'New password: at least 6 characters.'); else if (p !== p2) pmsg = L('Die beiden neuen Passwörter sind nicht gleich.', 'The two new passwords do not match.'); else if (!c) pmsg = L('Bitte das aktuelle Passwort eingeben.', 'Please enter your current password.');
+      if (p.length < 6 || p !== p2 || !c) { pok = false; renderProfile(); return; }
+      const r = await FB.changePassword(c, p); if (!r.ok) { pmsg = ERR(r.code); pok = false; renderProfile(); return; }
+      pmsg = L('Passwort geändert.', 'Password changed.'); pok = true; renderProfile(); return;
+    }
+  }
+  function openProfile() {
+    const g = game(); if (!g || !g.ui) return; g.ui.toggleMenu(true);
+    setTimeout(() => { for (const b of document.querySelectorAll('#stabs .stab')) if (/Konto|Account/.test(b.textContent)) { b.click(); break; } }, 80);
+  }
+  if (typeof UI !== 'undefined') {
+    const bs = UI.prototype.buildSettings;
+    UI.prototype.buildSettings = function () {
+      const r = bs.apply(this, arguments);
+      try {
+        const root = this.$('sbody');
+        if (root && !root.querySelector('section[data-acct]')) {
+          const secs = root.querySelectorAll('.sec'), sec = document.createElement('section'); sec.className = 'sec'; sec.dataset.acct = '1';
+          sec.innerHTML = '<h5 data-k="Account">' + T('Account') + '</h5><div class="grp"></div>';
+          root.insertBefore(sec, secs[1] || null); noKeys(sec);
+          sec.addEventListener('click', ev => { const b = ev.target.closest('[data-p]'); if (b) pAction(b.dataset.p); });
+          sec.querySelector('h5').addEventListener('click', () => sec.classList.toggle('closed'));
+          renderProfile(); this.buildTabs(this._tab | 0);
+        } else renderProfile();
+      } catch (e) { console.warn('account', e); }
+      return r;
+    };
   }
 
   /* ---------- Entwickler-Panel ---------- */
@@ -16624,7 +16720,7 @@ body.inmenu #devb{display:none!important}
     const r = await FB.guest(); if (r.ok) await identify(r.user, 'guest'); else { A.mode = 'guest'; ui(); }
   }
   boot().catch(e => console.warn('[RLAccount]', e));
-  return Object.assign(A, { allowed, showGate, setLock, devOpen, slug, emailOf, devInfo });
+  return Object.assign(A, { allowed, renderProfile, openProfile, showGate, setLock, devOpen, slug, emailOf, devInfo });
 })();
 
 ;
