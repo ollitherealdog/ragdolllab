@@ -16136,6 +16136,465 @@ function buildChambers(key, world, env, sp, add, deco, edge) {
 }
 
 ;
+/* ---- pull.js: Sanitaeter ziehen steckende Klingen, sonst Entfernung in der OP ---- */
+// (c) 2026 Olli - Ragdoll Lab. Idee: Olli, Code gemeinsam mit Claude (Anthropic). Credits nicht entfernen.
+'use strict';
+Object.assign(DE, {
+  'REMOVED': 'ENTFERNT', 'PULLING': 'ZIEHEN', 'STUCK': 'SITZT FEST', 'REMOVED IN SURGERY': 'IN DER OP ENTFERNT',
+  'sp.hint': ''
+});
+{
+  const CHANCE = { knife: 0.92, axe: 0.6, katana: 0.55, spear: 0.3 };
+  const NAME = { knife: ['das Messer', 'the knife'], axe: ['die Axt', 'the axe'], katana: ['das Katana', 'the katana'], spear: ['den Speer', 'the spear'] };
+  const stuckList = (g) => (g.blades || []).filter(B => B.state === 1 && B.body && B.lp);
+  const sl0 = Game.prototype.sceneLogic;
+  Game.prototype.sceneLogic = function (sc, dt) {
+    if (sc.kind === 'medic' && sc.st === 'act' && (sc.res === 'treat' || sc.res === 'urgent') && !sc.healed) {
+      if (!sc.pl) { const L = stuckList(this); sc.pl = { list: L.slice(0, 4), i: 0, t: 0, ph: 0, fail: [], ok: 0, done: !L.length }; }
+      if (!sc.pl.done) { this.pullStep(sc, sc.pl, dt); return; }
+    }
+    return sl0.apply(this, arguments);
+  };
+  Game.prototype.pullStep = function (sc, P, dt) {
+    const B = P.list[P.i], m = sc.npcs[0], g = this; P.t += dt;
+    if (!B || !g.blades.includes(B) || B.state !== 1) { P.i++; P.t = 0; P.ph = 0; if (P.i >= P.list.length) this.pullFinish(sc, P); return; }
+    const nm = NAME[B.kind] || ['den Gegenstand', 'the object'], wp = V3(); B.body.l2w(wp, B.lp);
+    if (P.ph === 0) {
+      if (P.t > 0.4) {
+        g.bubble(0, P.i === 0 ? tx2('Da steckt ' + (B.kind === 'spear' ? 'ein Speer' : B.kind === 'knife' ? 'ein Messer' : B.kind === 'axe' ? 'eine Axt' : 'eine Klinge') + '! Ich versuche, ' + nm[0] + ' vorsichtig herauszuziehen.', 'There is something stuck in him! I will try to pull ' + nm[1] + ' out carefully.') : tx2('Da ist noch etwas. Ich versuche es.', 'There is more. I will try.'), 3);
+        g.popup('PULLING', [wp[0], wp[1] + 0.3, wp[2]], '#ffd24a', 1.4); P.ph = 1; P.t = 0;
+        for (const n of sc.npcs) { n.wr = 1; n.wrT = 1; }
+      }
+    } else if (P.ph === 1) {                                     // ziehen und ruckeln
+      if (Math.random() < dt * 14) { const b = B.body, dir = V3((Math.random() - 0.5) * 0.4, 0.4 + Math.random() * 0.3, (Math.random() - 0.5) * 0.4); try { g.applyImpulse(b, wp, dir, 2.2); } catch (e) { } }
+      if (Math.random() < dt * 3) g.sfx.play('smack', { vol: 0.3, pitch: 1.3 });
+      if (P.t > 2.2) {
+        const ch = (CHANCE[B.kind] || 0.5) * (B.heart ? 0.5 : 1), ok = Math.random() < ch; P.ph = 2; P.t = 0; P.ok1 = ok;
+        if (ok) {
+          g.blades.splice(g.blades.indexOf(B), 1); P.ok++;
+          const col = g.woundColor(B.body.tag.part), up = V3(0, 1, 0); g.fx.puff(wp, up, 16, 2.6, col); if (g.blood && g.blood.bullet) { try { g.blood.bullet(B.body, wp, up, wp, null, up, { dmg: 0.5, stopped: true }, false); } catch (e) { } }
+          g.sfx.play('crunch', { vol: 0.6, pitch: 1.2 }); g.fx.addShake(0.12);
+          const hp = g.dummy.b.pelvis.p; g.popup('REMOVED', [wp[0], wp[1] + 0.3, wp[2]], '#7dff9a', 1.6); g.bubble(0, tx2('Draußen! Jetzt die Wunde versorgen.', 'Out! Now to dress the wound.'), 2.4);
+          if (g.brain.alive) { g.brain.pain = Math.min(1.2, g.brain.pain + 0.25); }
+        } else {
+          P.fail.push(B.kind);
+          g.popup('STUCK', [wp[0], wp[1] + 0.3, wp[2]], '#ff7a4a', 1.6); g.sfx.play('thud', { vol: 0.4, pitch: 1.6 });
+          g.bubble(0, tx2('Das sitzt zu fest – nicht weiter ziehen! Das muss im Krankenhaus operiert werden.', 'It is stuck too deep – do not pull any further! That has to be removed in surgery.'), 3.2);
+        }
+        for (const n of sc.npcs) { n.wr = 0; n.wrT = 0; }
+      }
+    } else if (P.ph === 2) {
+      if (P.t > 2.6) { P.i++; P.t = 0; P.ph = 0; if (P.i >= P.list.length) this.pullFinish(sc, P); }
+    }
+  };
+  Game.prototype.pullFinish = function (sc, P) {
+    P.done = true;
+    if (P.fail.length) {
+      this._opBlades = P.fail.slice();
+      if (!sc.hosp && this.cine && !this.menuOn) { sc.hosp = { ph: 0, t: 0, started: false }; sc.healed = true; sc.hospChk = true; sc.urgent = true; }
+    }
+  };
+  /* In der Operation: Fremdkoerper wird entfernt */
+  const hc0 = Game.prototype.hospCineLogic;
+  Game.prototype.hospCineLogic = function (sc, dt) {
+    const L = this._opBlades;
+    if (L && L.length && sc.t > 4.2 && !sc.F.opb) {
+      sc.F.opb = 1; const k = L[0], n = NAME[k] || ['den Fremdkörper', 'the object'];
+      this.bubble(0, tx2('Wir entfernen jetzt ' + n[0] + ' unter Narkose. Skalpell und Klemme, bitte.', 'We are removing ' + n[1] + ' under anesthesia now. Scalpel and clamp, please.'), 3.2);
+      this.popup('REMOVED IN SURGERY', this.dummy.b.head.p, '#7dff9a', 2.2); this.sfx.play('ding', { vol: 0.3, pitch: 1.7 }); this._opBlades = null;
+    }
+    return hc0.apply(this, arguments);
+  };
+}
+
+;
+/* ---- firebase.js: Firebase-Anbindung (Realtime Database + anonyme Anmeldung), faul geladen ---- */
+// (c) 2026 Olli - Ragdoll Lab. Idee: Olli, Code gemeinsam mit Claude (Anthropic). Credits nicht entfernen.
+'use strict';
+/* Nichts davon laeuft beim Spielstart (ausser account.js, das beim ersten Start die Anmeldung zeigt). Erst der erste Aufruf von RLFirebase.ready()/get()/set()... laedt das SDK.
+   Analytics ist bewusst NICHT eingebunden. Die Config ist oeffentlich; geschuetzt wird per Realtime-Database-Rules. */
+window.RLFirebase = (() => {
+  const CFG = {
+    apiKey: "AIzaSyCh8lRcaFHfV4qEXOm6nCpPevy8D8bntNg",
+    authDomain: "ragdoll-lab-c33f0.firebaseapp.com",
+    databaseURL: "https://ragdoll-lab-c33f0-default-rtdb.firebaseio.com",
+    projectId: "ragdoll-lab-c33f0",
+    storageBucket: "ragdoll-lab-c33f0.firebasestorage.app",
+    messagingSenderId: "866448122071",
+    appId: "1:866448122071:web:b47f21dfc94edc0a4e1092"
+  };
+  const V = '10.12.2', CDN = 'https://www.gstatic.com/firebasejs/' + V + '/';
+  let P = null, S = null, st = 'idle', err = null;
+  const api = {
+    cfg: CFG, enabled: true,
+    get status() { return st; }, get error() { return err; },
+    get uid() { return S && S.auth.currentUser ? S.auth.currentUser.uid : null; },
+    TS: { '.sv': 'timestamp' },
+    /* ---- Konto ---- */
+    _u(u) { return u ? { uid: u.uid, name: u.displayName || '', anon: !!u.isAnonymous } : null; },
+    get user() { return S ? api._u(S.auth.currentUser) : null; },
+    async authReady() { if (!(await api.ready())) return null; return api._u(await S.authP); },
+    async _auth(fn) { if (!(await api.ready())) return { ok: false, code: 'offline' }; try { return { ok: true, user: api._u(await fn(S.Au, S.auth)) }; } catch (e) { return { ok: false, code: String(e && e.code || e && e.message || e) }; } },
+    signIn(email, pw) { return api._auth(async (Au, a) => (await Au.signInWithEmailAndPassword(a, email, pw)).user); },
+    signUp(email, pw, name) { return api._auth(async (Au, a) => { const c = await Au.createUserWithEmailAndPassword(a, email, pw); await Au.updateProfile(c.user, { displayName: name }); return a.currentUser; }); },
+    guest() { return api._auth(async (Au, a) => a.currentUser && a.currentUser.isAnonymous ? a.currentUser : (await Au.signInAnonymously(a)).user); },
+    async signOut() { if (!(await api.ready())) return false; try { await S.Au.signOut(S.auth); return true; } catch (e) { return false; } },
+    /* beim Trennen der Verbindung Pfad loeschen (Praesenz) */
+    async onDisc(path) { return api._run(async (D, db) => { await D.onDisconnect(D.ref(db, path)).remove(); return true; }, false); },
+    /* Live-Abo auf die letzten n Eintraege (nach Schluessel = zeitlich bei push) */
+    async listenLast(path, n, cb) { if (!(await api.ready())) return () => { }; return S.D.onValue(S.D.query(S.D.ref(S.db, path), S.D.orderByKey(), S.D.limitToLast(n)), s => { try { cb(s.exists() ? s.val() : null); } catch (e) { console.warn(e); } }); },
+    /* Laedt SDK + meldet anonym an. Gibt true/false zurueck, wirft nie. */
+    ready() {
+      if (!api.enabled) return Promise.resolve(false);
+      if (P) return P;
+      st = 'loading';
+      P = (async () => {
+        try {
+          const [A, Au, D] = await Promise.all([import(CDN + 'firebase-app.js'), import(CDN + 'firebase-auth.js'), import(CDN + 'firebase-database.js')]);
+          const app = A.initializeApp(CFG), auth = Au.getAuth(app), db = D.getDatabase(app);
+          S = { app, auth, db, D, Au }; st = 'ready';
+          S.authP = new Promise(res => { const un = Au.onAuthStateChanged(auth, u => { res(u); try { un(); } catch (e) { } }); });
+          return true;
+        } catch (e) { err = String(e && e.message || e); st = 'error'; P = null; console.warn('[RLFirebase]', err); return false; }
+      })();
+      return P;
+    },
+    async _run(fn, dflt) { if (!(await api.ready())) return dflt; try { return await fn(S.D, S.db); } catch (e) { err = String(e && e.message || e); console.warn('[RLFirebase]', err); return dflt; } },
+    get(path) { return api._run(async (D, db) => { const s = await D.get(D.ref(db, path)); return s.exists() ? s.val() : null; }, null); },
+    set(path, val) { return api._run(async (D, db) => { await D.set(D.ref(db, path), val); return true; }, false); },
+    update(path, val) { return api._run(async (D, db) => { await D.update(D.ref(db, path), val); return true; }, false); },
+    remove(path) { return api._run(async (D, db) => { await D.remove(D.ref(db, path)); return true; }, false); },
+    push(path, val) { return api._run(async (D, db) => { const r = D.push(D.ref(db, path)); await D.set(r, val); return r.key; }, null); },
+    /* Live-Abo; gibt (async) eine Abmelde-Funktion zurueck */
+    async listen(path, cb) { if (!(await api.ready())) return () => { }; return S.D.onValue(S.D.ref(S.db, path), s => { try { cb(s.exists() ? s.val() : null); } catch (e) { console.warn(e); } }); },
+    /* Top-N nach Zahlenfeld, absteigend, z.B. top('scores','score',10) */
+    top(path, field, n) {
+      return api._run(async (D, db) => {
+        const s = await D.get(D.query(D.ref(db, path), D.orderByChild(field), D.limitToLast(n || 10)));
+        const out = []; s.forEach(c => { out.push(Object.assign({ id: c.key }, c.val())); }); return out.reverse();
+      }, []);
+    }
+  };
+  return api;
+})();
+
+;
+/* ---- account.js: Anmeldung / Gast, Entwicklerrechte, Seitensperre, Login-Liste ---- */
+// (c) 2026 Olli - Ragdoll Lab. Idee: Olli, Code gemeinsam mit Claude (Anthropic). Credits nicht entfernen.
+'use strict';
+/* WICHTIG: Im Code steht KEIN Passwort. "Entwickler" ist, wessen Firebase-UID unter /admins/<uid> = true steht
+   (nur in der Firebase-Console setzbar). Alle Pruefungen der Rechte erzwingen zusaetzlich die Realtime-Database-Rules. */
+window.RLAccount = (() => {
+  const FB = window.__fbMock || window.RLFirebase, LSK = 'rl_acct';
+  const A = { mode: null, name: '', uid: null, dev: false, locked: false, flags: { guests: true, register: true }, disabled: {}, ban: null, god: false, offline: false, ready: false };
+  const L = (de, en) => (typeof tx2 === 'function' ? tx2(de, en) : de);
+  const $ = id => document.getElementById(id);
+  const h = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const lsGet = () => { try { return JSON.parse(localStorage.getItem(LSK) || 'null'); } catch (e) { return null; } };
+  const lsSet = v => { try { if (v) localStorage.setItem(LSK, JSON.stringify(v)); else localStorage.removeItem(LSK); } catch (e) { } };
+  const game = () => window.__game;
+  const TEST = () => !!window.__fastLoad && !window.__acctForce;
+  const DOM = 'ragdoll-lab.app', RESERVED = ['badgamer', 'admin', 'administrator', 'entwickler', 'developer', 'owner', 'moderator', 'system', 'support'];
+  const slug = n => String(n).normalize('NFKD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  const emailOf = n => slug(n) + '@' + DOM;
+  const FIRST = () => (typeof MAP_ORDER !== 'undefined' ? MAP_ORDER[0] : 'ground');
+
+  /* ---------- Gerät / Browser ---------- */
+  async function devInfo() {
+    const ua = navigator.userAgent || '', d = {};
+    const m = (re) => { const r = ua.match(re); return r ? r[1] : ''; };
+    if (/Edg\//.test(ua)) d.browser = 'Edge ' + m(/Edg\/(\d+)/); else if (/OPR\/|Opera/.test(ua)) d.browser = 'Opera ' + m(/OPR\/(\d+)/);
+    else if (/SamsungBrowser/.test(ua)) d.browser = 'Samsung Internet ' + m(/SamsungBrowser\/(\d+)/); else if (/Firefox\/|FxiOS/.test(ua)) d.browser = 'Firefox ' + m(/(?:Firefox|FxiOS)\/(\d+)/);
+    else if (/Chrome\/|CriOS/.test(ua)) d.browser = 'Chrome ' + m(/(?:Chrome|CriOS)\/(\d+)/); else if (/Safari\//.test(ua)) d.browser = 'Safari ' + m(/Version\/(\d+)/); else d.browser = 'Unbekannt';
+    if (/Windows NT/.test(ua)) d.os = 'Windows'; else if (/Android/.test(ua)) d.os = 'Android ' + m(/Android (\d+)/); else if (/iPhone|iPad|iPod/.test(ua)) d.os = 'iOS ' + m(/OS (\d+)/); else if (/Mac OS X/.test(ua)) d.os = 'macOS'; else if (/CrOS/.test(ua)) d.os = 'ChromeOS'; else if (/Linux/.test(ua)) d.os = 'Linux'; else d.os = '?';
+    d.kind = /iPad|Tablet/.test(ua) || (/Android/.test(ua) && !/Mobile/.test(ua)) ? 'Tablet' : /Mobi|iPhone|Android/.test(ua) ? 'Handy' : 'PC';
+    d.model = /iPhone/.test(ua) ? 'iPhone' : /iPad/.test(ua) ? 'iPad' : m(/;\s*([^;)]+?)\s+Build\//);
+    try {
+      const u = navigator.userAgentData;
+      if (u && u.getHighEntropyValues) { const v = await Promise.race([u.getHighEntropyValues(['model', 'platformVersion']), new Promise(r => setTimeout(() => r(null), 800))]); if (v) { if (v.model) d.model = v.model; if (v.platformVersion && /Windows/.test(d.os)) d.os = parseInt(v.platformVersion) >= 13 ? 'Windows 11' : 'Windows 10'; } }
+    } catch (e) { }
+    d.screen = (screen.width || 0) + 'x' + (screen.height || 0) + '@' + (window.devicePixelRatio || 1);
+    d.lang = navigator.language || '';
+    for (const k in d) d[k] = String(d[k]).slice(0, 60);
+    return d;
+  }
+
+  /* ---------- Style ---------- */
+  const css = document.createElement('style'); css.textContent = `
+.ra{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;font-family:system-ui,Segoe UI,Roboto,sans-serif;color:#e8edf5;padding:16px;box-sizing:border-box}
+#acct{z-index:80;background:rgba(4,6,10,.74);backdrop-filter:blur(8px)}#acct.top{z-index:100}
+.rc{width:min(430px,94vw);max-height:92vh;overflow:auto;background:#0e131c;border:1px solid #263042;border-radius:18px;padding:26px 24px;box-shadow:0 20px 70px rgba(0,0,0,.6);animation:rin .5s cubic-bezier(.2,.8,.2,1)}
+@keyframes rin{from{opacity:0;transform:translateY(14px) scale(.97)}to{opacity:1;transform:none}}
+.rc h1{margin:0 0 4px;font-size:24px;letter-spacing:.3px}.rc h1 b{color:var(--red,#e0383e)}.rc p{margin:6px 0 16px;color:#9aa7ba;font-size:14px;line-height:1.45}
+.rb{display:block;width:100%;padding:13px 14px;margin:8px 0;border-radius:12px;border:1px solid #2c3850;background:#161d2b;color:#e8edf5;font-size:15px;font-weight:600;cursor:pointer;transition:.15s}
+.rb:hover{background:#1d2740;border-color:#41557c}.rb.pri{background:var(--red,#e0383e);border-color:transparent}.rb.pri:hover{filter:brightness(1.12)}.rb.sm{width:auto;display:inline-block;padding:7px 12px;font-size:13px;margin:3px}
+.rb[disabled]{opacity:.5;cursor:default}
+.ri{display:block;width:100%;box-sizing:border-box;padding:12px 13px;margin:8px 0;border-radius:10px;border:1px solid #2c3850;background:#0a0f17;color:#fff;font-size:15px;outline:none}.ri:focus{border-color:#5b7fc7}
+.rm{min-height:18px;font-size:13px;color:#ff8a7a;margin:4px 0}.rn{font-size:11.5px;color:#6f7d93;line-height:1.4;margin-top:10px}
+.rg li{list-style:none;margin:12px 0;padding:12px 14px;background:#131a27;border:1px solid #232e44;border-radius:12px;font-size:14.5px;opacity:0;animation:rli .6s forwards}
+.rg{padding:0;margin:14px 0}.rg li:nth-child(1){animation-delay:.35s}.rg li:nth-child(2){animation-delay:1.1s}.rg li:nth-child(3){animation-delay:1.85s}
+.rg li i{font-style:normal;font-size:21px;margin-right:10px;vertical-align:-3px;display:inline-block;animation:rwob 2.2s infinite}
+@keyframes rli{from{opacity:0;transform:translateX(-18px)}to{opacity:1;transform:none}}@keyframes rwob{0%,100%{transform:rotate(-8deg)}50%{transform:rotate(8deg)}}
+#lockov{z-index:9000;background:radial-gradient(ellipse at 50% 40%,#18213a 0,#090c16 62%,#020307 100%);flex-direction:column;text-align:center;user-select:none}
+#lockov svg{width:190px;height:150px;margin-bottom:10px}.g1{transform-origin:70px 80px;animation:gs 7s linear infinite}.g2{transform-origin:128px 52px;animation:gs 5.2s linear infinite reverse}
+@keyframes gs{to{transform:rotate(360deg)}}
+#lockov .lt{font-size:13px;letter-spacing:4px;color:#e0383e;font-weight:700;text-transform:uppercase}#lockov h2{margin:10px 0 8px;font-size:clamp(19px,3.6vw,28px);font-weight:600;max-width:640px;line-height:1.35}
+#lockov .lp{width:min(330px,70vw);height:5px;border-radius:5px;background:#1b2338;overflow:hidden;margin:20px auto 0}#lockov .lp i{display:block;width:40%;height:100%;background:linear-gradient(90deg,transparent,#e0383e,transparent);animation:lpm 1.6s ease-in-out infinite}
+@keyframes lpm{from{transform:translateX(-110%)}to{transform:translateX(280%)}}
+#lockov .ld{font-size:30px;letter-spacing:6px;color:#6f7d93;height:34px}#lockov .ld::after{content:'';animation:ldt 1.8s steps(4) infinite}@keyframes ldt{0%{content:''}25%{content:'.'}50%{content:'..'}75%{content:'...'}}
+#unlk{position:fixed;right:10px;bottom:10px;z-index:9100;padding:9px 14px;border-radius:10px;border:1px solid #3b6b4a;background:#10261a;color:#9dffbc;font-weight:700;font-size:14px;cursor:pointer;display:none}
+#banov{z-index:9500;background:#12060a;flex-direction:column;text-align:center}#banov h2{color:#ff6b6b;font-size:26px;margin:0 0 10px}#banov p{color:#c9a0a6;max-width:480px;line-height:1.5}
+#acchip{position:fixed;right:14px;top:calc(12px + env(safe-area-inset-top,0px));z-index:14;padding:7px 12px;border-radius:999px;background:rgba(14,19,28,.82);border:1px solid #2c3850;color:#dfe7f5;font:600 13px system-ui,sans-serif;cursor:pointer;backdrop-filter:blur(6px);display:none}
+body.inmenu #acchip{display:block}#acchip.dev{border-color:#b8902c;color:#ffd46b}
+#accpop{position:fixed;right:14px;top:calc(50px + env(safe-area-inset-top,0px));z-index:15;background:#0e131c;border:1px solid #2c3850;border-radius:12px;padding:8px;display:none;min-width:190px}#accpop.on{display:block}#accpop .rb{margin:4px 0;padding:9px 11px;font-size:13.5px}
+#devb{position:fixed;left:8px;bottom:8px;z-index:60;width:34px;height:34px;border-radius:50%;border:1px solid #b8902c;background:rgba(40,30,8,.7);color:#ffd46b;font-size:16px;cursor:pointer;opacity:.5;display:none}#devb:hover{opacity:1}
+body.inmenu #devb{display:none!important}
+#devp{z-index:8000;background:rgba(2,4,8,.7);backdrop-filter:blur(4px)}
+#devp .dp{width:min(760px,97vw);height:min(86vh,660px);background:#0c1119;border:1px solid #3a3320;border-radius:16px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 80px #000}
+#devp .dh{display:flex;align-items:center;gap:6px;padding:10px 12px;border-bottom:1px solid #232b3a;background:#10161f}#devp .dh b{color:#ffd46b;margin-right:auto;font-size:15px}
+#devp .dt{display:flex;gap:4px;padding:8px 10px;overflow-x:auto;border-bottom:1px solid #1a2230}#devp .dt button{white-space:nowrap;padding:7px 11px;border-radius:9px;border:1px solid #28324a;background:#131a27;color:#cfd8e8;font-size:13px;cursor:pointer}#devp .dt button.on{background:#2a2410;border-color:#b8902c;color:#ffd46b}
+#devp .db{flex:1;overflow:auto;padding:12px 14px;font-size:13.5px}
+.dr{display:flex;align-items:center;gap:8px;padding:8px 10px;margin:5px 0;background:#121927;border:1px solid #1f2a3d;border-radius:10px;flex-wrap:wrap}.dr b{font-weight:700}.dr small{color:#8392a8}.dr .gr{flex:1;min-width:120px}
+.bd{display:inline-block;padding:1px 7px;border-radius:6px;font-size:11px;font-weight:700;background:#26324a}.bd.g{background:#3a3320;color:#ffd46b}.bd.u{background:#17361f;color:#8dffa8}.bd.r{background:#3a1a1e;color:#ff9aa4}
+.tg{position:relative;width:44px;height:24px;border-radius:12px;background:#2a3348;border:0;cursor:pointer;flex:none}.tg::after{content:'';position:absolute;left:3px;top:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:.2s}.tg.on{background:#2f9e57}.tg.on::after{left:23px}
+#rtoast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:9200;max-width:min(520px,92vw);background:#161d2b;border:1px solid #41557c;border-radius:12px;padding:12px 16px;color:#e8edf5;font:14px system-ui,sans-serif;display:none;text-align:center}
+.mcard.lk{position:relative}.mcard.lk::after{content:'🔒';position:absolute;right:8px;top:8px;font-size:20px;background:rgba(0,0,0,.6);border-radius:8px;padding:2px 6px;z-index:3}.mcard.lk .pv{filter:grayscale(.85) brightness(.6)}
+`; document.head.appendChild(css);
+
+  function mk(id, cls, html) { let e = $(id); if (!e) { e = document.createElement('div'); e.id = id; document.body.appendChild(e); } e.className = cls || ''; if (html != null) e.innerHTML = html; return e; }
+  function noKeys(el) { for (const t of ['keydown', 'keyup', 'keypress']) el.addEventListener(t, e => e.stopPropagation()); }
+  let tT; function toast(msg, ms) { const e = mk('rtoast', ''); e.textContent = msg; e.style.display = 'block'; clearTimeout(tT); tT = setTimeout(() => e.style.display = 'none', ms || 3600); }
+
+  /* ---------- Erlaubnis fuer Karten ---------- */
+  function allowed(k) { if (TEST() || A.dev) return true; if (A.disabled && A.disabled[k]) return 'off'; if (A.mode === 'guest' && k !== FIRST()) return 'guest'; return true; }
+  function denyMsg(r) { toast(r === 'off' ? L('Diese Karte ist gerade gesperrt.', 'This map is currently disabled.') : L('Als Gast kannst du nur die erste Karte spielen. Melde dich an, um alle Karten freizuschalten.', 'Guests can only play the first map. Sign in to unlock all maps.'), 4200); }
+  function decorate() { const box = $('mcards'); if (!box) return; for (const c of box.querySelectorAll('.mcard')) c.classList.toggle('lk', allowed(c.dataset.k) !== true); }
+  document.addEventListener('click', e => { const c = e.target.closest && e.target.closest('.mcard'); if (!c || !c.dataset.k) return; const r = allowed(c.dataset.k); if (r !== true) { e.stopImmediatePropagation(); e.preventDefault(); denyMsg(r); } }, true);
+  if (typeof Menu !== 'undefined') {
+    const p0 = Menu.prototype.play;
+    Menu.prototype.play = function () { const r = allowed(this.sel); if (r !== true) { denyMsg(r); this.sel = FIRST(); return; } return p0.apply(this, arguments); };
+  }
+  if (typeof Game !== 'undefined') {
+    const n0 = Game.prototype.nextScene;
+    Game.prototype.nextScene = function () { const o = this.env.spawnOrder, k = o[(o.indexOf(this.spawnKey) + 1) % o.length], r = allowed(k); if (r !== true) { denyMsg(r); return; } return n0.apply(this, arguments); };
+    const u0 = Game.prototype.update;
+    Game.prototype.update = function () { const r = u0.apply(this, arguments); if (A.god && this.brain && this.brain.alive) { this.brain.health = 1; this.brain.pain = 0; this.brain.shock = 0; } return r; };
+  }
+  { const iv = setInterval(() => { const box = $('mcards'); if (!box) return; clearInterval(iv); new MutationObserver(decorate).observe(box, { childList: true }); decorate(); }, 400); }
+
+  /* ---------- Sperrbildschirm ---------- */
+  const gear = (n, r1, r2, cx, cy, cls) => { let p = ''; for (let i = 0; i < n * 4; i++) { const a = i / (n * 4) * Math.PI * 2, r = (i % 4 < 2) ? r2 : r1; p += (i ? 'L' : 'M') + (cx + Math.cos(a) * r).toFixed(1) + ' ' + (cy + Math.sin(a) * r).toFixed(1); } return '<g class="' + cls + '"><path d="' + p + 'Z" fill="#26324d" stroke="#3d5080" stroke-width="2"/><circle cx="' + cx + '" cy="' + cy + '" r="' + (r1 * 0.38) + '" fill="#090c16" stroke="#3d5080" stroke-width="2"/></g>'; };
+  let pausedBefore = null, sfxBefore = null, clicks = 0, clT;
+  function renderLock() {
+    const on = !!A.locked && !TEST(); window.__locked = on; let e = $('lockov');
+    if (on) {
+      if (!e) {
+        e = mk('lockov', 'ra', '<svg viewBox="0 0 200 150">' + gear(10, 34, 42, 70, 80, 'g1') + gear(7, 22, 29, 128, 52, 'g2') + '</svg><div class="lt"></div><h2></h2><div class="ld">&nbsp;</div><div class="lp"><i></i></div>');
+        noKeys(e); e.querySelector('.lt').addEventListener('click', () => { if (++clicks >= 5) { clicks = 0; showGate('login', true); } clearTimeout(clT); clT = setTimeout(() => clicks = 0, 2500); });
+      }
+      e.style.display = 'flex'; e.querySelector('.lt').textContent = L('Wartungsarbeiten', 'Maintenance');
+      e.querySelector('h2').textContent = L('Bei der Webseite wird gerade ein großes Update vorgenommen. Bitte warten Sie einen Augenblick.', 'A big update is currently being applied to the website. Please wait a moment.');
+      const g = game(); if (g && pausedBefore === null) { pausedBefore = !!g.paused; g.paused = true; if (g.sfx) { sfxBefore = g.sfx.enabled; g.sfx.enabled = false; } }
+    } else {
+      if (e) e.style.display = 'none';
+      const g = game(); if (g && pausedBefore !== null) { g.paused = pausedBefore; pausedBefore = null; if (g.sfx && sfxBefore !== null) g.sfx.enabled = sfxBefore; sfxBefore = null; }
+    }
+    const u = mk('unlk', ''); u.style.display = on && A.dev ? 'block' : 'none'; u.textContent = '🔓 ' + L('Entsperren', 'Unlock');
+    u.onclick = () => setLock(false);
+  }
+  async function setLock(on) { const ok = await FB.set('site/state', { locked: !!on, by: A.name, ts: FB.TS }); if (!ok) toast(L('Konnte nicht gespeichert werden (Rechte?).', 'Could not save (permissions?).')); else { A.locked = !!on; renderLock(); devRender(); } }
+
+  /* ---------- Sperre (Bann) ---------- */
+  function renderBan() {
+    let e = $('banov');
+    if (A.ban && !A.dev && !TEST()) {
+      if (!e) { e = mk('banov', 'ra', '<h2></h2><p></p>'); noKeys(e); }
+      e.style.display = 'flex'; e.querySelector('h2').textContent = L('Dein Zugang wurde gesperrt', 'Your access has been blocked');
+      e.querySelector('p').textContent = (A.ban.reason ? L('Grund: ', 'Reason: ') + A.ban.reason : L('Der Entwickler hat deinen Zugang gesperrt.', 'The developer has blocked your access.'));
+      const g = game(); if (g) g.paused = true;
+    } else if (e) e.style.display = 'none';
+  }
+
+  /* ---------- Anmeldebildschirm ---------- */
+  const ERR = c => /invalid-credential|user-not-found|wrong-password|invalid-login/.test(c) ? L('Name oder Passwort falsch.', 'Wrong name or password.') : /email-already/.test(c) ? L('Dieser Name ist schon vergeben.', 'This name is already taken.') : /weak-password/.test(c) ? L('Passwort zu kurz (mindestens 6 Zeichen).', 'Password too short (min. 6 characters).') : /too-many/.test(c) ? L('Zu viele Versuche. Bitte kurz warten.', 'Too many attempts. Please wait a moment.') : /network|offline/.test(c) ? L('Keine Verbindung zum Server.', 'No connection to the server.') : /operation-not-allowed/.test(c) ? L('Anmeldung ist im Server noch nicht aktiviert.', 'Sign-in is not enabled on the server yet.') : L('Fehler: ', 'Error: ') + c;
+  function hideGate() { const e = $('acct'); if (e) e.style.display = 'none'; }
+  function showGate(view, top, note) {
+    const e = mk('acct', 'ra' + (top ? ' top' : ''), ''); e.style.display = 'flex'; noKeys(e);
+    const card = (html) => { e.innerHTML = '<div class="rc">' + html + '</div>'; };
+    const priv = '<div class="rn">' + h(L('Beim Anmelden werden dein Name, Gerät und Browser gespeichert (keine IP-Adresse).', 'When you sign in, your name, device and browser are stored (no IP address).')) + '</div>';
+    if (view === 'guest') {
+      card('<h1>👤 ' + h(L('Gastmodus', 'Guest mode')) + '</h1><p>' + h(L('Das bekommst du als Gast:', 'What you get as a guest:')) + '</p><ul class="rg"><li><i>🔒</i>' + h(L('Du kannst nur das erste Level spielen.', 'You can only play the first level.')) + '</li><li><i>⏳</i>' + h(L('Updates bekommst du viel später.', 'You get updates much later.')) + '</li><li><i>⚙️</i>' + h(L('Alles funktioniert nicht so gut.', 'Not everything works as well.')) + '</li></ul><button class="rb pri" id="a-go">' + h(L('Weiter als Gast', 'Continue as guest')) + '</button><button class="rb" id="a-back">' + h(L('Doch lieber anmelden', 'Sign in instead')) + '</button><div class="rm" id="a-msg"></div>' + priv);
+      $('a-back').onclick = () => showGate('start', top);
+      $('a-go').onclick = async () => {
+        $('a-go').disabled = true; const msg = $('a-msg'); msg.textContent = '…';
+        const r = await FB.guest();
+        if (!r.ok) { if (r.code === 'offline') { A.offline = true; A.mode = 'guest'; A.name = L('Gast', 'Guest'); lsSet({ mode: 'guest', name: A.name }); hideGate(); ui(); return; } msg.textContent = ERR(r.code); $('a-go').disabled = false; return; }
+        await identify(r.user, 'guest'); hideGate();
+      };
+      return;
+    }
+    if (view === 'login' || view === 'reg') {
+      const reg = view === 'reg';
+      card('<h1>' + h(reg ? L('Konto erstellen', 'Create account') : L('Anmelden', 'Sign in')) + '</h1><input class="ri" id="a-n" maxlength="20" autocomplete="username" placeholder="' + h(L('Name', 'Name')) + '"><input class="ri" id="a-p" type="password" autocomplete="' + (reg ? 'new-password' : 'current-password') + '" placeholder="' + h(L('Passwort', 'Password')) + '"><div class="rm" id="a-msg"></div><button class="rb pri" id="a-ok">' + h(reg ? L('Registrieren', 'Register') : L('Anmelden', 'Sign in')) + '</button>' + (reg || !A.flags.register ? '' : '<button class="rb" id="a-reg">' + h(L('Neues Konto erstellen', 'Create new account')) + '</button>') + '<button class="rb" id="a-back">' + h(L('Zurück', 'Back')) + '</button>' + priv);
+      const go = async () => {
+        const n = $('a-n').value.trim().replace(/\s+/g, ' '), p = $('a-p').value, msg = $('a-msg');
+        if (n.length < 3 || slug(n).length < 3) { msg.textContent = L('Name: mindestens 3 Zeichen (Buchstaben/Zahlen).', 'Name: at least 3 characters (letters/numbers).'); return; }
+        if (reg && RESERVED.includes(n.toLowerCase().replace(/[^a-z0-9]/g, ''))) { msg.textContent = L('Dieser Name ist reserviert.', 'This name is reserved.'); return; }
+        if (p.length < 6) { msg.textContent = L('Passwort: mindestens 6 Zeichen.', 'Password: at least 6 characters.'); return; }
+        $('a-ok').disabled = true; msg.textContent = '…';
+        const r = reg ? await FB.signUp(emailOf(n), p, n) : await FB.signIn(emailOf(n), p);
+        if (!r.ok) { msg.textContent = ERR(r.code); $('a-ok').disabled = false; return; }
+        if (!r.user.name) r.user.name = n;
+        await identify(r.user, reg ? 'register' : 'login'); hideGate();
+      };
+      $('a-ok').onclick = go; $('a-p').addEventListener('keydown', ev => { if (ev.key === 'Enter') go(); });
+      if ($('a-reg')) $('a-reg').onclick = () => showGate('reg', top);
+      $('a-back').onclick = () => top ? hideGate() : showGate('start', top);
+      setTimeout(() => { try { $('a-n').focus(); } catch (e) { } }, 50);
+      return;
+    }
+    card('<h1>Ragdoll Lab</h1><p>' + h(note || L('Möchtest du dich anmelden oder als Gast spielen?', 'Do you want to sign in or play as a guest?')) + '</p><button class="rb pri" id="a-in">🔑 ' + h(L('Anmelden', 'Sign in')) + '</button><button class="rb" id="a-gs">👤 ' + h(L('Als Gast spielen', 'Play as guest')) + '</button><div class="rm" id="a-msg"></div>' + priv);
+    $('a-in').onclick = () => showGate('login', top);
+    $('a-gs').onclick = async () => { await refreshFlags(); if (A.flags.guests === false) { $('a-msg').textContent = L('Der Gastzugang ist derzeit geschlossen. Bitte melde dich an.', 'Guest access is currently closed. Please sign in.'); return; } showGate('guest', top); };
+  }
+  async function refreshFlags() { const f = await FB.get('site/flags'); if (f) A.flags = Object.assign({ guests: true, register: true }, f); }
+
+  /* ---------- Identitaet ---------- */
+  let subbed = false, pTimer = null;
+  async function identify(u, type) {
+    A.uid = u.uid; A.mode = u.anon ? 'guest' : 'user'; A.name = u.anon ? L('Gast', 'Guest') : (u.name || (lsGet() || {}).name || '?');
+    lsSet({ mode: A.mode, name: A.name });
+    A.dev = false;
+    if (!u.anon) { const v = await FB.get('admins/' + u.uid); A.dev = v === true; }
+    if (!u.anon) FB.update('users/' + u.uid, Object.assign({ name: A.name, last: FB.TS }, type === 'register' ? { created: FB.TS } : {}));
+    if (type) logLogin(type);
+    sub(); presence(); ui(); decorate(); renderBan(); A.ready = true;
+  }
+  async function logLogin(type) {
+    const d = await devInfo(), v = typeof APP_VERSION !== 'undefined' ? APP_VERSION : '';
+    FB.push('logins', { uid: A.uid, name: A.name, type, dev: !!A.dev, ts: FB.TS, kind: d.kind, os: d.os, browser: d.browser, model: d.model || '', screen: d.screen, lang: d.lang, ver: String(v).slice(0, 12) });
+  }
+  async function presence() {
+    if (!A.uid) return; const path = 'presence/' + A.uid;
+    const put = () => FB.set(path, { name: A.name, guest: A.mode === 'guest', dev: !!A.dev, ts: FB.TS });
+    await put(); FB.onDisc(path); clearInterval(pTimer); pTimer = setInterval(() => FB.update(path, { ts: FB.TS }), 60000);
+  }
+  async function sub() {
+    if (subbed) { return; } subbed = true;
+    FB.listen('bans/' + A.uid, v => { A.ban = v || null; renderBan(); });
+  }
+  async function siteSubs() {
+    FB.listen('site/state', v => { A.locked = !!(v && v.locked); renderLock(); devRender(); });
+    FB.listen('site/flags', v => { A.flags = Object.assign({ guests: true, register: true }, v || {}); devRender(); });
+    FB.listen('site/disabled', v => { A.disabled = v || {}; decorate(); devRender(); });
+  }
+
+  /* ---------- Chip + kleines Menue ---------- */
+  function ui() {
+    const c = mk('acchip', A.dev ? 'dev' : '');
+    c.textContent = A.dev ? '🛠️ ' + A.name + ' · ' + L('Entwickler', 'Developer') : A.mode === 'guest' ? '👤 ' + L('Gast – anmelden', 'Guest – sign in') : '👤 ' + A.name;
+    c.onclick = e => { e.stopPropagation(); const p = mk('accpop', 'on', ''); p.classList.toggle('on', !p.dataset.o); p.dataset.o = p.dataset.o ? '' : '1'; p.innerHTML = (A.dev ? '<button class="rb" id="p-dev">🛠️ ' + h(L('Entwickler-Panel', 'Developer panel')) + '</button>' : '') + (A.mode === 'guest' ? '<button class="rb pri" id="p-in">🔑 ' + h(L('Anmelden', 'Sign in')) + '</button>' : '<button class="rb" id="p-out">↩ ' + h(L('Abmelden', 'Sign out')) + '</button>'); if (!p.dataset.o) p.classList.remove('on');
+      if ($('p-dev')) $('p-dev').onclick = () => { p.classList.remove('on'); p.dataset.o = ''; devOpen(); };
+      if ($('p-in')) $('p-in').onclick = () => { p.classList.remove('on'); p.dataset.o = ''; showGate('login', true); };
+      if ($('p-out')) $('p-out').onclick = async () => { await FB.signOut(); lsSet(null); location.reload(); }; };
+    const b = mk('devb', ''); b.textContent = '🛠'; b.title = L('Entwickler-Panel', 'Developer panel'); b.style.display = A.dev ? 'block' : 'none'; b.onclick = devOpen;
+    document.addEventListener('click', () => { const p = $('accpop'); if (p) { p.classList.remove('on'); p.dataset.o = ''; } });
+    decorate(); renderLock();
+  }
+
+  /* ---------- Entwickler-Panel ---------- */
+  let tab = 'site', logs = null, pres = null, bans = null, unL = [], panelOn = false;
+  const TABS = [['site', '🔒', 'Seite', 'Site'], ['logins', '👥', 'Logins', 'Logins'], ['online', '🟢', 'Online', 'Online'], ['bans', '⛔', 'Sperren', 'Bans'], ['maps', '🗺️', 'Karten', 'Maps'], ['tools', '🧰', 'Werkzeuge', 'Tools']];
+  async function devOpen() {
+    if (!A.dev) return; panelOn = true; const e = mk('devp', 'ra', ''); e.style.display = 'flex'; noKeys(e);
+    e.onclick = ev => { if (ev.target === e) devClose(); };
+    for (const u of unL) { try { u(); } catch (x) { } } unL = [];
+    unL.push(await FB.listenLast('logins', 150, v => { logs = v || {}; devRender(); }));
+    unL.push(await FB.listen('presence', v => { pres = v || {}; devRender(); }));
+    unL.push(await FB.listen('bans', v => { bans = v || {}; devRender(); }));
+    devRender();
+  }
+  function devClose() { panelOn = false; const e = $('devp'); if (e) e.style.display = 'none'; for (const u of unL) { try { u(); } catch (x) { } } unL = []; }
+  const tg = (id, on) => '<button class="tg' + (on ? ' on' : '') + '" data-t="' + id + '"></button>';
+  const ago = ts => { if (!ts) return '?'; const s = Math.max(0, (Date.now() - ts) / 1000 | 0); return s < 60 ? s + ' s' : s < 3600 ? (s / 60 | 0) + ' min' : s < 86400 ? (s / 3600 | 0) + ' h' : (s / 86400 | 0) + ' d'; };
+  const when = ts => ts ? new Date(ts).toLocaleString() : '?';
+  function devRender() {
+    const e = $('devp'); if (!e || !panelOn || e.style.display === 'none') return;
+    const R = (de, en) => h(L(de, en));
+    let body = '';
+    if (tab === 'site') {
+      body = '<div class="dr"><span class="gr"><b>' + R('Webseite sperren', 'Lock website') + '</b><br><small>' + R('Alle außer dir sehen den Wartungsbildschirm.', 'Everyone except you sees the maintenance screen.') + '</small></span><button class="rb pri sm" data-a="lock">' + (A.locked ? '🔓 ' + R('Entsperren', 'Unlock') : '🔒 ' + R('Jetzt sperren', 'Lock now')) + '</button></div>'
+        + '<div class="dr"><span class="gr"><b>' + R('Gast-Zugang', 'Guest access') + '</b><br><small>' + R('Aus = niemand kommt als Gast rein.', 'Off = nobody can enter as a guest.') + '</small></span>' + tg('guests', A.flags.guests !== false) + '</div>'
+        + '<div class="dr"><span class="gr"><b>' + R('Neue Konten (Registrierung)', 'New accounts (registration)') + '</b><br><small>' + R('Aus = nur bestehende Konten können sich anmelden.', 'Off = only existing accounts can sign in.') + '</small></span>' + tg('register', A.flags.register !== false) + '</div>';
+    } else if (tab === 'logins') {
+      const ks = Object.keys(logs || {}).reverse();
+      body = '<div class="dr"><span class="gr"><b>' + ks.length + '</b> ' + R('letzte Anmeldungen', 'recent sign-ins') + '</span><button class="rb sm" data-a="csv">⬇ CSV</button></div>' + (ks.length ? '' : '<small>' + R('Noch nichts.', 'Nothing yet.') + '</small>')
+        + ks.map(k => { const x = logs[k]; return '<div class="dr"><span class="gr"><b>' + h(x.name) + '</b> <span class="bd ' + (x.type === 'guest' ? 'g' : x.type === 'register' ? 'r' : 'u') + '">' + h(x.type === 'guest' ? 'Gast' : x.type === 'register' ? 'Neu' : x.dev ? 'Dev' : 'Login') + '</span><br><small>' + h(x.kind) + ' · ' + h(x.model ? x.model + ' · ' : '') + h(x.os) + ' · ' + h(x.browser) + ' · ' + h(x.screen) + '<br>' + h(when(x.ts)) + ' (' + h(ago(x.ts)) + ')</small></span>' + (x.uid && x.uid !== A.uid ? '<button class="rb sm" data-a="ban" data-u="' + h(x.uid) + '" data-n="' + h(x.name) + '">⛔</button>' : '') + '</div>'; }).join('');
+    } else if (tab === 'online') {
+      const now = Date.now(), L2 = Object.entries(pres || {}).filter(([, v]) => v && now - (v.ts || 0) < 150000);
+      body = '<div class="dr"><b>' + L2.length + '</b> ' + R('gerade online', 'online now') + '</div>' + L2.map(([u, v]) => '<div class="dr"><span class="gr"><b>' + h(v.name) + '</b> <span class="bd ' + (v.dev ? 'g' : v.guest ? '' : 'u') + '">' + h(v.dev ? 'Dev' : v.guest ? 'Gast' : 'Konto') + '</span> <small>' + h(ago(v.ts)) + '</small></span>' + (u !== A.uid ? '<button class="rb sm" data-a="ban" data-u="' + h(u) + '" data-n="' + h(v.name) + '">⛔</button>' : '') + '</div>').join('');
+    } else if (tab === 'bans') {
+      const ks = Object.keys(bans || {});
+      body = '<small>' + R('Sperren geht über die Listen „Logins“ oder „Online“ (⛔).', 'Ban players via the “Logins” or “Online” lists (⛔).') + '</small>' + (ks.length ? '' : '<div class="dr">' + R('Niemand gesperrt.', 'Nobody banned.') + '</div>') + ks.map(u => { const b = bans[u]; return '<div class="dr"><span class="gr"><b>' + h(b.name || u) + '</b><br><small>' + h(b.reason || '') + ' · ' + h(when(b.ts)) + '</small></span><button class="rb sm" data-a="unban" data-u="' + h(u) + '">✔ ' + R('Entsperren', 'Unban') + '</button></div>'; }).join('');
+    } else if (tab === 'maps') {
+      const ks = typeof MAP_ORDER !== 'undefined' ? MAP_ORDER : [];
+      body = '<small>' + R('Gesperrte Karten sind für alle außer dir nicht spielbar.', 'Disabled maps cannot be played by anyone except you.') + '</small>' + ks.map((k, i) => '<div class="dr"><span class="gr"><b>' + String(i + 1).padStart(2, '0') + '</b> ' + h(L((MAP_INFO[k] && MAP_INFO[k].name) ? (typeof T === 'function' ? T(MAP_INFO[k].name) : MAP_INFO[k].name) : k, k)) + '</span>' + tg('map:' + k, !(A.disabled && A.disabled[k])) + '</div>').join('');
+    } else if (tab === 'tools') {
+      const g = game(), ts = g ? g.set.timeScale : 1;
+      body = '<div class="dr"><span class="gr"><b>' + R('Gottmodus', 'God mode') + '</b><br><small>' + R('Figur bleibt immer bei voller Gesundheit.', 'Dummy always stays at full health.') + '</small></span>' + tg('god', A.god) + '</div>'
+        + '<div class="dr"><span class="gr"><b>' + R('Zeitlupe', 'Slow motion') + '</b></span>' + [0.1, 0.25, 0.5, 1].map(v => '<button class="rb sm" data-a="ts" data-v="' + v + '"' + (Math.abs(ts - v) < .01 ? ' style="border-color:#ffd46b"' : '') + '>' + v + '×</button>').join('') + '</div>'
+        + '<div class="dr"><span class="gr"><b>' + R('Karte springen', 'Jump to map') + '</b><br><small>' + R('Ignoriert alle Sperren.', 'Ignores all locks.') + '</small></span></div><div>' + (typeof MAP_ORDER !== 'undefined' ? MAP_ORDER.map((k, i) => '<button class="rb sm" data-a="jump" data-k="' + k + '">' + String(i + 1).padStart(2, '0') + '</button>').join('') : '') + '</div>';
+    }
+    e.innerHTML = '<div class="dp"><div class="dh"><b>🛠️ ' + R('Entwicklerrechte', 'Developer rights') + '</b><button class="rb sm" data-a="close">✕</button></div><div class="dt">' + TABS.map(t => '<button data-tab="' + t[0] + '" class="' + (tab === t[0] ? 'on' : '') + '">' + t[1] + ' ' + h(L(t[2], t[3])) + '</button>').join('') + '</div><div class="db">' + body + '</div></div>';
+    e.onclick = ev => {
+      const t = ev.target.closest('[data-tab],[data-a],[data-t]'); if (!t) { if (ev.target === e) devClose(); return; }
+      if (t.dataset.tab) { tab = t.dataset.tab; devRender(); return; }
+      if (t.dataset.t) return devToggle(t.dataset.t);
+      const a = t.dataset.a;
+      if (a === 'close') devClose(); else if (a === 'lock') setLock(!A.locked);
+      else if (a === 'csv') csv();
+      else if (a === 'ban') { const r = prompt(L('Grund für die Sperre (optional):', 'Reason for the ban (optional):'), ''); if (r !== null) FB.set('bans/' + t.dataset.u, { name: t.dataset.n, reason: String(r).slice(0, 80), ts: FB.TS, by: A.name }); }
+      else if (a === 'unban') FB.remove('bans/' + t.dataset.u);
+      else if (a === 'ts') { const g = game(); if (g) { g.set.timeScale = parseFloat(t.dataset.v); devRender(); } }
+      else if (a === 'jump') { const g = game(), k = t.dataset.k; devClose(); if (g && g.menu) { g.menu.sel = k; g.menu.play(); } }
+    };
+  }
+  async function devToggle(id) {
+    if (id === 'god') { A.god = !A.god; devRender(); return; }
+    if (id === 'guests' || id === 'register') { const f = Object.assign({}, A.flags); f[id] = !(f[id] !== false); await FB.set('site/flags', { guests: f.guests !== false, register: f.register !== false }); return; }
+    if (id.startsWith('map:')) { const k = id.slice(4), d = Object.assign({}, A.disabled); if (d[k]) delete d[k]; else d[k] = true; await FB.set('site/disabled', Object.keys(d).length ? d : null); }
+  }
+  function csv() {
+    const ks = Object.keys(logs || {}).reverse(), q = s => '"' + String(s == null ? '' : s).replace(/"/g, '""') + '"';
+    const rows = [['Zeit', 'Name', 'Typ', 'Geraet', 'Modell', 'System', 'Browser', 'Bildschirm', 'Sprache', 'Version', 'UID']].concat(ks.map(k => { const x = logs[k]; return [new Date(x.ts || 0).toISOString(), x.name, x.type, x.kind, x.model, x.os, x.browser, x.screen, x.lang, x.ver, x.uid]; }));
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['﻿' + rows.map(r => r.map(q).join(';')).join('\n')], { type: 'text/csv' })); a.download = 'ragdoll-lab-logins.csv'; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+  }
+  document.addEventListener('keydown', e => { if (A.dev && e.ctrlKey && e.shiftKey && e.code === 'KeyD') { e.preventDefault(); panelOn ? devClose() : devOpen(); } });
+
+  /* ---------- Start ---------- */
+  async function boot() {
+    if (TEST()) { A.mode = 'test'; A.ready = true; return; }
+    const saved = lsGet();
+    if (!saved) showGate('start');
+    const ok = await FB.ready();
+    if (!ok) {
+      A.offline = true;
+      if (saved) { A.mode = saved.mode === 'user' ? 'user' : 'guest'; A.name = saved.name || L('Gast', 'Guest'); ui(); }
+      else { const m = $('a-msg'); if (m) m.textContent = L('Keine Verbindung – Anmeldung gerade nicht möglich. Du kannst offline als Gast spielen.', 'No connection – sign-in is not possible right now. You can play offline as a guest.'); }
+      return;
+    }
+    siteSubs(); await refreshFlags();
+    if (!saved) return;                               // Gate wartet auf Eingabe
+    const u = await FB.authReady();
+    if (u) { await identify(u, null); return; }
+    if (saved.mode === 'user') { showGate('start', false, L('Deine Sitzung ist abgelaufen. Bitte melde dich neu an.', 'Your session has expired. Please sign in again.')); return; }
+    const r = await FB.guest(); if (r.ok) await identify(r.user, 'guest'); else { A.mode = 'guest'; ui(); }
+  }
+  boot().catch(e => console.warn('[RLAccount]', e));
+  return Object.assign(A, { allowed, showGate, setLock, devOpen, slug, emailOf, devInfo });
+})();
+
+;
 /* ---- maps3.js: vier weitere Maps – Bauernhof, Skatepark, Arena, Lagerhalle ---- */
 'use strict';
 Object.assign(DE, {
@@ -16569,9 +17028,13 @@ Renderer.prototype.setFoliage = function (f) {
    changelog.js — Versionsnummer, Update-Protokoll (Einstellungen) und kurzes Update-Fenster beim ersten Start nach einer neuen Version.
    Neue Version: APP_VERSION hochzaehlen und oben in APP_LOG einen Eintrag ergaenzen.
    =================================================================== */
-const APP_VERSION = '1.8';
+const APP_VERSION = '1.9';
 const APP_ICON = 'data:image/png;base64,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';
 const APP_LOG = [
+  { v: '1.9', date: '27.11.2026', title: ['Seltener Update-Hinweis, Sanitäter ziehen Klingen', 'Rarer update notice, medics pull blades'], items: [
+    ['Das Update-Fenster erscheint nur noch beim allerersten Start, nicht mehr bei jedem Start oder jeder neuen Version (Änderungen stehen weiter unter Einstellungen → Update-Protokoll)', 'The update window now only appears on the very first start, no longer on every start or new version (changes remain under Settings → Update log)'],
+    ['Steckt ein Messer, eine Axt, ein Katana oder ein Speer im Körper, versuchen die Sanitäter es zuerst vorsichtig herauszuziehen', 'If a knife, axe, katana or spear is stuck in the body, the paramedics first try to pull it out carefully'],
+    ['Messer lassen sich meist ziehen, Speere und tiefe Äxte oft nicht – dann sagen die Sanitäter „nicht ziehen“ und es wird im Krankenhaus in der Operation entfernt', 'Knives usually come out, spears and deep axes often do not – then the medics say "don\'t pull" and it is removed in surgery at the hospital'] ] },
   { v: '1.8', date: '27.11.2026', title: ['Meer, Rettung im Wasser und 30 Experimentierkammern', 'Sea, water rescue and 30 experiment chambers'], items: [
     ['Hafen neu: Containerkai 2,4 m über einem echten Meer, Schiff im Wasser, Kai-Kante mit Pollern', 'Harbor rebuilt: container quay 2.4 m above a real sea, ship in the water, quay edge with bollards'],
     ['Ertrinken: Kopf unter Wasser = Luftanzeige; ohne Luft Schmerz, Schock und Schaden. Nach etwa 16 Sekunden im tiefen Wasser wird er müde und sinkt; Tote sinken langsam', 'Drowning: head under water shows an air bar; without air pain, shock and damage. After about 16 seconds in deep water he gets tired and sinks; dead bodies sink slowly'],
@@ -16659,15 +17122,21 @@ const APP_LOG = [
   }
 
   /* ---------- Update-Fenster ---------- */
+  const WELCOME_ITEMS = [
+    ['Ragdoll-Physik mit Organen, Knochen, Röntgen und Wunden', 'Ragdoll physics with organs, bones, X-ray and wounds'],
+    ['28 Karten: Pool, Hafen mit Meer, Gefängnis, Experimentier-Labor mit 30 Kammern …', '28 maps: pool, harbor with sea, prison, experiment labs with 30 chambers …'],
+    ['Rettungsdienst, Rettungsschwimmer, Rettungsboot, Polizei und Feuerwehr', 'Paramedics, lifeguards, rescue boat, police and fire department'],
+    ['Waffen, Klingen, Regen, Pfützen und Gewitter', 'Weapons, blades, rain, puddles and thunderstorms'],
+    ['Alle Änderungen: Einstellungen → Update-Protokoll', 'All changes: Settings → Update log'] ];
   const KEY = 'rl_app_version';
   let seen = null; try { seen = localStorage.getItem(KEY); } catch (e) { }
   function save() { try { localStorage.setItem(KEY, APP_VERSION); } catch (e) { } }
   window.__showUpdateLog = function (force) {
     if ($('upd')) return;
     const cur = APP_LOG[0], el = document.createElement('div'); el.id = 'upd';
-    const items = cur.items.slice(0, 5);
+    const items = (!seen && !force) ? WELCOME_ITEMS : cur.items.slice(0, 5);
     el.innerHTML = '<div class="ub" role="dialog" aria-modal="true"><img src="' + APP_ICON + '" alt=""><small>' + D(seen ? 'UPDATE INSTALLIERT' : 'WILLKOMMEN', seen ? 'UPDATE INSTALLED' : 'WELCOME') + '</small><h3>Ragdoll Lab <em>v' + APP_VERSION + '</em></h3><h4>' + esc(L(cur.title)) + '</h4><ul>' +
-      items.map(i => '<li>' + esc(L(i)) + '</li>').join('') + '</ul>' + (cur.items.length > items.length ? '<p>' + D('… und mehr', '… and more') + '</p>' : '') + '<p class="hint">' + D('Alle Änderungen findest du unter Einstellungen → Update-Protokoll.', 'Find all changes under Settings → Update log.') + '</p><button>' + D('Los geht\'s', 'Let\'s go') + '</button></div>';
+      items.map(i => '<li>' + esc(L(i)) + '</li>').join('') + '</ul>' + ((items !== WELCOME_ITEMS) && cur.items.length > items.length ? '<p>' + D('… und mehr', '… and more') + '</p>' : '') + '<p class="hint">' + D('Alle Änderungen findest du unter Einstellungen → Update-Protokoll.', 'Find all changes under Settings → Update log.') + '</p><button>' + D('Los geht\'s', 'Let\'s go') + '</button></div>';
     document.body.appendChild(el); void el.offsetWidth; el.classList.add('on');
     const close = () => { save(); el.classList.remove('on'); setTimeout(() => el.remove(), 350); removeEventListener('keydown', key, true); };
     const key = ev => { if (ev.key === 'Enter' || ev.key === 'Escape' || ev.key === ' ') { ev.preventDefault(); ev.stopPropagation(); close(); } };
@@ -16675,13 +17144,14 @@ const APP_LOG = [
     el.querySelector('button').addEventListener('click', close);
     el.addEventListener('pointerdown', ev => { if (ev.target === el) close(); });
   };
-  if (seen !== APP_VERSION && !window.__fastLoad) {
+  if (seen && seen !== APP_VERSION) save();      // bekannte Nutzer: Version still merken, kein Fenster
+  if (!seen && !window.__fastLoad) {
     /* erst zeigen, wenn Ladebildschirm weg ist (Menue sichtbar) */
     let n = 0, tH = 0; const iv = setInterval(() => {
       const ml = $('mload'), mn = $('menu'); n++;
       const hidden = !ml || ml.classList.contains('hide'); if (hidden && !tH) tH = performance.now();
       const ready = hidden && performance.now() - tH > 4800 && !$('agesplash') && mn && mn.classList.contains('show');   // 18+-Hinweis (~3,8 s) ist vorbei
-      if (ready || n > 600) { clearInterval(iv); setTimeout(() => window.__showUpdateLog(), 400); }
+      if (ready || n > 600) { clearInterval(iv); save(); setTimeout(() => window.__showUpdateLog(), 400); }
     }, 300);
   }
 
