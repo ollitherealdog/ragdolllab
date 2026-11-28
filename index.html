@@ -16294,7 +16294,7 @@ window.RLAccount = (() => {
   const lsSet = v => { try { if (v) localStorage.setItem(LSK, JSON.stringify(v)); else localStorage.removeItem(LSK); } catch (e) { } };
   const game = () => window.__game;
   const TEST = () => !!window.__fastLoad && !window.__acctForce;
-  const DOM = 'ragdoll-lab.app', RESERVED = ['badgamer', 'admin', 'administrator', 'entwickler', 'developer', 'owner', 'moderator', 'system', 'support'];
+  const DOM = 'ragdoll-lab.app', RESERVED = ['admin', 'administrator', 'entwickler', 'developer', 'owner', 'moderator', 'system', 'support'];
   const slug = n => String(n).normalize('NFKD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
   const emailOf = n => slug(n) + '@' + DOM;
   const FIRST = () => (typeof MAP_ORDER !== 'undefined' ? MAP_ORDER[0] : 'ground');
@@ -16322,19 +16322,38 @@ window.RLAccount = (() => {
   /* ---------- Style ---------- */
   const css = document.createElement('style'); css.textContent = `
 .ra{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;font-family:system-ui,Segoe UI,Roboto,sans-serif;color:#e8edf5;padding:16px;box-sizing:border-box}
-#acct{z-index:80;background:rgba(4,6,10,.74);backdrop-filter:blur(8px)}#acct.top{z-index:100}
-.rc{width:min(430px,94vw);max-height:92vh;overflow:auto;background:#0e131c;border:1px solid #263042;border-radius:18px;padding:26px 24px;box-shadow:0 20px 70px rgba(0,0,0,.6);animation:rin .5s cubic-bezier(.2,.8,.2,1)}
-@keyframes rin{from{opacity:0;transform:translateY(14px) scale(.97)}to{opacity:1;transform:none}}
-.rc h1{margin:0 0 4px;font-size:24px;letter-spacing:.3px}.rc h1 b{color:var(--red,#e0383e)}.rc p{margin:6px 0 16px;color:#9aa7ba;font-size:14px;line-height:1.45}
-.rb{display:block;width:100%;padding:13px 14px;margin:8px 0;border-radius:12px;border:1px solid #2c3850;background:#161d2b;color:#e8edf5;font-size:15px;font-weight:600;cursor:pointer;transition:.15s}
-.rb:hover{background:#1d2740;border-color:#41557c}.rb.pri{background:var(--red,#e0383e);border-color:transparent}.rb.pri:hover{filter:brightness(1.12)}.rb.sm{width:auto;display:inline-block;padding:7px 12px;font-size:13px;margin:3px}
-.rb[disabled]{opacity:.5;cursor:default}
-.ri{display:block;width:100%;box-sizing:border-box;padding:12px 13px;margin:8px 0;border-radius:10px;border:1px solid #2c3850;background:#0a0f17;color:#fff;font-size:15px;outline:none}.ri:focus{border-color:#5b7fc7}
-.rm{min-height:18px;font-size:13px;color:#ff8a7a;margin:4px 0}.rn{font-size:11.5px;color:#6f7d93;line-height:1.4;margin-top:10px}
-.rg li{list-style:none;margin:12px 0;padding:12px 14px;background:#131a27;border:1px solid #232e44;border-radius:12px;font-size:14.5px;opacity:0;animation:rli .6s forwards}
-.rg{padding:0;margin:14px 0}.rg li:nth-child(1){animation-delay:.35s}.rg li:nth-child(2){animation-delay:1.1s}.rg li:nth-child(3){animation-delay:1.85s}
-.rg li i{font-style:normal;font-size:21px;margin-right:10px;vertical-align:-3px;display:inline-block;animation:rwob 2.2s infinite}
-@keyframes rli{from{opacity:0;transform:translateX(-18px)}to{opacity:1;transform:none}}@keyframes rwob{0%,100%{transform:rotate(-8deg)}50%{transform:rotate(8deg)}}
+#acct{z-index:80;background:radial-gradient(ellipse 60% 50% at 18% 15%,rgba(224,56,62,.20),transparent 70%),radial-gradient(ellipse 55% 55% at 88% 92%,rgba(70,100,220,.20),transparent 70%),rgba(3,5,9,.80);backdrop-filter:blur(14px) saturate(1.2);overflow:hidden;animation:rfade .7s ease both}#acct.top{z-index:100}
+@keyframes rfade{from{opacity:0}to{opacity:1}}
+#acct::before,#acct::after{content:'';position:absolute;width:46vmax;height:46vmax;border-radius:50%;filter:blur(70px);opacity:.22;pointer-events:none;animation:rdrift 16s ease-in-out infinite alternate}
+#acct::before{background:#e0383e;left:-18vmax;top:-20vmax}#acct::after{background:#3b63d8;right:-20vmax;bottom:-22vmax;animation-delay:-8s}
+@keyframes rdrift{to{transform:translate(8vmax,6vmax) scale(1.15)}}
+.rc{position:relative;width:min(440px,94vw);max-height:94vh;overflow:auto;background:linear-gradient(165deg,rgba(26,33,50,.92),rgba(11,15,24,.95));border:1px solid rgba(255,255,255,.09);border-radius:24px;padding:28px 26px 22px;box-shadow:0 30px 90px rgba(0,0,0,.65),0 0 0 1px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.07);animation:rin .7s cubic-bezier(.2,.9,.2,1) both;scrollbar-width:none}
+.rc::before{content:'';position:absolute;left:24px;right:24px;top:0;height:2px;background:linear-gradient(90deg,transparent,#e0383e,#ff8a5c,transparent);opacity:.9;border-radius:2px}
+.rc>*{animation:rup .55s cubic-bezier(.2,.9,.2,1) both}.rc>*:nth-child(1){animation-delay:.12s}.rc>*:nth-child(2){animation-delay:.2s}.rc>*:nth-child(3){animation-delay:.28s}.rc>*:nth-child(4){animation-delay:.36s}.rc>*:nth-child(5){animation-delay:.44s}.rc>*:nth-child(6){animation-delay:.52s}.rc>*:nth-child(7){animation-delay:.6s}
+@keyframes rin{from{opacity:0;transform:translateY(22px) scale(.95)}to{opacity:1;transform:none}}@keyframes rup{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+.rl{display:flex;align-items:center;gap:14px;margin-bottom:6px}.rm2{width:54px;height:54px;border-radius:16px;background:linear-gradient(145deg,#ff5a5f,#b3161c);display:grid;place-items:center;box-shadow:0 8px 26px rgba(224,56,62,.45),inset 0 1px 0 rgba(255,255,255,.35);animation:rpulse 3.4s ease-in-out infinite}
+.rm2 svg{width:34px;height:34px}@keyframes rpulse{50%{box-shadow:0 8px 38px rgba(224,56,62,.75),inset 0 1px 0 rgba(255,255,255,.35)}}
+.rtt{display:flex;flex-direction:column;line-height:1}.rtt span::before{content:attr(data-t)}.rtt span:first-child{font-size:25px;font-weight:800;letter-spacing:5px}.rtt .b{font-size:13px;font-weight:700;letter-spacing:11px;color:#ff6a6f;margin-top:5px}
+.rc h1{margin:0 0 4px;font-size:23px;letter-spacing:.3px}.rc p{margin:10px 0 18px;color:#a3b0c4;font-size:14.5px;line-height:1.5}
+.rb{position:relative;display:flex;align-items:center;justify-content:center;gap:9px;width:100%;box-sizing:border-box;padding:14px 16px;margin:9px 0;border-radius:14px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.05);color:#eef3fb;font-size:15.5px;font-weight:650;cursor:pointer;transition:transform .15s,background .2s,border-color .2s,box-shadow .2s;overflow:hidden;font-family:inherit}
+.rb:hover{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.22);transform:translateY(-1px)}.rb:active{transform:scale(.98)}
+.rb.pri{background:linear-gradient(135deg,#ff4b52,#c4151c);border-color:rgba(255,255,255,.18);box-shadow:0 10px 28px rgba(224,56,62,.4);color:#fff}
+.rb.pri:hover{box-shadow:0 12px 34px rgba(224,56,62,.65);filter:brightness(1.08)}
+.rb.pri::after{content:'';position:absolute;top:0;bottom:0;width:60px;left:-80px;background:linear-gradient(100deg,transparent,rgba(255,255,255,.35),transparent);transform:skewX(-18deg);animation:rshine 3.6s ease-in-out infinite}
+@keyframes rshine{0%,55%{left:-80px}100%{left:120%}}
+.rb.sm{width:auto;display:inline-flex;padding:7px 12px;font-size:13px;margin:3px;border-radius:10px}.rb[disabled]{opacity:.5;cursor:default;transform:none}
+.rsep{display:flex;align-items:center;gap:12px;color:#6c7a91;font-size:12px;letter-spacing:2px;text-transform:uppercase;margin:8px 2px}.rsep::before,.rsep::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.14),transparent)}
+.rf{position:relative;margin:11px 0}.rf>i{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-style:normal;font-size:17px;opacity:.75;pointer-events:none}
+.ri{display:block;width:100%;box-sizing:border-box;padding:14px 44px 14px 44px;border-radius:13px;border:1px solid rgba(255,255,255,.1);background:rgba(6,9,15,.75);color:#fff;font-size:16px;outline:none;transition:.2s;font-family:inherit}.ri:focus{border-color:#ff6a6f;box-shadow:0 0 0 4px rgba(224,56,62,.18)}.ri::placeholder{color:#6c7a91}
+.rye{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:36px;height:36px;border:0;background:transparent;color:#8a98ae;font-size:17px;cursor:pointer;border-radius:10px}.rye:hover{background:rgba(255,255,255,.07)}
+.rsw{display:flex;gap:4px;padding:4px;border-radius:14px;background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.07);margin:12px 0 6px}.rsw button{flex:1;padding:10px;border:0;border-radius:10px;background:transparent;color:#8a98ae;font-weight:650;font-size:14.5px;cursor:pointer;transition:.2s;font-family:inherit}.rsw button.on{background:rgba(255,255,255,.1);color:#fff;box-shadow:0 2px 10px rgba(0,0,0,.35)}.rsw button[disabled]{opacity:.35;cursor:default}
+.rlnk{display:block;margin:8px auto 0;padding:8px 14px;border:0;background:none;color:#8a98ae;font-size:13.5px;cursor:pointer;font-family:inherit}.rlnk:hover{color:#fff}
+.rm{min-height:19px;font-size:13px;color:#ff8f80;margin:6px 2px 0;line-height:1.35}.rn{font-size:11.5px;color:#66748a;line-height:1.45;margin-top:12px;text-align:center}.rn.cr{margin-top:6px;opacity:.7}
+.rg{padding:0;margin:14px 0}.rg li{list-style:none;display:flex;align-items:center;gap:14px;margin:11px 0;padding:13px 15px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:15px;font-size:14.5px;line-height:1.35;opacity:0;animation:rli .6s cubic-bezier(.2,.9,.2,1) forwards}
+.rg li:nth-child(1){animation-delay:.4s}.rg li:nth-child(2){animation-delay:1.2s}.rg li:nth-child(3){animation-delay:2s}
+.rg li i{flex:none;width:42px;height:42px;display:grid;place-items:center;border-radius:13px;background:rgba(224,56,62,.16);font-style:normal;font-size:21px;animation:rwob 2.4s ease-in-out infinite}
+.rg li:nth-child(2) i{background:rgba(240,180,50,.16)}.rg li:nth-child(3) i{background:rgba(90,130,240,.18)}
+@keyframes rli{from{opacity:0;transform:translateX(-22px)}to{opacity:1;transform:none}}@keyframes rwob{0%,100%{transform:rotate(-9deg)}50%{transform:rotate(9deg)}}
 #lockov{z-index:9000;background:radial-gradient(ellipse at 50% 40%,#18213a 0,#090c16 62%,#020307 100%);flex-direction:column;text-align:center;user-select:none}
 #lockov svg{width:190px;height:150px;margin-bottom:10px}.g1{transform-origin:70px 80px;animation:gs 7s linear infinite}.g2{transform-origin:128px 52px;animation:gs 5.2s linear infinite reverse}
 @keyframes gs{to{transform:rotate(360deg)}}
@@ -16416,26 +16435,30 @@ body.inmenu #devb{display:none!important}
   }
 
   /* ---------- Anmeldebildschirm ---------- */
-  const ERR = c => /invalid-credential|user-not-found|wrong-password|invalid-login/.test(c) ? L('Name oder Passwort falsch.', 'Wrong name or password.') : /email-already/.test(c) ? L('Dieser Name ist schon vergeben.', 'This name is already taken.') : /weak-password/.test(c) ? L('Passwort zu kurz (mindestens 6 Zeichen).', 'Password too short (min. 6 characters).') : /too-many/.test(c) ? L('Zu viele Versuche. Bitte kurz warten.', 'Too many attempts. Please wait a moment.') : /network|offline/.test(c) ? L('Keine Verbindung zum Server.', 'No connection to the server.') : /operation-not-allowed/.test(c) ? L('Anmeldung ist im Server noch nicht aktiviert.', 'Sign-in is not enabled on the server yet.') : L('Fehler: ', 'Error: ') + c;
-  function hideGate() { const e = $('acct'); if (e) e.style.display = 'none'; }
+  const ERR = c => /invalid-credential|user-not-found|wrong-password|invalid-login/.test(c) ? L('Name oder Passwort falsch.', 'Wrong name or password.') : /email-already/.test(c) ? L('Dieser Name ist schon vergeben.', 'This name is already taken.') : /weak-password/.test(c) ? L('Passwort zu kurz (mindestens 6 Zeichen).', 'Password too short (min. 6 characters).') : /too-many/.test(c) ? L('Zu viele Versuche. Bitte kurz warten.', 'Too many attempts. Please wait a moment.') : /network|offline/.test(c) ? L('Keine Verbindung zum Server.', 'No connection to the server.') : /operation-not-allowed|admin-restricted/.test(c) ? L('Diese Anmeldeart ist in Firebase noch nicht aktiviert.', 'This sign-in method is not enabled in Firebase yet.') : L('Fehler: ', 'Error: ') + c;
+  function hideGate() { const e = $('acct'); if (e) e.style.display = 'none'; A.gateOpen = false; }
+  const MARK = '<svg viewBox="0 0 48 48" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="24" cy="9" r="4.6" fill="#fff"/><path d="M24 15v13M24 19l-10 7M24 19l11 4M24 28l-8 13M24 28l11 10"/></svg>';
+  const LOGO = '<div class="rl"><div class="rm2">' + MARK + '</div><div class="rtt"><span data-t="RAGDOLL"></span><span class="b" data-t="LAB"></span></div></div>';
   function showGate(view, top, note) {
-    const e = mk('acct', 'ra' + (top ? ' top' : ''), ''); e.style.display = 'flex'; noKeys(e);
+    const e = mk('acct', 'ra' + (top ? ' top' : ''), ''); e.style.display = 'flex'; A.gateOpen = true; noKeys(e);
     const card = (html) => { e.innerHTML = '<div class="rc">' + html + '</div>'; };
-    const priv = '<div class="rn">' + h(L('Beim Anmelden werden dein Name, Gerät und Browser gespeichert (keine IP-Adresse).', 'When you sign in, your name, device and browser are stored (no IP address).')) + '</div>';
+    const priv = '<div class="rn">' + h(L('Beim Anmelden werden dein Name, Gerät und Browser gespeichert (keine IP-Adresse).', 'When you sign in, your name, device and browser are stored (no IP address).')) + '</div><div class="rn cr">© Olli (mit Claude, Anthropic)</div>';
     if (view === 'guest') {
-      card('<h1>👤 ' + h(L('Gastmodus', 'Guest mode')) + '</h1><p>' + h(L('Das bekommst du als Gast:', 'What you get as a guest:')) + '</p><ul class="rg"><li><i>🔒</i>' + h(L('Du kannst nur das erste Level spielen.', 'You can only play the first level.')) + '</li><li><i>⏳</i>' + h(L('Updates bekommst du viel später.', 'You get updates much later.')) + '</li><li><i>⚙️</i>' + h(L('Alles funktioniert nicht so gut.', 'Not everything works as well.')) + '</li></ul><button class="rb pri" id="a-go">' + h(L('Weiter als Gast', 'Continue as guest')) + '</button><button class="rb" id="a-back">' + h(L('Doch lieber anmelden', 'Sign in instead')) + '</button><div class="rm" id="a-msg"></div>' + priv);
-      $('a-back').onclick = () => showGate('start', top);
+      card('<div class="rl"><div class="rm2">' + MARK + '</div><div><h1>' + h(L('Gastmodus', 'Guest mode')) + '</h1></div></div><p>' + h(L('Das bekommst du als Gast:', 'What you get as a guest:')) + '</p><ul class="rg"><li><i>🔒</i><span>' + h(L('Du kannst nur das erste Level spielen.', 'You can only play the first level.')) + '</span></li><li><i>⏳</i><span>' + h(L('Updates bekommst du viel später.', 'You get updates much later.')) + '</span></li><li><i>⚙️</i><span>' + h(L('Alles funktioniert nicht so gut.', 'Not everything works as well.')) + '</span></li></ul><button class="rb pri" id="a-go">' + h(L('Weiter als Gast', 'Continue as guest')) + '</button><button class="rlnk" id="a-back">← ' + h(L('Doch lieber anmelden', 'Sign in instead')) + '</button><div class="rm" id="a-msg"></div>' + priv);
+      $('a-back').onclick = () => showGate('login', top);
       $('a-go').onclick = async () => {
         $('a-go').disabled = true; const msg = $('a-msg'); msg.textContent = '…';
         const r = await FB.guest();
-        if (!r.ok) { if (r.code === 'offline') { A.offline = true; A.mode = 'guest'; A.name = L('Gast', 'Guest'); lsSet({ mode: 'guest', name: A.name }); hideGate(); ui(); return; } msg.textContent = ERR(r.code); $('a-go').disabled = false; return; }
+        if (!r.ok) { if (r.code === 'offline' || /operation-not-allowed|admin-restricted/.test(r.code)) { A.offline = true; A.mode = 'guest'; A.name = L('Gast', 'Guest'); lsSet({ mode: 'guest', name: A.name }); hideGate(); ui(); if (r.code !== 'offline') toast(L('Hinweis: „Anonym“-Anmeldung ist in Firebase nicht aktiviert – du spielst als lokaler Gast (ohne Eintrag in der Liste).', 'Note: “Anonymous” sign-in is not enabled in Firebase – you play as a local guest (not listed).'), 7000); return; } msg.textContent = ERR(r.code); $('a-go').disabled = false; return; }
         await identify(r.user, 'guest'); hideGate();
       };
       return;
     }
     if (view === 'login' || view === 'reg') {
-      const reg = view === 'reg';
-      card('<h1>' + h(reg ? L('Konto erstellen', 'Create account') : L('Anmelden', 'Sign in')) + '</h1><input class="ri" id="a-n" maxlength="20" autocomplete="username" placeholder="' + h(L('Name', 'Name')) + '"><input class="ri" id="a-p" type="password" autocomplete="' + (reg ? 'new-password' : 'current-password') + '" placeholder="' + h(L('Passwort', 'Password')) + '"><div class="rm" id="a-msg"></div><button class="rb pri" id="a-ok">' + h(reg ? L('Registrieren', 'Register') : L('Anmelden', 'Sign in')) + '</button>' + (reg || !A.flags.register ? '' : '<button class="rb" id="a-reg">' + h(L('Neues Konto erstellen', 'Create new account')) + '</button>') + '<button class="rb" id="a-back">' + h(L('Zurück', 'Back')) + '</button>' + priv);
+      const reg = view === 'reg', regOk = A.flags.register !== false;
+      card(LOGO + '<div class="rsw"><button id="a-tl" class="' + (reg ? '' : 'on') + '">' + h(L('Anmelden', 'Sign in')) + '</button><button id="a-tr" class="' + (reg ? 'on' : '') + '"' + (regOk ? '' : ' disabled') + '>' + h(L('Registrieren', 'Register')) + '</button></div>'
+        + '<div class="rf"><i>👤</i><input class="ri" id="a-n" maxlength="20" autocomplete="username" autocapitalize="off" spellcheck="false" placeholder="' + h(L('Name', 'Name')) + '"></div><div class="rf"><i>🔒</i><input class="ri" id="a-p" type="password" autocomplete="' + (reg ? 'new-password' : 'current-password') + '" placeholder="' + h(L('Passwort', 'Password')) + '"><button class="rye" id="a-eye" type="button" tabindex="-1">👁</button></div>'
+        + '<div class="rm" id="a-msg">' + (!regOk && reg ? '' : '') + '</div><button class="rb pri" id="a-ok">' + h(reg ? L('Konto erstellen', 'Create account') : L('Anmelden', 'Sign in')) + '</button><button class="rlnk" id="a-back">' + h(top ? L('Schließen', 'Close') : L('← Zurück', '← Back')) + '</button>' + priv);
       const go = async () => {
         const n = $('a-n').value.trim().replace(/\s+/g, ' '), p = $('a-p').value, msg = $('a-msg');
         if (n.length < 3 || slug(n).length < 3) { msg.textContent = L('Name: mindestens 3 Zeichen (Buchstaben/Zahlen).', 'Name: at least 3 characters (letters/numbers).'); return; }
@@ -16447,13 +16470,14 @@ body.inmenu #devb{display:none!important}
         if (!r.user.name) r.user.name = n;
         await identify(r.user, reg ? 'register' : 'login'); hideGate();
       };
-      $('a-ok').onclick = go; $('a-p').addEventListener('keydown', ev => { if (ev.key === 'Enter') go(); });
-      if ($('a-reg')) $('a-reg').onclick = () => showGate('reg', top);
+      $('a-ok').onclick = go; $('a-p').addEventListener('keydown', ev => { if (ev.key === 'Enter') go(); }); $('a-n').addEventListener('keydown', ev => { if (ev.key === 'Enter') $('a-p').focus(); });
+      $('a-eye').onclick = () => { const i = $('a-p'); i.type = i.type === 'password' ? 'text' : 'password'; };
+      $('a-tl').onclick = () => reg && showGate('login', top); $('a-tr').onclick = () => !reg && regOk && showGate('reg', top);
       $('a-back').onclick = () => top ? hideGate() : showGate('start', top);
-      setTimeout(() => { try { $('a-n').focus(); } catch (e) { } }, 50);
+      setTimeout(() => { try { $('a-n').focus(); } catch (e) { } }, 450);
       return;
     }
-    card('<h1>Ragdoll Lab</h1><p>' + h(note || L('Möchtest du dich anmelden oder als Gast spielen?', 'Do you want to sign in or play as a guest?')) + '</p><button class="rb pri" id="a-in">🔑 ' + h(L('Anmelden', 'Sign in')) + '</button><button class="rb" id="a-gs">👤 ' + h(L('Als Gast spielen', 'Play as guest')) + '</button><div class="rm" id="a-msg"></div>' + priv);
+    card(LOGO + '<p>' + h(note || L('Willkommen! Möchtest du dich anmelden oder als Gast spielen?', 'Welcome! Do you want to sign in or play as a guest?')) + '</p><button class="rb pri" id="a-in">🔑 ' + h(L('Anmelden', 'Sign in')) + '</button><div class="rsep">' + h(L('oder', 'or')) + '</div><button class="rb" id="a-gs">👤 ' + h(L('Als Gast spielen', 'Play as guest')) + '</button><div class="rm" id="a-msg">' + (A.offline ? h(L('Keine Verbindung – Anmeldung gerade nicht möglich. Du kannst offline als Gast spielen.', 'No connection – sign-in is not possible right now. You can play offline as a guest.')) : '') + '</div>' + priv);
     $('a-in').onclick = () => showGate('login', top);
     $('a-gs').onclick = async () => { await refreshFlags(); if (A.flags.guests === false) { $('a-msg').textContent = L('Der Gastzugang ist derzeit geschlossen. Bitte melde dich an.', 'Guest access is currently closed. Please sign in.'); return; } showGate('guest', top); };
   }
@@ -16493,8 +16517,9 @@ body.inmenu #devb{display:none!important}
   function ui() {
     const c = mk('acchip', A.dev ? 'dev' : '');
     c.textContent = A.dev ? '🛠️ ' + A.name + ' · ' + L('Entwickler', 'Developer') : A.mode === 'guest' ? '👤 ' + L('Gast – anmelden', 'Guest – sign in') : '👤 ' + A.name;
-    c.onclick = e => { e.stopPropagation(); const p = mk('accpop', 'on', ''); p.classList.toggle('on', !p.dataset.o); p.dataset.o = p.dataset.o ? '' : '1'; p.innerHTML = (A.dev ? '<button class="rb" id="p-dev">🛠️ ' + h(L('Entwickler-Panel', 'Developer panel')) + '</button>' : '') + (A.mode === 'guest' ? '<button class="rb pri" id="p-in">🔑 ' + h(L('Anmelden', 'Sign in')) + '</button>' : '<button class="rb" id="p-out">↩ ' + h(L('Abmelden', 'Sign out')) + '</button>'); if (!p.dataset.o) p.classList.remove('on');
+    c.onclick = e => { e.stopPropagation(); const p = mk('accpop', 'on', ''); p.classList.toggle('on', !p.dataset.o); p.dataset.o = p.dataset.o ? '' : '1'; p.innerHTML = (A.dev ? '<button class="rb" id="p-dev">🛠️ ' + h(L('Entwickler-Panel', 'Developer panel')) + '</button>' : '') + (A.uid && A.mode !== 'guest' ? '<div class="rn">' + h(L('Deine ID:', 'Your ID:')) + '<br><code style="user-select:all;word-break:break-all">' + h(A.uid) + '</code></div><button class="rb" id="p-id">📋 ' + h(L('ID kopieren', 'Copy ID')) + '</button>' : '') + (A.mode === 'guest' ? '<button class="rb pri" id="p-in">🔑 ' + h(L('Anmelden', 'Sign in')) + '</button>' : '<button class="rb" id="p-out">↩ ' + h(L('Abmelden', 'Sign out')) + '</button>'); if (!p.dataset.o) p.classList.remove('on');
       if ($('p-dev')) $('p-dev').onclick = () => { p.classList.remove('on'); p.dataset.o = ''; devOpen(); };
+      if ($('p-id')) $('p-id').onclick = ev => { ev.stopPropagation(); try { navigator.clipboard.writeText(A.uid); toast(L('ID kopiert.', 'ID copied.')); } catch (x) { toast(A.uid, 8000); } };
       if ($('p-in')) $('p-in').onclick = () => { p.classList.remove('on'); p.dataset.o = ''; showGate('login', true); };
       if ($('p-out')) $('p-out').onclick = async () => { await FB.signOut(); lsSet(null); location.reload(); }; };
     const b = mk('devb', ''); b.textContent = '🛠'; b.title = L('Entwickler-Panel', 'Developer panel'); b.style.display = A.dev ? 'block' : 'none'; b.onclick = devOpen;
@@ -16572,10 +16597,18 @@ body.inmenu #devb{display:none!important}
   document.addEventListener('keydown', e => { if (A.dev && e.ctrlKey && e.shiftKey && e.code === 'KeyD') { e.preventDefault(); panelOn ? devClose() : devOpen(); } });
 
   /* ---------- Start ---------- */
+  /* Erst zeigen, wenn der Ladebildschirm weg ist, der 18+-Hinweis vorbei ist und das Menue steht (gleiche Bedingung wie beim Update-Fenster) */
+  function whenIntroDone(fn) {
+    let n = 0, tH = 0; const iv = setInterval(() => {
+      const ml = $('mload'), mn = $('menu'); n++;
+      const hidden = !ml || ml.classList.contains('hide'); if (hidden && !tH) tH = performance.now();
+      if ((hidden && performance.now() - tH > 4800 && !$('agesplash') && mn && mn.classList.contains('show')) || n > 900) { clearInterval(iv); setTimeout(fn, 250); }
+    }, 300);
+  }
   async function boot() {
     if (TEST()) { A.mode = 'test'; A.ready = true; return; }
     const saved = lsGet();
-    if (!saved) showGate('start');
+    if (!saved) { A.gateOpen = true; whenIntroDone(() => showGate('start')); }
     const ok = await FB.ready();
     if (!ok) {
       A.offline = true;
@@ -16587,7 +16620,7 @@ body.inmenu #devb{display:none!important}
     if (!saved) return;                               // Gate wartet auf Eingabe
     const u = await FB.authReady();
     if (u) { await identify(u, null); return; }
-    if (saved.mode === 'user') { showGate('start', false, L('Deine Sitzung ist abgelaufen. Bitte melde dich neu an.', 'Your session has expired. Please sign in again.')); return; }
+    if (saved.mode === 'user') { A.gateOpen = true; whenIntroDone(() => showGate('start', false, L('Deine Sitzung ist abgelaufen. Bitte melde dich neu an.', 'Your session has expired. Please sign in again.'))); return; }
     const r = await FB.guest(); if (r.ok) await identify(r.user, 'guest'); else { A.mode = 'guest'; ui(); }
   }
   boot().catch(e => console.warn('[RLAccount]', e));
@@ -17150,8 +17183,8 @@ const APP_LOG = [
     let n = 0, tH = 0; const iv = setInterval(() => {
       const ml = $('mload'), mn = $('menu'); n++;
       const hidden = !ml || ml.classList.contains('hide'); if (hidden && !tH) tH = performance.now();
-      const ready = hidden && performance.now() - tH > 4800 && !$('agesplash') && mn && mn.classList.contains('show');   // 18+-Hinweis (~3,8 s) ist vorbei
-      if (ready || n > 600) { clearInterval(iv); save(); setTimeout(() => window.__showUpdateLog(), 400); }
+      const ready = hidden && performance.now() - tH > 4800 && !$('agesplash') && mn && mn.classList.contains('show') && !(window.RLAccount && window.RLAccount.gateOpen);   // 18+-Hinweis (~3,8 s) ist vorbei
+      if (ready || (n > 600 && !(window.RLAccount && window.RLAccount.gateOpen)) || n > 6000) { clearInterval(iv); save(); setTimeout(() => window.__showUpdateLog(), 400); }
     }, 300);
   }
 
